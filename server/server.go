@@ -15,7 +15,23 @@ type Message struct {
 
 type myHandler struct{}
 
+/**TODO: Review and see which are needed */
+func enableCors(w *http.ResponseWriter) {
+	(*w).Header().Set("Access-Control-Allow-Origin", "*")
+	(*w).Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PUT, PATCH, DELETE")
+	(*w).Header().Set("Access-Control-Allow-Headers", "Accept, Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization")
+	(*w).Header().Set("Access-Control-Allow-Credentials", "true")
+}
+
 func (h *myHandler) ServeHTTP(writer http.ResponseWriter, request *http.Request) {
+	// Handle CORS issues TODO: Review CORS in detail
+	enableCors(&writer)
+	if request.Method == "OPTIONS" {
+		writer.WriteHeader(http.StatusOK)
+		writer.Write([]byte(""))
+		return
+	}
+
 	//Implement route forwarding, ensure there is a route established for the request
 	if handler, ok := mux[request.URL.Path]; ok {
 		handler(writer, request)
