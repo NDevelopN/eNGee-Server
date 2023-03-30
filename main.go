@@ -6,14 +6,20 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/gorilla/websocket"
+
 	server "Engee-Server/server"
 )
 
 var mux = map[string]func(http.ResponseWriter, *http.Request){
-	"/": def,
+	"/":  def,
+	"/s": socket,
 }
 
+var upgrader = websocket.Upgrader{}
+
 func main() {
+	log.Println("Welcome to Engee-Server!")
 	go func() {
 		server.Serve(mux)
 	}()
@@ -31,4 +37,32 @@ func def(writer http.ResponseWriter, request *http.Request) {
 	log.Print("\n")
 
 	http.Error(writer, "Invalid request", http.StatusBadRequest)
+}
+
+func socket(writer http.ResponseWriter, request *http.Request) {
+	conn, err := upgrader.Upgrade(writer, request, nil)
+	if err != nil {
+		log.Println(err)
+		return
+	}
+	log.Println("Websocket connection established")
+	defer conn.Close()
+
+	for {
+		mt, message, err := conn.ReadMessage()
+		if err != nil {
+			log.Println(err)
+			break
+		}
+
+		input := string(message)
+
+		err = conn.WriteMessage(mt, []byte(input))
+		if err != nil {
+			log.Println("write failed:", err)
+			break
+		}
+
+	}
+
 }
