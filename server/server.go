@@ -1,51 +1,57 @@
 package server
 
 import (
-	"encoding/json"
-	"fmt"
+	"log"
 	"net/http"
+	"strings"
 	"time"
+
+	g "Engee-Server/gameRoom"
 )
-
-var mux map[string]func(http.ResponseWriter, *http.Request)
-
-type Message struct {
-	Text string
-}
 
 type myHandler struct{}
 
+/**TODO: Review and see which are needed */
+func enableCors(w *http.ResponseWriter) {
+	(*w).Header().Set("Access-Control-Allow-Origin", "*")
+	(*w).Header().Set("Access-Control-Allow-Methods", "*")
+	(*w).Header().Set("Access-Control-Allow-Headers", "*")
+}
+
+var mux = map[string]func(http.ResponseWriter, *http.Request){
+	"":       ReMux,
+	"server": ReMux,
+	"game":   g.ReMux,
+}
+
 func (h *myHandler) ServeHTTP(writer http.ResponseWriter, request *http.Request) {
+	// Handle CORS issues TODO: Review CORS in detail
+	enableCors(&writer)
+	if request.Method == "OPTIONS" {
+		log.Println(request.URL)
+		writer.WriteHeader(http.StatusOK)
+		writer.Write([]byte(""))
+		return
+	}
+
+	// Get the base path and pass to relevant ReMux
+	path := strings.Split(request.URL.Path, "/")[1]
+	log.Printf("Path: %s", path)
+
 	//Implement route forwarding, ensure there is a route established for the request
-	if handler, ok := mux[request.URL.Path]; ok {
+	if handler, ok := mux[path]; ok {
 		handler(writer, request)
 		return
 	}
-	http.Error(writer, "Invalid route"+request.URL.Path, http.StatusNotFound)
+	http.Error(writer, "Invalid route: "+request.URL.Path, http.StatusNotFound)
 }
 
-func Write(writer http.ResponseWriter, request *http.Request) {
-
-	//Decode body into formated form
-	var msg Message
-	err := json.NewDecoder(request.Body).Decode(&msg)
-
-	if err != nil {
-		http.Error(writer, err.Error(), http.StatusBadRequest)
-		return
-	}
-
-	fmt.Println(msg)
-}
-
-func Serve(inMux map[string]func(http.ResponseWriter, *http.Request)) error {
+func Serve() error {
 	server := http.Server{
 		Addr:        ":8080",
 		Handler:     &myHandler{},
 		ReadTimeout: 5 * time.Second,
 	}
-
-	mux = inMux
 
 	return server.ListenAndServe()
 }
