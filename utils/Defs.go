@@ -12,12 +12,23 @@ type PlayerInfo struct {
 }
 
 type PlayerStatus struct {
+	ID     string `json:"id"`
 	Name   string `json:"name"`
 	Status string `json:"status"`
 }
 
 type PlayerList struct {
 	Players []PlayerStatus `json:"players"`
+}
+
+type GameStatus struct {
+	Status  string         `json:"status"`
+	Leader  string         `json:"leader"`
+	Players []PlayerStatus `json:"players"`
+}
+
+type Leader struct {
+	IsLeader bool `json:"isLeader"`
 }
 
 type GameID struct {
@@ -32,6 +43,7 @@ type Game struct {
 	MinPlayers  int
 	MaxPlayers  int
 	Status      string
+	OldStatus   string
 	PlayerCount int
 	Players     map[string]string
 }

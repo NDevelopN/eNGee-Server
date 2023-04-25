@@ -17,7 +17,7 @@ func Extract[O *PlayerInfo | *GameRules | *GameOp | *RemovePlr](r *http.Request,
 	return err
 }
 
-func PackSend[O PlayerInfo | GameInfo | GameList | string](w http.ResponseWriter, msg O) error {
+func PackSend[O PlayerInfo | GameInfo | GameList | GameStatus | GameRules | Leader | string](w http.ResponseWriter, msg O) error {
 	response, err := json.Marshal(msg)
 	if err != nil {
 		return err

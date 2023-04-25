@@ -107,7 +107,7 @@ func createGame(w http.ResponseWriter, r *http.Request) {
 	id := rules.ID
 	if id == "" {
 		//Generate UUID for first time player
-		gm.Status = "Ready"
+		gm.Status = "Lobby"
 		id = uuid.NewString()
 		gm.Players = make(map[string]string)
 

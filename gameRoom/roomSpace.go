@@ -11,10 +11,13 @@ import (
 
 var gmux = map[string]func(http.ResponseWriter, *http.Request){
 	"/join":    join,
+	"/status":  status,
 	"/leave":   leave,
 	"/ready":   ready,
 	"/start":   start,
 	"/delete":  dlt,
+	"/rules":   rules,
+	"/update":  update,
 	"/remove":  remove,
 	"/restart": restart,
 	"/pause":   pause,
@@ -61,6 +64,43 @@ func checkGameList(w http.ResponseWriter, op u.GameOp) (u.Game, bool) {
 	return g, b
 }
 
+func status(w http.ResponseWriter, r *http.Request) {
+	var req u.GameOp
+	err := u.Extract(r, &req)
+	if err != nil {
+		http.Error(w, "Could not read request for players", http.StatusInternalServerError)
+		log.Printf("Could not read from request: %v", err)
+	}
+
+	g, fail := checkGameList(w, req)
+	if fail {
+		return
+	}
+
+	var plr u.Player
+	var plrStat u.PlayerStatus
+
+	var status u.GameStatus
+
+	status.Status = g.Status
+	status.Leader = g.Leader
+
+	for i, p := range g.Players {
+		plr = u.Plrs[i]
+		plrStat.Name = plr.Name
+		plrStat.ID = i
+		plrStat.Status = p
+		status.Players = append(status.Players, plrStat)
+	}
+
+	err = u.PackSend(w, status)
+	if err != nil {
+		http.Error(w, "Failed in response", http.StatusInternalServerError)
+		log.Printf("Failed to send response: %v", err)
+		return
+	}
+	log.Println("Function complete")
+}
 func join(w http.ResponseWriter, r *http.Request) {
 	var join u.GameOp
 	err := u.Extract(r, &join)
@@ -93,7 +133,7 @@ func join(w http.ResponseWriter, r *http.Request) {
 	}
 
 	p.Games[join.GID] = g.Name
-	g.Players[join.PID] = "Joined"
+	g.Players[join.PID] = "Lobby"
 	g.PlayerCount++
 
 	u.Plrs[join.PID] = p
@@ -105,9 +145,6 @@ func join(w http.ResponseWriter, r *http.Request) {
 	game.GameType = g.GameType
 	game.Status = g.Status
 	game.PlayerCount = g.PlayerCount
-
-	log.Print(p)
-	log.Print(g)
 
 	err = u.PackSend(w, game)
 	if err != nil {
@@ -196,7 +233,7 @@ func ready(w http.ResponseWriter, r *http.Request) {
 
 	//TODO maybe more conditions
 	if g.Players[ready.PID] == "Ready" {
-		g.Players[ready.PID] = "Not Ready"
+		g.Players[ready.PID] = g.Status
 	} else {
 		g.Players[ready.PID] = "Ready"
 	}
@@ -270,7 +307,6 @@ func start(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Failed in response", http.StatusInternalServerError)
 		log.Printf("Failed to send response: %v", err)
 	}
-
 }
 
 func dlt(w http.ResponseWriter, r *http.Request) {
@@ -314,6 +350,72 @@ func dlt(w http.ResponseWriter, r *http.Request) {
 		log.Printf("Failed to send response: %v", err)
 	}
 
+}
+
+func rules(w http.ResponseWriter, r *http.Request) {
+	var rules u.GameOp
+	err := u.Extract(r, &rules)
+	if err != nil {
+		http.Error(w, "Could not read rules request", http.StatusBadRequest)
+		log.Printf("Could not read rules request: %v", err)
+	}
+
+	g, fail := checkGameList(w, rules)
+	if fail {
+		return
+	}
+
+	if g.Leader != rules.PID {
+		http.Error(w, "Player is not leader of game", http.StatusBadRequest)
+		log.Printf("Player (%v) not leader of game (%v)", rules.PID, g.Leader)
+		return
+	}
+
+	var ri u.GameRules
+	ri.ID = rules.PID
+	ri.Name = g.Name
+	ri.GameType = g.GameType
+	ri.MinPlayers = g.MinPlayers
+	ri.MaxPlayers = g.MaxPlayers
+	//TODO
+	ri.Additional = ""
+
+	err = u.PackSend(w, ri)
+	if err != nil {
+		http.Error(w, "Failed in response", http.StatusInternalServerError)
+		log.Printf("Failed to send response: %v", err)
+	}
+}
+
+func update(w http.ResponseWriter, r *http.Request) {
+	var rules u.GameRules
+	err := u.Extract(r, &rules)
+	if err != nil {
+		http.Error(w, "Could not read rules from request", http.StatusBadRequest)
+		log.Printf("Could no ready rules from request: %v", err)
+	}
+
+	var op u.GameOp
+	op.GID = rules.ID
+
+	//TODO change GameRules to include pid
+	g, fail := checkGameList(w, op)
+	if fail {
+		return
+	}
+
+	g.Name = rules.Name
+	g.GameType = rules.GameType
+	g.MinPlayers = rules.MinPlayers
+	g.MaxPlayers = rules.MaxPlayers
+	//TODO additional
+
+	//TODO change to ACK
+	err = u.PackSend(w, "")
+	if err != nil {
+		http.Error(w, "Failed in response", http.StatusInternalServerError)
+		log.Printf("Failed to send response: %v", err)
+	}
 }
 
 func remove(w http.ResponseWriter, r *http.Request) {
@@ -370,7 +472,7 @@ func restart(w http.ResponseWriter, r *http.Request) {
 		log.Printf("Could not read from request %v", err)
 	}
 
-	p, fail := checkPlayerList(w, restart)
+	_, fail := checkPlayerList(w, restart)
 	if fail {
 		return
 	}
@@ -387,8 +489,8 @@ func restart(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	/**
 	var readyCount int = 0
-	//TODO check if enough players are ready
 	for _, plr := range g.Players {
 		if plr == "Ready" {
 			readyCount++
@@ -399,16 +501,15 @@ func restart(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "There are not enough ready players", http.StatusInternalServerError)
 		log.Printf("Not enough ready players")
 		return
-	}
+	}*/
 
-	g.Status = "InGame"
+	g.Status = "Lobby"
 	for i := range g.Players {
-		g.Players[i] = "InGame"
+		g.Players[i] = "Lobby"
 	}
 	//TODO now do sometihng for game specifics
 
-	log.Print(p)
-	log.Print(g)
+	u.Games[restart.GID] = g
 
 	//TODO remove player from game
 	//TODO change to ACK
@@ -428,7 +529,7 @@ func pause(w http.ResponseWriter, r *http.Request) {
 		log.Printf("Could not read from request %v", err)
 	}
 
-	p, fail := checkPlayerList(w, pause)
+	_, fail := checkPlayerList(w, pause)
 	if fail {
 		return
 	}
@@ -447,13 +548,13 @@ func pause(w http.ResponseWriter, r *http.Request) {
 
 	// TODO more conditions?
 	if g.Status == "Pause" {
-		g.Status = "InGame"
+		g.Status = g.OldStatus
 	} else {
+		g.OldStatus = g.Status
 		g.Status = "Pause"
 	}
 
-	log.Print(p)
-	log.Print(g)
+	u.Games[pause.GID] = g
 
 	//TODO remove player from game
 	//TODO change to ACK
@@ -472,7 +573,7 @@ func end(w http.ResponseWriter, r *http.Request) {
 		log.Printf("Could not read from request %v", err)
 	}
 
-	p, fail := checkPlayerList(w, end)
+	_, fail := checkPlayerList(w, end)
 	if fail {
 		return
 	}
@@ -490,10 +591,9 @@ func end(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// TODO more conditions?
-	g.Status = "Ready"
+	g.Status = "Lobby"
 
-	log.Print(p)
-	log.Print(g)
+	u.Games[end.GID] = g
 
 	//TODO remove player from game
 	//TODO change to ACK
