@@ -1,12 +1,11 @@
 package server
 
 import (
-	"log"
 	"net/http"
 	"strings"
 	"time"
 
-	g "Engee-Server/gameRoom"
+	l "Engee-Server/lobby"
 )
 
 type myHandler struct{}
@@ -21,14 +20,13 @@ func enableCors(w *http.ResponseWriter) {
 var mux = map[string]func(http.ResponseWriter, *http.Request){
 	"":       ReMux,
 	"server": ReMux,
-	"game":   g.ReMux,
+	"game":   l.ReMux,
 }
 
 func (h *myHandler) ServeHTTP(writer http.ResponseWriter, request *http.Request) {
 	// Handle CORS issues TODO: Review CORS in detail
 	enableCors(&writer)
 	if request.Method == "OPTIONS" {
-		log.Println(request.URL)
 		writer.WriteHeader(http.StatusOK)
 		writer.Write([]byte(""))
 		return
@@ -36,7 +34,6 @@ func (h *myHandler) ServeHTTP(writer http.ResponseWriter, request *http.Request)
 
 	// Get the base path and pass to relevant ReMux
 	path := strings.Split(request.URL.Path, "/")[1]
-	log.Printf("Path: %s", path)
 
 	//Implement route forwarding, ensure there is a route established for the request
 	if handler, ok := mux[path]; ok {
@@ -52,6 +49,5 @@ func Serve() error {
 		Handler:     &myHandler{},
 		ReadTimeout: 5 * time.Second,
 	}
-
 	return server.ListenAndServe()
 }

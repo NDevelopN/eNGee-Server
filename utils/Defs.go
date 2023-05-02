@@ -1,84 +1,58 @@
 package utils
 
 type Player struct {
-	Name   string
-	Status string
-	Games  map[string]string
-}
-
-type PlayerInfo struct {
-	ID   string `json:"id"`
-	Name string `json:"name"`
-}
-
-type PlayerStatus struct {
-	ID     string `json:"id"`
+	PID    string `json:"id"`
 	Name   string `json:"name"`
 	Status string `json:"status"`
 }
 
-type PlayerList struct {
-	Players []PlayerStatus `json:"players"`
-}
-
-type GameStatus struct {
-	Status  string         `json:"status"`
-	Leader  string         `json:"leader"`
-	Players []PlayerStatus `json:"players"`
-}
-
-type Leader struct {
-	IsLeader bool `json:"isLeader"`
-}
-
-type GameID struct {
-	ID   string `json:"id"`
-	Name string `json:"name"`
-}
-
 type Game struct {
-	Name        string
-	GameType    string
-	Leader      string
-	MinPlayers  int
-	MaxPlayers  int
-	Status      string
-	OldStatus   string
-	PlayerCount int
-	Players     map[string]string
+	GID       string   `json:"id"`
+	Name      string   `json:"name"`
+	Type      string   `json:"type"`
+	Status    string   `json:"status"`
+	OldStatus string   `json:"old_status"`
+	Leader    string   `json:"leader"`
+	Rules     Rules    `json:"rules"`
+	Players   []Player `json:"players"`
 }
 
-// Limitted view of Games
-type GameInfo struct {
-	ID          string `json:"id"`
-	Name        string `json:"name"`
-	GameType    string `json:"game_type"`
-	Status      string `json:"status"`
-	PlayerCount int    `json:"player_count"`
-}
-
-type GameList struct {
-	Games []GameInfo `json:"games"`
-}
-
-// For creating / changing settings of a game
-type GameRules struct {
-	ID         string `json:"id"`
-	Name       string `json:"name"`
-	GameType   string `json:"gameType"`
-	MinPlayers int    `json:"minPlayers"`
-	MaxPlayers int    `json:"maxPlayers"`
+type Rules struct {
+	Rounds     int    `json:"rounds"`
+	MinPlrs    int    `json:"min_plrs"`
+	MaxPlrs    int    `json:"max_plrs"`
+	Timeout    int    `json:"timeout"`
 	Additional string `json:"additional"`
 }
 
-// For Player/Game interaction (joining, leaving, ready, etc)
-type GameOp struct {
+type Join struct {
 	PID string `json:"pid"`
 	GID string `json:"gid"`
 }
 
-type RemovePlr struct {
-	AdminID string `json:"adminID"`
+type GView struct {
 	GID     string `json:"gid"`
-	PlrID   string `json:"plrID"`
+	Name    string `json:"name"`
+	Type    string `json:"type"`
+	CurPlrs int    `json:"cur_plrs"`
+	MaxPlrs int    `json:"max_plrs"`
+}
+
+type GameMsg struct {
+	Type    string `json:"type"`
+	PID     string `json:"pid"`
+	GID     string `json:"gid"`
+	Content string `json:"content"`
+}
+
+type GameInfo struct {
+	Games []GView `json:"games"`
+}
+
+type PlrList struct {
+	Players []Player `json:"players"`
+}
+
+type ACK struct {
+	Message string `json:"message"`
 }

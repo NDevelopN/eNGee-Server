@@ -6,14 +6,24 @@ import (
 	"strings"
 
 	"github.com/google/uuid"
+	"github.com/gorilla/websocket"
 
 	u "Engee-Server/utils"
 )
+
+var defRules = u.Rules{
+	Rounds:     1,
+	MinPlrs:    2,
+	MaxPlrs:    8,
+	Timeout:    -1,
+	Additional: "",
+}
 
 var smux = map[string]func(http.ResponseWriter, *http.Request){
 	"/":        landing,
 	"/browser": browser,
 	"/create":  createGame,
+	"/join":    joinGame,
 }
 
 func ReMux(w http.ResponseWriter, r *http.Request) {
@@ -24,42 +34,33 @@ func ReMux(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	http.Error(w, "Invalid route: "+r.URL.Path, http.StatusNotFound)
-
 }
 
 func landing(w http.ResponseWriter, r *http.Request) {
-	var pInfo u.PlayerInfo
-	err := u.Extract(r, &pInfo)
+	var p u.Player
+	err := u.Extract(r, &p)
 	if err != nil {
 		http.Error(w, "Failed to read body", http.StatusBadRequest)
 		log.Print(err)
 		return
 	}
 
-	var Plr u.Player
-	id := pInfo.ID
-	if id == "" {
+	if p.PID == "" {
 		//Generate UUID for first time player
-		Plr.Status = "New"
-		Plr.Games = make(map[string]string)
-		id = uuid.NewString()
-
+		p.Status = "New"
+		p.PID = uuid.NewString()
 	} else {
-		_, k := u.Plrs[id]
+		_, k := u.Plrs[p.PID]
 		if !k {
 			//TODO is there anything else to do here?
 			log.Printf("Invalid player ID")
 			http.Error(w, "Invalid player ID", http.StatusBadRequest)
 		}
-		Plr = u.Plrs[id]
 	}
 
-	Plr.Name = pInfo.Name
-	u.Plrs[id] = Plr
+	u.Plrs[p.PID] = p
 
-	pInfo.ID = id
-
-	err = u.PackSend(w, pInfo)
+	err = u.PackSend(w, p)
 
 	if err != nil {
 		http.Error(w, "Failed in response", http.StatusInternalServerError)
@@ -68,26 +69,19 @@ func landing(w http.ResponseWriter, r *http.Request) {
 }
 
 func browser(w http.ResponseWriter, r *http.Request) {
-	var pInfo u.PlayerInfo
-	err := u.Extract(r, &pInfo)
-	if err != nil {
-		http.Error(w, "Failed to read body", http.StatusBadRequest)
-		log.Print(err)
-		return
-	}
+	var gList u.GameInfo
+	var gInfo u.GView
 
-	//TODO: add some importance to games player is already in
-	var gList u.GameList
-	var gInfo u.GameInfo
 	for i, g := range u.Games {
-		gInfo.ID = i
+		gInfo.GID = i
 		gInfo.Name = g.Name
-		gInfo.GameType = g.GameType
-		gInfo.Status = g.Status
+		gInfo.Type = g.Type
+		gInfo.CurPlrs = len(g.Players)
+		gInfo.MaxPlrs = g.Rules.MaxPlrs
 		gList.Games = append(gList.Games, gInfo)
 	}
 
-	err = u.PackSend(w, gList)
+	err := u.PackSend(w, gList)
 	if err != nil {
 		http.Error(w, "Failed in response", http.StatusInternalServerError)
 		log.Printf("Failed to send reponse: %v\n", err)
@@ -95,51 +89,79 @@ func browser(w http.ResponseWriter, r *http.Request) {
 }
 
 func createGame(w http.ResponseWriter, r *http.Request) {
-	var rules u.GameRules
-	err := u.Extract(r, &rules)
+	var g u.Game
+	err := u.Extract(r, &g)
 	if err != nil {
 		http.Error(w, "Failed to read body", http.StatusBadRequest)
 		log.Print(err)
 		return
 	}
 
-	var gm u.Game
-	id := rules.ID
-	if id == "" {
+	if g.GID == "" {
 		//Generate UUID for first time player
-		gm.Status = "Lobby"
-		id = uuid.NewString()
-		gm.Players = make(map[string]string)
-
-	} else {
-		_, k := u.Games[id]
-		if !k {
-			//TODO is there anything else to do here?
-			http.Error(w, "Invalid Game ID", http.StatusBadRequest)
-			log.Printf("Invalid Game ID")
-		}
-		gm = u.Games[id]
+		g.Status = "Lobby"
+		g.GID = uuid.NewString()
+		g.Rules = defRules
+		g.Leader = ""
 	}
 
-	gm.Name = rules.Name
-	gm.GameType = rules.GameType
-	gm.MinPlayers = rules.MinPlayers
-	gm.MaxPlayers = rules.MaxPlayers
+	u.Games[g.GID] = g
+	u.Connections[g.GID] = make(map[string]*websocket.Conn)
 
-	u.Games[id] = gm
+	err = u.PackSend(w, u.Games[g.GID])
 
-	var gInfo u.GameInfo
-	gInfo.ID = id
-	gInfo.Name = rules.Name
-	gInfo.GameType = rules.GameType
-	gInfo.Status = gm.Status
-	gInfo.PlayerCount = 0
-
-	err = u.PackSend(w, gInfo)
 	if err != nil {
 		http.Error(w, "Failed in response", http.StatusInternalServerError)
 		log.Printf("Failed to send response: %v", err)
 		return
 	}
+}
 
+func joinGame(w http.ResponseWriter, r *http.Request) {
+	var j u.Join
+	err := u.Extract(r, &j)
+	if err != nil {
+		http.Error(w, "Failed to read body", http.StatusBadRequest)
+		log.Print(err)
+		return
+	}
+
+	found, _ := u.CheckForPlayer(j.PID)
+	if !found {
+		http.Error(w, "Player not found", http.StatusNotFound)
+		log.Printf("Could not find player: %v", j.PID)
+		return
+	}
+
+	found, gm := u.CheckForGame(j.GID)
+	if !found {
+		http.Error(w, "Game not found", http.StatusNotFound)
+		log.Printf("Could not find game: %v", j.GID)
+		return
+	}
+
+	for _, p := range gm.Players {
+		if p.PID == j.PID {
+			http.Error(w, "Player alreayd in the game", http.StatusBadRequest)
+			log.Printf("Player alreayd in the game: %v", j.PID)
+			return
+		}
+	}
+
+	gm.Players = append(gm.Players, u.Plrs[j.PID])
+
+	if gm.Leader == "" {
+
+		gm.Leader = j.PID
+	}
+
+	u.Games[j.GID] = gm
+
+	err = u.PackSend(w, u.ACK{Message: "ACK"})
+
+	if err != nil {
+		http.Error(w, "Failed in response", http.StatusInternalServerError)
+		log.Printf("Failed to send response: %v", err)
+		return
+	}
 }
