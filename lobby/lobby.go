@@ -12,6 +12,8 @@ import (
 )
 
 type ConFunc func(*websocket.Conn, string, string)
+type StartFunc func(string)
+type GHandler func(u.GameMsg)
 
 func UpdatePlayers(gid string, msg []byte) {
 	for _, p := range u.Games[gid].Players {
@@ -94,10 +96,9 @@ func pause(gm u.Game) {
 
 }
 
-func start(gm *u.Game) {
+func start(gm *u.Game, sf StartFunc) {
 	updateStatus(gm, "Play")
-
-	//TODO
+	sf(gm.GID)
 }
 
 func end(gm *u.Game) {
@@ -151,7 +152,14 @@ func SingleWrite(t string, pid string, gid string, content string) {
 }
 
 func lobbyConnect(conn *websocket.Conn, pid string, gid string) {
-	info, err := json.Marshal(u.Games[gid])
+	gm := u.Games[gid]
+
+	//Make first connector be leader
+	if gm.Leader == "" {
+		gm.Leader = pid
+	}
+
+	info, err := json.Marshal(gm)
 	if err != nil {
 		log.Printf("Cannot marshal game info: %v", err)
 		return
@@ -160,7 +168,7 @@ func lobbyConnect(conn *websocket.Conn, pid string, gid string) {
 	SingleWrite("Info", pid, gid, string(info))
 }
 
-func Lobby(w http.ResponseWriter, r *http.Request, gameConnect ConFunc, gameHandler u.MHandler) {
+func Lobby(w http.ResponseWriter, r *http.Request, gameConnect ConFunc, sf StartFunc, gameHandler GHandler) {
 
 	var lobbyHandler u.MHandler = func(conn *websocket.Conn, data []byte) {
 		var msg u.GameMsg
@@ -205,7 +213,8 @@ func Lobby(w http.ResponseWriter, r *http.Request, gameConnect ConFunc, gameHand
 				return
 			}
 
-			start(&gm)
+			start(&gm, sf)
+			u.Games[msg.GID] = gm
 		case "End":
 			if !leader {
 				log.Printf("%v, is not leader", msg.PID)
@@ -236,10 +245,9 @@ func Lobby(w http.ResponseWriter, r *http.Request, gameConnect ConFunc, gameHand
 			//TODO
 
 		default:
-			gameHandler(conn, data)
+			gameHandler(msg)
 			return
 		}
-
 	}
 
 	u.Sock(w, r, lobbyHandler)
