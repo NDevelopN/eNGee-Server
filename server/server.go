@@ -1,12 +1,11 @@
 package server
 
 import (
-	"log"
 	"net/http"
 	"strings"
 	"time"
 
-	g "Engee-Server/gameRoom"
+	c "Engee-Server/games/consequences"
 )
 
 type myHandler struct{}
@@ -19,16 +18,45 @@ func enableCors(w *http.ResponseWriter) {
 }
 
 var mux = map[string]func(http.ResponseWriter, *http.Request){
-	"":       ReMux,
-	"server": ReMux,
-	"game":   g.ReMux,
+	"":       ServerRouting,
+	"server": ServerRouting,
+	"game":   GameRouting,
+}
+
+var smux = map[string]func(http.ResponseWriter, *http.Request){
+	"/":        landing,
+	"/browser": browser,
+	"/create":  createGame,
+	"/join":    joinGame,
+}
+
+var gmux = map[string]func(http.ResponseWriter, *http.Request){
+	"/consequences": c.Lobby,
+}
+
+func ServerRouting(w http.ResponseWriter, r *http.Request) {
+	path := strings.Replace(r.URL.Path, "/server", "", 1)
+
+	if handler, ok := smux[path]; ok {
+		handler(w, r)
+		return
+	}
+	http.Error(w, "Invalid route: "+r.URL.Path, http.StatusNotFound)
+}
+
+func GameRouting(w http.ResponseWriter, r *http.Request) {
+	path := strings.Replace(r.URL.Path, "/game", "", 1)
+	if handler, ok := gmux[path]; ok {
+		handler(w, r)
+		return
+	}
+	http.Error(w, "Invalid route: "+r.URL.Path, http.StatusNotFound)
 }
 
 func (h *myHandler) ServeHTTP(writer http.ResponseWriter, request *http.Request) {
 	// Handle CORS issues TODO: Review CORS in detail
 	enableCors(&writer)
 	if request.Method == "OPTIONS" {
-		log.Println(request.URL)
 		writer.WriteHeader(http.StatusOK)
 		writer.Write([]byte(""))
 		return
@@ -36,7 +64,6 @@ func (h *myHandler) ServeHTTP(writer http.ResponseWriter, request *http.Request)
 
 	// Get the base path and pass to relevant ReMux
 	path := strings.Split(request.URL.Path, "/")[1]
-	log.Printf("Path: %s", path)
 
 	//Implement route forwarding, ensure there is a route established for the request
 	if handler, ok := mux[path]; ok {
@@ -44,14 +71,14 @@ func (h *myHandler) ServeHTTP(writer http.ResponseWriter, request *http.Request)
 		return
 	}
 	http.Error(writer, "Invalid route: "+request.URL.Path, http.StatusNotFound)
+
 }
 
 func Serve() error {
 	server := http.Server{
-		Addr:        ":8080",
+		Addr:        ":8090",
 		Handler:     &myHandler{},
 		ReadTimeout: 5 * time.Second,
 	}
-
 	return server.ListenAndServe()
 }
