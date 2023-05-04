@@ -67,7 +67,6 @@ func AddStory(g string, p string, s []string) {
 // TODO offer more random shuffle?
 func ShuffleStories(stories [][]string) [][]string {
 	var ns [][]string = make([][]string, len(stories))
-	log.Printf("Stories: %v", stories)
 
 	for plr := range stories {
 		ns[plr] = make([]string, len(stories[plr]))
@@ -155,9 +154,6 @@ var handler l.GHandler = func(m u.GameMsg) {
 			return
 		}
 
-		//TODO remove
-		log.Print(p)
-
 		SetPrompts(p)
 
 		l.SingleWrite("ACK", m.PID, m.GID, "")
@@ -171,9 +167,6 @@ var handler l.GHandler = func(m u.GameMsg) {
 			log.Printf("Could not unmarshal replies: %v", err)
 			return
 		}
-
-		//TODO remove
-		log.Print(replies)
 
 		if len(replies.List) != len(GetPrompts()) {
 			log.Printf("Mismatch in replies and prompts: \n%v. \n%v.\n", replies, GetPrompts())
