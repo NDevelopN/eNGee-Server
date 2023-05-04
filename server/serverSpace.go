@@ -3,7 +3,6 @@ package server
 import (
 	"log"
 	"net/http"
-	"strings"
 
 	"github.com/google/uuid"
 	"github.com/gorilla/websocket"
@@ -19,23 +18,6 @@ var defRules = u.Rules{
 	Additional: "",
 }
 
-var smux = map[string]func(http.ResponseWriter, *http.Request){
-	"/":        landing,
-	"/browser": browser,
-	"/create":  createGame,
-	"/join":    joinGame,
-}
-
-func ReMux(w http.ResponseWriter, r *http.Request) {
-	path := strings.Replace(r.URL.Path, "/server", "", 1)
-
-	if handler, ok := smux[path]; ok {
-		handler(w, r)
-		return
-	}
-	http.Error(w, "Invalid route: "+r.URL.Path, http.StatusNotFound)
-}
-
 func landing(w http.ResponseWriter, r *http.Request) {
 	var p u.Player
 	err := u.Extract(r, &p)
@@ -44,6 +26,7 @@ func landing(w http.ResponseWriter, r *http.Request) {
 		log.Print(err)
 		return
 	}
+	log.Printf("Landing achieved, %v", p.Name)
 
 	if p.PID == "" {
 		//Generate UUID for first time player
@@ -99,9 +82,8 @@ func createGame(w http.ResponseWriter, r *http.Request) {
 
 	if g.GID == "" {
 		//Generate UUID for first time player
-		g.Status = "Lobby"
 		g.GID = uuid.NewString()
-		g.Rules = defRules
+		g.Status = "Lobby"
 		g.Leader = ""
 	}
 
