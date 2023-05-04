@@ -129,8 +129,37 @@ func rules(gid string, content string) {
 	gm.Type = rules.Type
 	gm.Rules = rules.Rules
 
-	restart(&gm)
+	updateStatus(&gm, "Restart")
+	for i := range gm.Players {
+		gm.Players[i].Status = "New"
+	}
 
+	gUpd, err := json.Marshal(gm)
+	if err != nil {
+		log.Printf("Could not marshal games for rules update: %v", err)
+		return
+	}
+
+	gMsg := u.GameMsg{
+		Type:    "Update",
+		PID:     "",
+		GID:     gid,
+		Content: string(gUpd),
+	}
+
+	msg, err := json.Marshal(gMsg)
+	if err != nil {
+		log.Printf("Could not marshal rules update message: %v", err)
+		return
+	}
+
+	log.Print("Sending rules update now")
+
+	UpdatePlayers(gid, msg)
+
+	time.Sleep(1 * time.Second)
+
+	updateStatus(&gm, "Lobby")
 }
 
 // TO send update only to one Player
@@ -239,6 +268,8 @@ func Lobby(w http.ResponseWriter, r *http.Request, gameConnect ConFunc, sf Start
 			}
 
 			rules(msg.GID, msg.Content)
+
+			u.Games[msg.GID] = gm
 		case "Remove":
 			//TODO
 		case "Delete":
