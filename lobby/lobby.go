@@ -72,15 +72,24 @@ func connect(gid string, pid string, conn *websocket.Conn) {
 	plrListUpdate(gid)
 }
 
-func playerStatus(gm u.Game, pid string, status string) {
+func playerStatus(gm *u.Game, pid string, status string, sf StartFunc) {
+	ready := 0
+	log.Printf("New Status for %v: %v", u.Plrs[pid].Name, status)
 	for i, p := range gm.Players {
 		if p.PID == pid {
 			p.Status = status
 			gm.Players[i] = p
 			plrListUpdate(gm.GID)
-			u.Games[gm.GID] = gm
-			return
 		}
+
+		if p.Status == "Ready" {
+			ready++
+		}
+	}
+
+	//If half of all players are ready, start game
+	if ready > (len(gm.Players) / 2) {
+		start(gm, sf)
 	}
 }
 
@@ -97,13 +106,17 @@ func pause(gm u.Game) {
 }
 
 func start(gm *u.Game, sf StartFunc) {
-	updateStatus(gm, "Play")
-	sf(gm.GID)
+	//TODO countdown
+	if len(gm.Players) >= gm.Rules.MinPlrs {
+		updateStatus(gm, "Play")
+		sf(gm.GID)
+	}
+	// TODO else
 }
 
 func end(gm *u.Game) {
-	updateStatus(gm, "Lobby")
-	//TODO
+	restart(gm)
+	//TODO change to delete the game
 }
 
 func restart(gm *u.Game) {
@@ -226,7 +239,7 @@ func Lobby(w http.ResponseWriter, r *http.Request, gameConnect ConFunc, sf Start
 		case "Connect":
 			connect(msg.GID, msg.PID, conn)
 		case "Status":
-			playerStatus(gm, msg.PID, msg.Content)
+			playerStatus(&gm, msg.PID, msg.Content, sf)
 		case "Leave":
 			u.RemovePlayer(msg.GID, msg.PID)
 			plrListUpdate(msg.GID)

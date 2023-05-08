@@ -124,10 +124,16 @@ func joinGame(w http.ResponseWriter, r *http.Request) {
 
 	for _, p := range gm.Players {
 		if p.PID == j.PID {
-			http.Error(w, "Player alreayd in the game", http.StatusBadRequest)
-			log.Printf("Player alreayd in the game: %v", j.PID)
+			http.Error(w, "Player already in the game", http.StatusBadRequest)
+			log.Printf("Player already in the game: %v", j.PID)
 			return
 		}
+	}
+
+	if len(gm.Players) == gm.Rules.MaxPlrs {
+		http.Error(w, "Cannot join game, it is alredy full", http.StatusConflict)
+		log.Printf("Player trying to join a full game")
+		return
 	}
 
 	gm.Players = append(gm.Players, u.Plrs[j.PID])
