@@ -74,7 +74,6 @@ func connect(gid string, pid string, conn *websocket.Conn) {
 
 func playerStatus(gm *u.Game, pid string, status string, sf StartFunc) {
 	ready := 0
-	log.Printf("New Status for %v: %v", u.Plrs[pid].Name, status)
 	for i, p := range gm.Players {
 		if p.PID == pid {
 			p.Status = status
@@ -166,13 +165,14 @@ func rules(gid string, content string) {
 		return
 	}
 
-	log.Print("Sending rules update now")
-
+	//TODO clean this up
 	UpdatePlayers(gid, msg)
 
 	time.Sleep(1 * time.Second)
 
 	updateStatus(&gm, "Lobby")
+
+	u.Games[gm.GID] = gm
 }
 
 // TO send update only to one Player
@@ -281,8 +281,6 @@ func Lobby(w http.ResponseWriter, r *http.Request, gameConnect ConFunc, sf Start
 			}
 
 			rules(msg.GID, msg.Content)
-
-			u.Games[msg.GID] = gm
 		case "Remove":
 			//TODO
 		case "Delete":
