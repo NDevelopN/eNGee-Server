@@ -140,7 +140,7 @@ var gameCon l.ConFunc = func(conn *websocket.Conn, pid string, gid string) {
 }
 
 var handler l.GHandler = func(m u.GameMsg) {
-	if strings.ToLower(u.Games[m.GID].Type) != "con" {
+	if strings.ToLower(u.Games[m.GID].Type) != "consequences" {
 		log.Printf("Gametype mismatch: %v", u.Games[m.GID].Type)
 		return
 	}

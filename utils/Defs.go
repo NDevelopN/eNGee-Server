@@ -1,13 +1,13 @@
 package utils
 
 type Player struct {
-	PID    string `json:"id"`
+	PID    string `json:"pid"`
 	Name   string `json:"name"`
 	Status string `json:"status"`
 }
 
 type Game struct {
-	GID       string   `json:"id"`
+	GID       string   `json:"gid"`
 	Name      string   `json:"name"`
 	Type      string   `json:"type"`
 	Status    string   `json:"status"`
