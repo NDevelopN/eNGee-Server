@@ -138,8 +138,21 @@ func rules(gid string, content string) {
 	//TODO rules validation
 
 	gm := u.Games[gid]
-	gm.Type = rules.Type
-	gm.Rules = rules.Rules
+	change := false
+	if gm.Type != rules.Type {
+		gm.Type = rules.Type
+		change = true
+	}
+
+	if gm.Rules != rules.Rules {
+		gm.Rules = rules.Rules
+		change = true
+	}
+
+	if !change {
+		log.Print("No changes to game rules provided")
+		return
+	}
 
 	updateStatus(&gm, "Restart")
 	for i := range gm.Players {
