@@ -89,16 +89,20 @@ func playerStatus(gm *u.Game, pid string, status string, sf StartFunc) {
 	//If half of all players are ready, start game
 	if ready > (len(gm.Players) / 2) {
 		start(gm, sf)
+
 	}
 }
 
 func pause(gm u.Game) {
+	log.Printf("Status before pause function: %v", gm.Status)
 	if gm.Status == "Pause" {
 		updateStatus(&gm, gm.OldStatus)
 	} else {
 		gm.OldStatus = gm.Status
 		updateStatus(&gm, "Pause")
 	}
+	log.Printf("Status after pause function: %v", gm.Status)
+	log.Printf("Old Status after pause function: %v", gm.OldStatus)
 
 	u.Games[gm.GID] = gm
 
@@ -203,6 +207,8 @@ func SingleWrite(t string, pid string, gid string, content string) {
 		return
 	}
 
+	log.Printf("Got this far: %v: %v", gid, pid)
+
 	u.Connections[gid][pid].WriteMessage(websocket.TextMessage, enc)
 }
 
@@ -253,9 +259,15 @@ func Lobby(w http.ResponseWriter, r *http.Request, gameConnect ConFunc, sf Start
 			connect(msg.GID, msg.PID, conn)
 		case "Status":
 			playerStatus(&gm, msg.PID, msg.Content, sf)
+			u.Games[msg.GID] = gm
 		case "Leave":
-			u.RemovePlayer(msg.GID, msg.PID)
-			plrListUpdate(msg.GID)
+			//Remove the player, if they were not the last update the others
+			if u.RemovePlayer(msg.GID, msg.PID) {
+				log.Printf("REmove player %v all done", msg.PID)
+				log.Printf("NEw leader: %v", u.Games[msg.GID].Leader)
+				SingleWrite("Leader", u.Games[msg.GID].Leader, msg.GID, "")
+				plrListUpdate(msg.GID)
+			}
 		case "Pause":
 			if !leader {
 				log.Printf("%v, is not leader", msg.PID)
