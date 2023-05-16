@@ -58,6 +58,7 @@ func browser(w http.ResponseWriter, r *http.Request) {
 	for i, g := range u.Games {
 		gInfo.GID = i
 		gInfo.Name = g.Name
+		gInfo.Status = g.Status
 		gInfo.Type = g.Type
 		gInfo.CurPlrs = len(g.Players)
 		gInfo.MaxPlrs = g.Rules.MaxPlrs

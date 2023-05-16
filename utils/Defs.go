@@ -33,6 +33,7 @@ type Join struct {
 type GView struct {
 	GID     string `json:"gid"`
 	Name    string `json:"name"`
+	Status  string `json:"status"`
 	Type    string `json:"type"`
 	CurPlrs int    `json:"cur_plrs"`
 	MaxPlrs int    `json:"max_plrs"`
