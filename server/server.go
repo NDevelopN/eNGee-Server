@@ -5,6 +5,7 @@ import (
 	"strings"
 	"time"
 
+	b "Engee-Server/browser"
 	c "Engee-Server/games/consequences"
 )
 
@@ -24,10 +25,10 @@ var mux = map[string]func(http.ResponseWriter, *http.Request){
 }
 
 var smux = map[string]func(http.ResponseWriter, *http.Request){
-	"/":        landing,
-	"/browser": browser,
-	"/create":  createGame,
-	"/join":    joinGame,
+	"/":        b.EditUser,
+	"/browser": b.Browser,
+	"/create":  b.EditGame,
+	"/join":    b.JoinGame,
 }
 
 var gmux = map[string]func(http.ResponseWriter, *http.Request){

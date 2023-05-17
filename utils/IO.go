@@ -20,14 +20,19 @@ func Extract[O *Player | *Game | *Join](r *http.Request, obj O) error {
 	return err
 }
 
-func PackSend[O Player | Game | GameInfo | ACK](w http.ResponseWriter, msg O) error {
+func PackSend[O Player | Game | GameInfo | ACK](w http.ResponseWriter, msg O, e string) error {
 	response, err := json.Marshal(msg)
 	if err != nil {
+		http.Error(w, e, http.StatusInternalServerError)
 		return err
 	}
 
 	w.WriteHeader(http.StatusOK)
 	_, err = w.Write(response)
+	if err != nil {
+		http.Error(w, e, http.StatusInternalServerError)
+	}
+
 	return err
 }
 

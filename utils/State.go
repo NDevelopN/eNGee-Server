@@ -54,7 +54,7 @@ func CheckForPlayer(pid string) (bool, Player) {
 
 	p, k := Plrs[pid]
 	if !k {
-		log.Printf("Could not find player: %v", pid)
+		log.Printf("[Error] Failed to find a matching player: %v", pid)
 		b = false
 	}
 
@@ -67,9 +67,19 @@ func CheckForGame(gid string) (bool, Game) {
 
 	g, k := Games[gid]
 	if !k {
-		log.Printf("Could not find game: %v", gid)
+		log.Printf("[Error] Failed to find a matching game: %v", gid)
 		b = false
 	}
 
 	return b, g
+}
+
+func CheckGameForPlayer(gm Game, pid string) bool {
+	for _, p := range gm.Players {
+		if p.PID == pid {
+			return true
+		}
+	}
+
+	return false
 }
