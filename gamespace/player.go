@@ -55,7 +55,7 @@ func Status(conn *websocket.Conn, gm u.Game, pid string, status string) bool {
 func Leave(conn *websocket.Conn, msg u.GameMsg) {
 	leader := u.RemovePlayer(msg.GID, msg.PID)
 	if leader != "" {
-		u.SockSend(u.Connections[msg.GID][leader], "Leader", msg.GID, msg.PID, "")
+		u.SockSend(u.Connections[msg.GID][leader], "Leader", msg.GID, leader, "")
 		UpdatePlayerList(msg.GID)
 	}
 }
