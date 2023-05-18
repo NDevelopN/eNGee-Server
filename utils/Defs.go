@@ -20,10 +20,8 @@ type Game struct {
 }
 
 type Rules struct {
-	Rounds     int    `json:"rounds"`
 	MinPlrs    int    `json:"min_plrs"`
 	MaxPlrs    int    `json:"max_plrs"`
-	Timeout    int    `json:"timeout"`
 	Additional string `json:"additional"`
 }
 
