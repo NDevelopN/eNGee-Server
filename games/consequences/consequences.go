@@ -3,110 +3,15 @@ package consequences
 import (
 	"encoding/json"
 	"log"
-	"net/http"
 	"strings"
 
-	"github.com/gorilla/websocket"
-
-	l "Engee-Server/lobby"
 	u "Engee-Server/utils"
 )
 
-var prompts []string
-var defaultPrompts = []string{
-	"Character 1",
-	"Character 2",
-	"Location",
-	"Character 1's action",
-	"Character 2's action",
-	"Consequences",
-}
-
-type conGame struct {
-	playerCount int
-	readyCount  int
-	stories     [][]string
-	pMap        map[string]int
-}
-
-var gMap map[string]conGame = make(map[string]conGame)
-
-var custom = false
-
-// TODO create a database for custom prompts
-func SetPrompts(p []string) {
-	prompts = p
-	custom = true
-}
-
-func GetPrompts() []string {
-	if custom {
-		return prompts
-	}
-
-	return defaultPrompts
-}
-
-func AddStory(g string, p string, s []string) {
-	gRef := gMap[g]
-
-	gRef.pMap[p] = len(gRef.stories)
-	gRef.stories = append(gRef.stories, s)
-	gRef.readyCount++
-
-	if gRef.readyCount >= gRef.playerCount {
-		gRef.stories = ShuffleStories(gRef.stories)
-		gMap[g] = gRef
-		endRound(g)
-		return
-	}
-
-	gMap[g] = gRef
-}
-
-// TODO offer more random shuffle?
-func ShuffleStories(stories [][]string) [][]string {
-	var ns [][]string = make([][]string, len(stories))
-
-	for plr := range stories {
-		ns[plr] = make([]string, len(stories[plr]))
-		for line := range stories[plr] {
-			k := (plr + line + 1) % len(stories)
-			ns[plr][line] = stories[k][line]
-		}
-
-	}
-
-	return ns
-}
-
-func endRound(g string) {
-	gRef := gMap[g]
-
-	for i, p := range gRef.pMap {
-		var pl u.PairList
-
-		for j := range GetPrompts() {
-			pl.List = append(pl.List, u.Pair{First: GetPrompts()[j], Second: gRef.stories[p][j]})
-		}
-
-		msg, err := json.Marshal(pl)
-		if err != nil {
-			log.Printf("Could not marshal story: %v", err)
-			return
-		}
-
-		l.SingleWrite("Story", i, g, string(msg))
-	}
-
-}
-
-var start l.StartFunc = func(gid string) {
-	log.Print("Starting Consequences...	")
-
-	p, err := json.Marshal(u.SList{List: GetPrompts()})
+func Start(gid string) {
+	p, err := json.Marshal(Prompts{List: gMap[gid].Prompts})
 	if err != nil {
-		log.Printf("Cannot marshal prompts: %v", err)
+		log.Printf("[Error] Failed to marshal prompt list: %v", err)
 		return
 	}
 
@@ -116,76 +21,110 @@ var start l.StartFunc = func(gid string) {
 		GID:     gid,
 		Content: string(p),
 	})
+
 	if err != nil {
-		log.Printf("Could not marshal start message: %v", err)
+		log.Printf("[Error] Failed to marshal prompt message: %v", err)
 		return
 	}
 
-	pc := len(u.Games[gid].Players)
-
-	cg := conGame{
-		playerCount: pc,
-		readyCount:  0,
-		stories:     make([][]string, 0),
-		pMap:        make(map[string]int),
-	}
-
-	gMap[gid] = cg
-
-	l.UpdatePlayers(gid, msg)
+	u.Broadcast(gid, msg)
 }
 
-var gameCon l.ConFunc = func(conn *websocket.Conn, pid string, gid string) {
-	//TODO is there anything needed in this function right now?
-}
-
-var handler l.GHandler = func(m u.GameMsg) {
-	if strings.ToLower(u.Games[m.GID].Type) != "consequences" {
-		log.Printf("Gametype mismatch: %v", u.Games[m.GID].Type)
+var HandleInput u.GHandler = func(msg u.GameMsg) {
+	if strings.ToLower(u.Games[msg.GID].Type) != "consequences" {
+		log.Printf("[Error] Gametype mismatch: %v", u.Games[msg.GID].Type)
 		return
 	}
 
-	switch m.Type {
-	case "Prompts": // Handles creation of new set of prompts
-		var p []string
-		err := json.Unmarshal([]byte(m.Content), &p)
-		if err != nil {
-			log.Printf("Could not unmarshal prompts: %v", err)
-			return
-		}
-
-		SetPrompts(p)
-
-		l.SingleWrite("ACK", m.PID, m.GID, "")
-		return
-
+	switch msg.Type {
+	case "Create":
+		CreateGame(msg.GID, msg.Content)
+	case "Connect":
+		PlayerJoin(msg.GID, msg.PID)
+	case "Leave":
+		PlayerLeave(msg.GID, msg.PID)
+	case "Start":
+		Start(msg.GID)
+	case "Update":
+		UpdateGame(msg.GID, msg.PID, msg.Content)
 	case "Reply":
-		// Handles replies to prompts
-		var replies u.SList
-		err := json.Unmarshal([]byte(m.Content), &replies)
-		if err != nil {
-			log.Printf("Could not unmarshal replies: %v", err)
-			return
-		}
-
-		if len(replies.List) != len(GetPrompts()) {
-			log.Printf("Mismatch in replies and prompts: \n%v. \n%v.\n", replies, GetPrompts())
-			return
-		}
-
-		AddStory(m.GID, m.PID, replies.List)
-		return
-
-	case "Shuffle":
-		// Accepts settigns for variations in the shuffling
-		//TODO
-	case "Save":
-		// Saves the shuffled story for later viewing
-		//TODO
-
+		HandleReply(msg)
+	default:
+		log.Printf("No matching message type: %v", msg.Type)
 	}
 }
 
-func Lobby(w http.ResponseWriter, r *http.Request) {
-	l.Lobby(w, r, gameCon, start, handler)
+func HandleReply(msg u.GameMsg) {
+	var r Replies
+	err := json.Unmarshal([]byte(msg.Content), &r)
+	if err != nil {
+		log.Printf("[Error] Failed to unmarshal replies: %v", err)
+	}
+
+	length := len(gMap[msg.GID].Prompts)
+	if len(r.List) != length {
+		log.Printf("[Error] Mismatch in length of replies and prompts: %v : %v", len(r.List), length)
+		return
+	}
+
+	AddStory(msg.GID, msg.PID, r.List)
+
+	u.SockSend(u.Connections[msg.GID][msg.PID], "Accept", msg.GID, msg.PID, "")
+
+	CheckComplete(msg.GID)
+}
+
+func AddStory(gid string, pid string, s []string) {
+	gRef := gMap[gid]
+
+	index := gRef.PMap[pid]
+	gRef.Stories[index] = s
+	gRef.ReadyCount++
+
+	gMap[gid] = gRef
+}
+
+func CheckComplete(gid string) {
+	gRef := gMap[gid]
+
+	if gRef.ReadyCount >= gRef.PlayerCount {
+		gRef.Stories = ShuffleStories(gRef.Stories)
+		gMap[gid] = gRef
+		EndRound(gid)
+	}
+}
+
+func ShuffleStories(stories [][]string) [][]string {
+	var ns [][]string = make([][]string, len(stories))
+
+	for plr := range stories {
+		ns[plr] = make([]string, len(stories[plr]))
+		for line := range stories[plr] {
+			k := (plr + line + 1) % len(stories)
+			ns[plr][line] = stories[k][line]
+		}
+	}
+
+	return ns
+}
+
+func EndRound(gid string) {
+	gRef := gMap[gid]
+
+	for i, p := range gRef.PMap {
+		log.Printf("PID: %v", i)
+		var pl Story
+
+		for j := range gRef.Prompts {
+			pl.Lines = append(pl.Lines, Line{Prompt: gRef.Prompts[j], Story: gRef.Stories[p][j]})
+		}
+
+		msg, err := json.Marshal(pl)
+		if err != nil {
+			log.Printf("[Error] Failed to marshal story: %v", err)
+			return
+		}
+
+		u.SockSend(u.Connections[gid][i], "Story", gid, i, string(msg))
+	}
 }

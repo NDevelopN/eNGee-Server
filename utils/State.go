@@ -17,25 +17,20 @@ func RemoveGame(gid string) {
 	delete(Connections, gid)
 }
 
-func RemovePlayer(gid string, pid string) bool {
+func RemovePlayer(gid string, pid string) string {
 	gm := Games[gid]
-
-	//If there is only one player, just remove the game
-	if len(gm.Players) <= 1 {
-		RemoveGame(gid)
-		return false
-	}
 
 	for i, p := range gm.Players {
 		if p.PID == pid {
 			gm.Players[i] = gm.Players[len(gm.Players)-1]
 			gm.Players = gm.Players[:len(gm.Players)-1]
+			break
 		}
 	}
 
 	if len(gm.Players) <= 0 {
 		RemoveGame(gid)
-		return false
+		return ""
 	} else {
 		if gm.Leader == pid {
 			gm.Leader = gm.Players[0].PID
@@ -43,7 +38,7 @@ func RemovePlayer(gid string, pid string) bool {
 
 		delete(Connections[gid], pid)
 		Games[gid] = gm
-		return true
+		return gm.Leader
 	}
 
 }

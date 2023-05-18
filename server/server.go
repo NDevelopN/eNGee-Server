@@ -6,8 +6,14 @@ import (
 	"time"
 
 	b "Engee-Server/browser"
-	c "Engee-Server/games/consequences"
+	consequences "Engee-Server/games/consequences"
+	g "Engee-Server/gamespace"
+	u "Engee-Server/utils"
 )
+
+var gHandlers = map[string]u.GHandler{
+	"consequences": consequences.HandleInput,
+}
 
 type myHandler struct{}
 
@@ -31,10 +37,6 @@ var smux = map[string]func(http.ResponseWriter, *http.Request){
 	"/join":    b.JoinGame,
 }
 
-var gmux = map[string]func(http.ResponseWriter, *http.Request){
-	"/consequences": c.Lobby,
-}
-
 func ServerRouting(w http.ResponseWriter, r *http.Request) {
 	path := strings.Replace(r.URL.Path, "/server", "", 1)
 
@@ -46,11 +48,13 @@ func ServerRouting(w http.ResponseWriter, r *http.Request) {
 }
 
 func GameRouting(w http.ResponseWriter, r *http.Request) {
-	path := strings.Replace(r.URL.Path, "/game", "", 1)
-	if handler, ok := gmux[path]; ok {
-		handler(w, r)
-		return
+	gid := strings.Replace(r.URL.Path, "/game/", "", 1)
+	t := strings.ToLower(u.Games[gid].Type)
+
+	if handler, ok := gHandlers[t]; ok {
+		g.GameSpace(w, r, handler)
 	}
+
 	http.Error(w, "Invalid route: "+r.URL.Path, http.StatusNotFound)
 }
 

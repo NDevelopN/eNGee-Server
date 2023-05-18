@@ -1,5 +1,7 @@
 package utils
 
+type GHandler func(msg GameMsg)
+
 type Player struct {
 	PID    string `json:"pid"`
 	Name   string `json:"name"`
@@ -54,18 +56,6 @@ type PlrList struct {
 	Players []Player `json:"players"`
 }
 
-type SList struct {
-	List []string `json:"list"`
-}
-
-type Pair struct {
-	First  string `json:"first"`
-	Second string `json:"second"`
-}
-
-type PairList struct {
-	List []Pair `json:"list"`
-}
 type ACK struct {
 	Message string `json:"message"`
 }
