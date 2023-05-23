@@ -89,18 +89,23 @@ var handler u.MHandler = func(conn *websocket.Conn, data []byte, gHandler u.GHan
 			return
 		}
 		Remove(conn, gm, msg.Content)
+	case "Rules":
+		if !leader {
+			u.SockSend(conn, "Error", msg.GID, msg.PID, "Player is not the leader")
+			return
+		}
+		UpdateRules(conn, gm, msg.Content)
 	default:
 		gHandler(msg)
-		//TODO call game handler
 	}
 }
 
-func UpdateStatus(conn *websocket.Conn, gid string, status string) {
+func UpdateStatus(conn *websocket.Conn, gm u.Game) {
 	gMsg := u.GameMsg{
 		Type:    "Status",
-		GID:     gid,
+		GID:     gm.GID,
 		PID:     "",
-		Content: status,
+		Content: gm.Status,
 	}
 
 	msg, err := json.Marshal(gMsg)
@@ -110,7 +115,7 @@ func UpdateStatus(conn *websocket.Conn, gid string, status string) {
 		return
 	}
 
-	u.Broadcast(gid, msg)
+	u.Broadcast(gm.GID, msg)
 }
 
 func UpdatePlayerList(gid string) {

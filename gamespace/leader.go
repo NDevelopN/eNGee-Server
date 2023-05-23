@@ -14,12 +14,11 @@ import (
 func Pause(conn *websocket.Conn, gm u.Game) {
 	if gm.Status == "Pause" {
 		gm.Status = gm.OldStatus
-		UpdateStatus(conn, gm.GID, gm.Status)
 	} else {
 		gm.OldStatus = gm.Status
 		gm.Status = "Pause"
-		UpdateStatus(conn, gm.GID, gm.Status)
 	}
+	UpdateStatus(conn, gm)
 
 	u.Games[gm.GID] = gm
 }
@@ -28,7 +27,8 @@ func Pause(conn *websocket.Conn, gm u.Game) {
 func Start(conn *websocket.Conn, gm u.Game) {
 	//TODO add option to toggle this as requirement
 	if len(gm.Players) >= gm.Rules.MinPlrs {
-		UpdateStatus(conn, gm.GID, "Play")
+		gm.Status = "Play"
+		UpdateStatus(conn, gm)
 		//TODO: here goes the start function
 	} else {
 		u.SockSend(conn, "Block", "", "", "There are not enough players in the game.")
@@ -43,7 +43,8 @@ func End(conn *websocket.Conn, gm u.Game) {
 }
 
 func Restart(conn *websocket.Conn, gm u.Game) {
-	UpdateStatus(conn, gm.GID, "Restart")
+	gm.Status = "Restart"
+	UpdateStatus(conn, gm)
 
 	for i := range gm.Players {
 		gm.Players[i].Status = "New"
@@ -51,7 +52,8 @@ func Restart(conn *websocket.Conn, gm u.Game) {
 
 	//TODO: Remove
 	time.Sleep(1 * time.Second)
-	UpdateStatus(conn, gm.GID, "Lobby")
+	gm.Status = "Lobby"
+	UpdateStatus(conn, gm)
 
 	u.Games[gm.GID] = gm
 }
@@ -105,10 +107,6 @@ func UpdateRules(conn *websocket.Conn, gm u.Game, content string) {
 
 	// Send the players the rules update
 	u.Broadcast(gm.GID, msg)
-	time.Sleep(1 * time.Second)
-
-	// Leave restart state, return to lobby
-	UpdateStatus(conn, gm.GID, "Lobby")
 	u.Games[gm.GID] = gm
 }
 
