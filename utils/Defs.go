@@ -1,13 +1,15 @@
 package utils
 
+type GHandler func(msg GameMsg)
+
 type Player struct {
-	PID    string `json:"id"`
+	PID    string `json:"pid"`
 	Name   string `json:"name"`
 	Status string `json:"status"`
 }
 
 type Game struct {
-	GID       string   `json:"id"`
+	GID       string   `json:"gid"`
 	Name      string   `json:"name"`
 	Type      string   `json:"type"`
 	Status    string   `json:"status"`
@@ -18,10 +20,8 @@ type Game struct {
 }
 
 type Rules struct {
-	Rounds     int    `json:"rounds"`
 	MinPlrs    int    `json:"min_plrs"`
 	MaxPlrs    int    `json:"max_plrs"`
-	Timeout    int    `json:"timeout"`
 	Additional string `json:"additional"`
 }
 
@@ -33,6 +33,7 @@ type Join struct {
 type GView struct {
 	GID     string `json:"gid"`
 	Name    string `json:"name"`
+	Status  string `json:"status"`
 	Type    string `json:"type"`
 	CurPlrs int    `json:"cur_plrs"`
 	MaxPlrs int    `json:"max_plrs"`
@@ -53,18 +54,6 @@ type PlrList struct {
 	Players []Player `json:"players"`
 }
 
-type SList struct {
-	List []string `json:"list"`
-}
-
-type Pair struct {
-	First  string `json:"first"`
-	Second string `json:"second"`
-}
-
-type PairList struct {
-	List []Pair `json:"list"`
-}
 type ACK struct {
 	Message string `json:"message"`
 }
