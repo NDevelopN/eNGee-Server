@@ -5,11 +5,12 @@ import (
 	"log"
 	"strings"
 
+	db "Engee-Server/database"
 	u "Engee-Server/utils"
 )
 
-func Start(gid string) {
-	p, err := json.Marshal(Prompts{List: gMap[gid].Prompts})
+func Start(gid string, broadcast func(string, []byte)) {
+	p, err := json.Marshal(gMap[gid].Prompts)
 	if err != nil {
 		log.Printf("[Error] Failed to marshal prompt list: %v", err)
 		return
@@ -27,12 +28,19 @@ func Start(gid string) {
 		return
 	}
 
-	u.Broadcast(gid, msg)
+	broadcast(gid, msg)
 }
 
-var HandleInput u.GHandler = func(msg u.GameMsg) {
-	if strings.ToLower(u.Games[msg.GID].Type) != "consequences" {
-		log.Printf("[Error] Gametype mismatch: %v", u.Games[msg.GID].Type)
+var HandleInput u.GHandler = func(msg u.GameMsg, broadcast func(string, []byte)) {
+
+	gm, err := db.GetGame(msg.GID)
+	if err != nil {
+		log.Printf("[Error] Failed to get game from db in gHandler: %v", err)
+		return
+	}
+
+	if strings.ToLower(gm.Type) != "consequences" {
+		log.Printf("[Error] Gametype mismatch: %v", gm.Type)
 		return
 	}
 
@@ -44,24 +52,26 @@ var HandleInput u.GHandler = func(msg u.GameMsg) {
 	case "Leave":
 		PlayerLeave(msg.GID, msg.PID)
 	case "Start":
-		Start(msg.GID)
+		Start(msg.GID, broadcast)
 	case "Update":
 		UpdateGame(msg.GID, msg.PID, msg.Content)
 	case "Reply":
 		HandleReply(msg)
 	default:
-		log.Printf("No matching message type: %v", msg.Type)
+		log.Printf("[Error] No matching message type: %v", msg.Type)
 	}
 }
 
 func HandleReply(msg u.GameMsg) {
 	var r Replies
+
 	err := json.Unmarshal([]byte(msg.Content), &r)
 	if err != nil {
 		log.Printf("[Error] Failed to unmarshal replies: %v", err)
 	}
 
 	length := len(gMap[msg.GID].Prompts)
+
 	if len(r.List) != length {
 		log.Printf("[Error] Mismatch in length of replies and prompts: %v : %v", len(r.List), length)
 		return
@@ -112,7 +122,6 @@ func EndRound(gid string) {
 	gRef := gMap[gid]
 
 	for i, p := range gRef.PMap {
-		log.Printf("PID: %v", i)
 		var pl Story
 
 		for j := range gRef.Prompts {

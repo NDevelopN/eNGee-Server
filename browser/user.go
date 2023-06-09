@@ -6,6 +6,7 @@ import (
 
 	"github.com/google/uuid"
 
+	db "Engee-Server/database"
 	u "Engee-Server/utils"
 )
 
@@ -30,18 +31,27 @@ func EditUser(w http.ResponseWriter, r *http.Request) {
 		// Create UUID for new player
 		p.Status = "New"
 		p.PID = uuid.NewString()
+		err := db.CreatePlayer(p)
+		if err != nil {
+			log.Printf("[Error] Could not create user in database: %v", err)
+			http.Error(w, "Could not create new user in database", http.StatusInternalServerError)
+			return
+		}
 	} else {
-		// Otherwise, check if player exists
-		_, k := u.Plrs[p.PID]
-		if !k {
-			log.Printf("[Error] Invalid Player ID: %v", p.PID)
-			http.Error(w, "Invalid Player ID", http.StatusBadRequest)
+		_, err = db.GetPlayer(p.PID)
+		if err != nil {
+			log.Printf("[Error] Could not retrieve player from database: %v", err)
+			http.Error(w, "Could not retrieve player from database", http.StatusInternalServerError)
+			return
+		}
+
+		err = db.UpdatePlayer(p)
+		if err != nil {
+			log.Printf("[Error] Could not update player in database: %v", err)
+			http.Error(w, "Could not update player in database", http.StatusInternalServerError)
 			return
 		}
 	}
-
-	//Add/update player in map
-	u.Plrs[p.PID] = p
 
 	//Send user information back to the user, allowing the client to receive the PID
 	err = u.PackSend(w, p, "Could not send player update response")
