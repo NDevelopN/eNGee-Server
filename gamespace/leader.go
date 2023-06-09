@@ -51,7 +51,7 @@ func Start(conn *websocket.Conn, gm u.Game) {
 		return
 	}
 
-	err = db.UpdateGamePlayerStatus(gm, "In Game")
+	err = db.UpdateGamePlayerStatus(gm.GID, "In Game")
 	if err != nil {
 		log.Printf("[Error] Could not update player statuses in database: %v", err)
 		u.SockSend(conn, "Error", "", "", "Could not update player status in database")
@@ -98,7 +98,7 @@ func Restart(conn *websocket.Conn, gm u.Game) {
 
 	UpdateStatus(conn, gm)
 
-	err = db.UpdateGamePlayerStatus(gm, "Joined")
+	err = db.UpdateGamePlayerStatus(gm.GID, "Joined")
 	if err != nil {
 		log.Printf("[Error] Could not update players of game in database: %v", err)
 		u.SockSend(conn, "Error", "", "", "Could not update players of game in database")

@@ -11,6 +11,12 @@ import (
 
 var DB *sql.DB
 
+/**
+* This function initializes the database connection
+* It checks for existing tables and currently removes them
+* It then creates the games and players tables
+* TODO: An external file with more permanent storage of tables
+ */
 func InitDB() {
 	var err error
 	//TODO config file
@@ -59,6 +65,9 @@ func InitDB() {
 	}
 }
 
+/**
+* This function returns all the games in the games table
+ */
 func GetAllGames() ([]u.Game, error) {
 	rows, err := DB.Query("SELECT * FROM games")
 	if err != nil {
@@ -97,6 +106,9 @@ func GetAllGames() ([]u.Game, error) {
 	return gms, nil
 }
 
+/**
+* This function returns a single game, identified by the unique gid
+ */
 func GetGame(gid string) (u.Game, error) {
 	row := DB.QueryRow("SELECT * FROM games WHERE gid = $1", gid)
 
@@ -124,6 +136,9 @@ func GetGame(gid string) (u.Game, error) {
 	return *gm, nil
 }
 
+/**
+ * This function adds a single new row to the games table
+ */
 func CreateGame(gm u.Game) error {
 	createStatement := `
 		INSERT INTO games (
@@ -160,6 +175,10 @@ func CreateGame(gm u.Game) error {
 
 }
 
+/**
+* This function updates a row in the games table, identified by the given game's gid
+* All fields are updated in this function
+ */
 func UpdateGame(gm u.Game) error {
 	updateStatement := `
 		UPDATE games
@@ -193,6 +212,10 @@ func UpdateGame(gm u.Game) error {
 	return err
 }
 
+/**
+* This function gets all players with the gid matching the given gid
+* These are the players that are in the game
+ */
 func GetGamePlayers(gid string) ([]u.Player, error) {
 	rows, err := DB.Query("SELECT * FROM players WHERE gid = $1", gid)
 	if err != nil {
@@ -219,11 +242,17 @@ func GetGamePlayers(gid string) ([]u.Player, error) {
 	return plrs, nil
 }
 
+/**
+* This function deletes a row on the games table, identified by the given gid
+ */
 func RemoveGame(gid string) error {
 	_, err := DB.Query("DELETE FROM games WHERE gid = $1", gid)
 	return err
 }
 
+/**
+* This function returns a count of players who have matching gids with the given gid
+ */
 func GetGamePCount(gid string) int {
 	count := 0
 	DB.QueryRow("SELECT count(*) FROM players WHERE gid = $1", gid).Scan(&count)
@@ -231,6 +260,9 @@ func GetGamePCount(gid string) int {
 	return count
 }
 
+/**
+* This function returns a count of players who have the correct gid and a status of Ready
+ */
 func GetGamePReady(gid string) int {
 	count := 0
 	DB.QueryRow("SELECT count(*) FROM players WHERE gid = $1 AND status = $2", gid, "Ready").Scan(&count)
@@ -238,6 +270,9 @@ func GetGamePReady(gid string) int {
 	return count
 }
 
+/**
+* This function returns the player with the given pid
+ */
 func GetPlayer(pid string) (u.Player, error) {
 
 	row := DB.QueryRow("SELECT * FROM players WHERE pid = $1", pid)
@@ -255,6 +290,9 @@ func GetPlayer(pid string) (u.Player, error) {
 	return *plr, nil
 }
 
+/**
+ * This function adds a single new row to the players table
+ */
 func CreatePlayer(plr u.Player) error {
 	_, err := DB.Exec("INSERT INTO players VALUES($1, $2, $3, $4)",
 		plr.PID,
@@ -270,6 +308,10 @@ func CreatePlayer(plr u.Player) error {
 	return nil
 }
 
+/**
+ * This function updates a row in the players table, identified by the given player's pid
+ * All fields are updated in this function
+ */
 func UpdatePlayer(plr u.Player) error {
 	_, err := DB.Exec(
 		"UPDATE players "+
@@ -284,19 +326,25 @@ func UpdatePlayer(plr u.Player) error {
 	return err
 }
 
-func UpdateGamePlayerStatus(gm u.Game, status string) error {
+/**
+ * This function updates the status field of all players with gids that match the given gid
+ */
+func UpdateGamePlayerStatus(gid string, status string) error {
 
 	_, err := DB.Exec(
 		"UPDATE players "+
 			"SET "+
 			"status = $2 "+
 			"WHERE gid = $1",
-		gm.GID, status)
+		gid, status)
 
 	return err
 
 }
 
+/**
+ * This function deletes a row on the palers table, identified by the given pid
+ */
 func RemovePlayer(pid string) error {
 	_, err := DB.Query("DELETE FROM players WHERE pid = $1", pid)
 	return err
