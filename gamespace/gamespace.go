@@ -7,6 +7,7 @@ import (
 
 	"github.com/gorilla/websocket"
 
+	db "Engee-Server/database"
 	u "Engee-Server/utils"
 )
 
@@ -20,44 +21,65 @@ var handler u.MHandler = func(conn *websocket.Conn, data []byte, gHandler u.GHan
 		return
 	}
 
-	found, _ := u.CheckForPlayer(msg.PID)
-	if !found {
-		u.SockSend(conn, "Error", "", "", "Player was not found")
+	//Check if player exists
+	plr, err := db.GetPlayer(msg.PID)
+	if err != nil {
+		log.Printf("[Error] Failed to get player from db in gsHandler: %v", err)
+		u.SockSend(conn, "Error", msg.PID, msg.GID, "Failed to get player from db in gsHandler")
 		return
 	}
 
-	found, gm := u.CheckForGame(msg.GID)
-	if !found {
-		u.SockSend(conn, "Error", "", "", "Game was not found")
+	//Check if game exists
+	gm, err := db.GetGame(msg.GID)
+	if err != nil {
+		log.Printf("[Error] Failed to get game from db in gsHandler: %v", err)
+		u.SockSend(conn, "Error", msg.PID, msg.GID, "Failed to get game from db in gsHandler")
 		return
 	}
 
-	found = u.CheckGameForPlayer(gm, msg.PID)
-	if !found {
-		u.SockSend(conn, "Error", "", "", "Player was not found in the game")
+	//Check if player is in the game
+	if plr.GID != msg.GID {
+		log.Printf("[Error] Player GID does not match game GID: %v", err)
+		u.SockSend(conn, "Error", msg.PID, msg.GID, "Player GID does not match game GID")
 		return
 	}
 
+	//Check if the player is the game leader
 	leader := (msg.PID == gm.Leader)
 
 	switch msg.Type {
+	//Case for first connection
 	case "Connect":
-		if Connect(conn, msg) {
+		//TODO this is not clear
+		if Connect(conn, gm, plr) {
 			gHandler(
 				u.GameMsg{
 					Type:    "Create",
 					PID:     msg.PID,
 					GID:     msg.GID,
-					Content: gm.Rules.Additional,
+					Content: gm.AdditionalRules,
 				},
+				Broadcast,
 			)
+
 		}
-		gHandler(msg)
+		gHandler(msg, Broadcast)
 	case "Status":
-		Status(conn, gm, msg.PID, msg.Content)
+		ChangePlayerStatus(conn, msg.GID, plr, msg.Content, leader)
+
+		//If autostart enabled, start the game after more than half of players are ready
+		if true {
+			ready := db.GetGamePReady(msg.GID)
+			threshold := db.GetGamePCount(msg.GID) / 2
+			if ready >= threshold {
+				Start(conn, gm)
+				msg.Type = "Start"
+				gHandler(msg, Broadcast)
+			}
+		}
 	case "Leave":
-		gHandler(msg)
-		Leave(conn, msg)
+		gHandler(msg, Broadcast)
+		Leave(conn, plr, gm)
 	case "Pause":
 		if !leader {
 			u.SockSend(conn, "Error", msg.GID, msg.PID, "Player is not the leader")
@@ -70,7 +92,7 @@ var handler u.MHandler = func(conn *websocket.Conn, data []byte, gHandler u.GHan
 			return
 		}
 		Start(conn, gm)
-		gHandler(msg)
+		gHandler(msg, Broadcast)
 	case "End":
 		if !leader {
 			u.SockSend(conn, "Error", msg.GID, msg.PID, "Player is not the leader")
@@ -96,7 +118,7 @@ var handler u.MHandler = func(conn *websocket.Conn, data []byte, gHandler u.GHan
 		}
 		UpdateRules(conn, gm, msg.Content)
 	default:
-		gHandler(msg)
+		gHandler(msg, Broadcast)
 	}
 }
 
@@ -115,11 +137,16 @@ func UpdateStatus(conn *websocket.Conn, gm u.Game) {
 		return
 	}
 
-	u.Broadcast(gm.GID, msg)
+	Broadcast(gm.GID, msg)
 }
 
 func UpdatePlayerList(gid string) {
-	list, err := json.Marshal(u.PlrList{Players: u.Games[gid].Players})
+	plrs, err := db.GetGamePlayers(gid)
+	if err != nil {
+		log.Printf("[Error] Failed to get player list from game %v", err)
+		return
+	}
+	list, err := json.Marshal(plrs)
 	if err != nil {
 		log.Printf("[Error] Failed to marshal player list: %v", err)
 		return
@@ -138,9 +165,22 @@ func UpdatePlayerList(gid string) {
 		return
 	}
 
-	u.Broadcast(gid, msg)
+	Broadcast(gid, msg)
 }
 
 func GameSpace(w http.ResponseWriter, r *http.Request, gHandler u.GHandler) {
 	u.Sock(w, r, handler, gHandler)
+}
+
+func Broadcast(gid string, msg []byte) {
+	plrs, err := db.GetGamePlayers(gid)
+	if err != nil {
+		log.Printf("[Error] Failed to get players for broadcast: %v", err)
+		return
+	}
+
+	for _, p := range plrs {
+		u.Connections[gid][p.PID].WriteMessage(websocket.TextMessage, msg)
+	}
+
 }

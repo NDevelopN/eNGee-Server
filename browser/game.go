@@ -7,6 +7,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/gorilla/websocket"
 
+	db "Engee-Server/database"
 	u "Engee-Server/utils"
 )
 
@@ -32,17 +33,27 @@ func EditGame(w http.ResponseWriter, r *http.Request) {
 		g.GID = uuid.NewString()
 		g.Status = "Lobby"
 		g.Leader = ""
+		err := db.CreateGame(g)
+		if err != nil {
+			log.Printf("[Error] Could not create game in database: %v", err)
+			http.Error(w, "Could not create new game in database", http.StatusInternalServerError)
+			return
+		}
 	} else {
-		_, k := u.Games[g.GID]
-		if !k {
-			log.Printf("[Error] Invalid Game ID: %v", g.GID)
-			http.Error(w, "Invalid Game ID", http.StatusBadRequest)
+		_, err := db.GetGame(g.GID)
+		if err != nil {
+			log.Printf("[Error] Could not retieve  game from database: %v", err)
+			http.Error(w, "Could not retrieve game from database", http.StatusInternalServerError)
+			return
+		}
+
+		err = db.UpdateGame(g)
+		if err != nil {
+			log.Printf("[Error] Could not update  game in database: %v", err)
+			http.Error(w, "Could not update game in database", http.StatusInternalServerError)
 			return
 		}
 	}
-
-	//Add/update game in map
-	u.Games[g.GID] = g
 
 	//Make new map for player connections
 	u.Connections[g.GID] = make(map[string]*websocket.Conn)

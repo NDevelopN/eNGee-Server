@@ -4,6 +4,7 @@ import (
 	"log"
 	"net/http"
 
+	db "Engee-Server/database"
 	u "Engee-Server/utils"
 )
 
@@ -16,22 +17,14 @@ import (
  *
  */
 func Browser(w http.ResponseWriter, r *http.Request) {
-	var gList u.GameInfo
-	var gInfo u.GView
-	//TODO do I need gList to be a struct
 
-	//For each game, put its information into the GameInfo list
-	for i, g := range u.Games {
-		gInfo.GID = i
-		gInfo.Name = g.Name
-		gInfo.Status = g.Status
-		gInfo.Type = g.Type
-		gInfo.CurPlrs = len(g.Players)
-		gInfo.MaxPlrs = g.Rules.MaxPlrs
-		gList.Games = append(gList.Games, gInfo)
+	games, err := db.GetAllGames()
+	if err != nil {
+		log.Printf("[Error] Failed to get games from database: %v", err)
+		return
 	}
 
-	err := u.PackSend(w, gList, "Could not send game browser information")
+	err = u.SendGameInfo(w, games, "Could not send game browser info")
 	if err != nil {
 		log.Printf("[Error] Failed to send game browser information: %v", err)
 		return
@@ -40,7 +33,7 @@ func Browser(w http.ResponseWriter, r *http.Request) {
 
 /**
  *
- * This JoinGame fucntion handles users requests to join a game
+ * This JoinGame function handles users requests to join a game
  * This function checks if the user and the game exists, returning an error if either is not found
  * This function then checks if the user is already in the game, returning an error if true
  * This funciton then checks if there is enough room for the user to join, returning an error if there is not
@@ -54,48 +47,54 @@ func JoinGame(w http.ResponseWriter, r *http.Request) {
 	err := u.Extract(r, &j)
 	if err != nil {
 		log.Printf("[Error] Failed to read join request: %v", err)
+		http.Error(w, "Failed to read join request", http.StatusBadRequest)
 		return
 	}
 
 	//Check if the player exists
-	found, p := u.CheckForPlayer(j.PID)
-	if !found {
-		http.Error(w, "Player was not found", http.StatusNotFound)
+	plr, err := db.GetPlayer(j.PID)
+	if err != nil {
+		log.Printf("[Error] Failed to find player in DB: %v", err)
+		http.Error(w, "Failed to find player in the Database", http.StatusInternalServerError)
 		return
 	}
 
 	//Check if the game exists
-	found, gm := u.CheckForGame(j.GID)
-	if !found {
-		http.Error(w, "Game was not found", http.StatusNotFound)
+	gm, err := db.GetGame(j.GID)
+	if err != nil {
+		log.Printf("[Error] Failed to find game in DB: %v", err)
+		http.Error(w, "Failed to find game in the Database", http.StatusInternalServerError)
 		return
 	}
 
-	//Check if the player is already in the game
-	found = u.CheckGameForPlayer(gm, j.PID)
-	if found {
-		http.Error(w, "Player is already in the game", http.StatusBadRequest)
-		log.Printf("[Error] Player is trying to join a game they are already in")
+	//Check if the player is in the game
+	if plr.GID == gm.GID {
+		log.Printf("[Error] Player is already in game")
+		http.Error(w, "Player is already in selected game", http.StatusBadRequest)
 		return
 	}
 
-	//Check if there is enough space for the player to join
-	if len(gm.Players) == gm.Rules.MaxPlrs {
-		http.Error(w, "Cannot join game, it is already full", http.StatusConflict)
-		log.Printf("[Error] Player trying to join a full game")
+	//Check if there is enough room for the player to join
+	pCount := db.GetGamePCount(j.GID)
+	if pCount >= gm.MaxPlrs {
+		log.Printf("[Error] No space for player to join: %v", err)
+		http.Error(w, "No room for player to join", http.StatusConflict)
 		return
 	}
 
-	//Add the player to the game's map
-	gm.Players = append(gm.Players, p)
+	//Update the player to be part of the game
+	plr.GID = gm.GID
+	plr.Status = "Joining"
 
 	//If there hasn't yet been an assigned leader, set the player as the game leader
 	if gm.Leader == "" {
-		gm.Leader = p.PID
+		gm.Leader = plr.PID
 	}
 
-	//Update the game map with the update game
-	u.Games[j.GID] = gm
+	gm.CurPlrs = pCount + 1
+
+	db.UpdateGame(gm)
+	db.UpdatePlayer(plr)
 
 	//Send an ACK message to the user to complete the process
 	err = u.PackSend(w, u.ACK{Message: "ACK"}, "Could not send join Acknowledgement")

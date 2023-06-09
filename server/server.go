@@ -1,11 +1,13 @@
 package server
 
 import (
+	"log"
 	"net/http"
 	"strings"
 	"time"
 
 	b "Engee-Server/browser"
+	db "Engee-Server/database"
 	consequences "Engee-Server/games/consequences"
 	g "Engee-Server/gamespace"
 	u "Engee-Server/utils"
@@ -49,7 +51,13 @@ func ServerRouting(w http.ResponseWriter, r *http.Request) {
 
 func GameRouting(w http.ResponseWriter, r *http.Request) {
 	gid := strings.Replace(r.URL.Path, "/game/", "", 1)
-	t := strings.ToLower(u.Games[gid].Type)
+	gm, err := db.GetGame(gid)
+	if err != nil {
+		log.Printf("[Error] Game in path not found: %v", err)
+		http.Error(w, "Game in path not found", http.StatusNotFound)
+		return
+	}
+	t := strings.ToLower(gm.Type)
 
 	if handler, ok := gHandlers[t]; ok {
 		g.GameSpace(w, r, handler)
@@ -80,6 +88,7 @@ func (h *myHandler) ServeHTTP(writer http.ResponseWriter, request *http.Request)
 }
 
 func Serve() error {
+	db.InitDB()
 	server := http.Server{
 		Addr:        ":8090",
 		Handler:     &myHandler{},

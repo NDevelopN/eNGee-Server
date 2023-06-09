@@ -20,7 +20,7 @@ func Extract[O *Player | *Game | *Join](r *http.Request, obj O) error {
 	return err
 }
 
-func PackSend[O Player | Game | GameInfo | ACK](w http.ResponseWriter, msg O, e string) error {
+func PackSend[O Player | Game | ACK](w http.ResponseWriter, msg O, e string) error {
 	response, err := json.Marshal(msg)
 	if err != nil {
 		http.Error(w, e, http.StatusInternalServerError)
@@ -36,7 +36,27 @@ func PackSend[O Player | Game | GameInfo | ACK](w http.ResponseWriter, msg O, e 
 	return err
 }
 
+func SendGameInfo(w http.ResponseWriter, gms []Game, e string) error {
+	log.Printf("Games: %v", gms)
+
+	response, err := json.Marshal(gms)
+	if err != nil {
+		http.Error(w, e, http.StatusInternalServerError)
+		return err
+	}
+
+	w.WriteHeader(http.StatusOK)
+	_, err = w.Write(response)
+	if err != nil {
+		http.Error(w, e, http.StatusInternalServerError)
+	}
+
+	return err
+}
+
 type MHandler func(*websocket.Conn, []byte, GHandler)
+
+var Connections = map[string](map[string]*websocket.Conn){}
 
 func Sock(w http.ResponseWriter, r *http.Request, handleMessage MHandler, gHandler GHandler) {
 	var upgrader = websocket.Upgrader{}
@@ -80,10 +100,4 @@ func SockSend(conn *websocket.Conn, t string, gid string, pid string, content st
 	}
 
 	conn.WriteMessage(websocket.TextMessage, enc)
-}
-
-func Broadcast(gid string, msg []byte) {
-	for _, p := range Games[gid].Players {
-		Connections[gid][p.PID].WriteMessage(websocket.TextMessage, msg)
-	}
 }
