@@ -71,7 +71,7 @@ var handler u.MHandler = func(conn *websocket.Conn, data []byte, gHandler u.GHan
 		if true {
 			ready := db.GetGamePReady(msg.GID)
 			threshold := db.GetGamePCount(msg.GID) / 2
-			if ready >= threshold {
+			if ready > threshold {
 				Start(conn, gm)
 				msg.Type = "Start"
 				gHandler(msg, Broadcast)
