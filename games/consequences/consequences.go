@@ -16,6 +16,8 @@ func Start(gid string, broadcast func(string, []byte)) {
 		return
 	}
 
+	db.UpdateGamePlayerStatus(gid, "Writing")
+
 	msg, err := json.Marshal(u.GameMsg{
 		Type:    "Prompts",
 		PID:     "",
@@ -84,7 +86,33 @@ func HandleReply(msg u.GameMsg) {
 
 	AddStory(msg.GID, msg.PID, r.List)
 
-	u.SockSend(u.Connections[msg.GID][msg.PID], "Accept", msg.GID, msg.PID, "")
+	plr, err := db.GetPlayer(msg.PID)
+	if err != nil {
+		log.Printf("[Error] Could not get player from db for congame: %v", err)
+		return
+	}
+
+	plr.Status = "Submitted"
+
+	err = db.UpdatePlayer(plr)
+	if err != nil {
+		log.Printf("[Error] Could not update player for congame: %v", err)
+		return
+	}
+
+	plrs, err := db.GetGamePlayers(msg.GID)
+	if err != nil {
+		log.Printf("[Error] Could not get game players for accept message: %v", err)
+		return
+	}
+
+	plrList, err := json.Marshal(plrs)
+	if err != nil {
+		log.Printf("[Error] Could not marshal game players for accept message: %v", err)
+		return
+	}
+
+	u.SockSend(u.Connections[msg.GID][msg.PID], "Accept", msg.GID, msg.PID, string(plrList))
 
 	CheckComplete(msg.GID)
 }
@@ -128,6 +156,11 @@ func EndRound(gid string) {
 
 	for i, p := range gRef.PMap {
 		var pl Story
+
+		err := db.UpdateGamePlayerStatus(gid, "Reading")
+		if err != nil {
+			log.Printf("[Error] Could not update all players to reading status: %v", err)
+		}
 
 		for j := range gRef.Prompts {
 			pl.Lines = append(pl.Lines, Line{Prompt: gRef.Prompts[j], Story: gRef.Stories[p][j]})
