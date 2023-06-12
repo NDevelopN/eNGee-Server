@@ -99,12 +99,14 @@ var handler u.MHandler = func(conn *websocket.Conn, data []byte, gHandler u.GHan
 			return
 		}
 		End(conn, gm)
+		gHandler(msg, Broadcast)
 	case "Restart":
 		if !leader {
 			u.SockSend(conn, "Error", msg.GID, msg.PID, "Player is not the leader")
 			return
 		}
 		Restart(conn, gm)
+		gHandler(msg, Broadcast)
 	case "Remove":
 		if !leader {
 			u.SockSend(conn, "Error", msg.GID, msg.PID, "Player is not the leader")
@@ -117,6 +119,7 @@ var handler u.MHandler = func(conn *websocket.Conn, data []byte, gHandler u.GHan
 			return
 		}
 		UpdateRules(conn, gm, msg.Content)
+		gHandler(msg, Broadcast)
 	default:
 		gHandler(msg, Broadcast)
 	}

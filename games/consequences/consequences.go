@@ -57,11 +57,16 @@ var HandleInput u.GHandler = func(msg u.GameMsg, broadcast func(string, []byte))
 		UpdateGame(msg.GID, msg.PID, msg.Content)
 	case "Reply":
 		HandleReply(msg)
+	case "Restart":
+		ResetGame(msg.GID)
+	case "End":
+		EndGame(msg.GID)
 	default:
 		log.Printf("[Error] No matching message type: %v", msg.Type)
 	}
 }
 
+// TODO simplify reply structs
 func HandleReply(msg u.GameMsg) {
 	var r Replies
 

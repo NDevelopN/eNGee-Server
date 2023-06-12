@@ -47,6 +47,18 @@ func CreateGame(gid string, add string) {
 	}
 }
 
+func ResetGame(gid string) {
+	gRef := gMap[gid]
+	gRef.Stories = make([][]string, len(gRef.Stories))
+	gRef.ReadyCount = 0
+	gMap[gid] = gRef
+
+}
+
+func EndGame(gid string) {
+	delete(gMap, gid)
+}
+
 func PlayerJoin(gid string, pid string) {
 	gRef := gMap[gid]
 	_, k := gRef.PMap[pid]
