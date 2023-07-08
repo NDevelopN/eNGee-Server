@@ -11,16 +11,6 @@ import (
 
 var errNotLeader = fmt.Errorf("player is not the game leader")
 
-type HandlerFunc func(msg utils.GameMsg, game utils.Game) (utils.GameMsg, error)
-
-func testHandler(msg utils.GameMsg, game utils.Game) (utils.GameMsg, error) {
-	return utils.ReplyACK(msg), nil
-}
-
-var typeHandlers = map[string]HandlerFunc{
-	"test": testHandler,
-}
-
 func initialize(msg utils.GameMsg, game utils.Game, handler HandlerFunc) (utils.GameMsg, error) {
 	//TODO is there any generic Gamespace initalization?
 
@@ -111,7 +101,7 @@ func GamespaceHandle(msg utils.GameMsg) (utils.GameMsg, error) {
 		return utils.ReplyError(msg, err)
 	}
 
-	handler := typeHandlers[game.Type]
+	handler := TypeHandlers[game.Type]
 	if handler == nil {
 		return utils.ReplyError(msg, fmt.Errorf(`game type %q does not have a handler`, game.Type))
 	}
