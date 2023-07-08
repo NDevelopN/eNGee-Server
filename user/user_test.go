@@ -15,7 +15,7 @@ func TestCreateUserValid(t *testing.T) {
 	msg, err := CreateUser(u.DefUser)
 	_, pe := uuid.Parse(msg)
 	if pe != nil || err != nil {
-		t.Fatalf(`CreateUser(valid) = %q, %q, want "uuid", "nil"`, msg, err)
+		t.Fatalf(`CreateUser(valid) = %q, "%v", want "uuid", "nil"`, msg, err)
 	}
 }
 
@@ -25,7 +25,7 @@ func TestCreateUserMutli(t *testing.T) {
 	msg, err := CreateUser(u.DefUser)
 	_, pe := uuid.Parse(msg)
 	if pe != nil || err != nil {
-		t.Fatalf(`CreateUser(multi) = %q, %q, want "uuid", "nil"`, msg, err)
+		t.Fatalf(`CreateUser(multi) = %q, "%v", want "uuid", "nil"`, msg, err)
 	}
 }
 
@@ -36,7 +36,7 @@ func TestCreateUserEmptyName(t *testing.T) {
 
 	msg, err := CreateUser(user)
 	if err == nil {
-		t.Fatalf(`CreateUser(Empty name) = %q, %q, want "", ERROR`, msg, err)
+		t.Fatalf(`CreateUser(Empty name) = %q, "%v", want "", ERROR`, msg, err)
 	}
 }
 
@@ -55,7 +55,7 @@ func TestGetUserValid(t *testing.T) {
 
 	user, err := GetUser(uid)
 	if user != want || err != nil {
-		t.Fatalf(`GetUser(valid) = %q, %q, want %q, "nil"`, user, err, want)
+		t.Fatalf(`GetUser(valid) = %q, "%v", want %q, "nil"`, user, err, want)
 	}
 }
 
@@ -70,7 +70,7 @@ func TestGetUserMulti(t *testing.T) {
 
 	user, err := GetUser(uid)
 	if user != want || err != nil {
-		t.Fatalf(`GetUser(multi) = %q, %q, want %q, "nil"`, user, err, want)
+		t.Fatalf(`GetUser(multi) = %q, "%v", want %q, "nil"`, user, err, want)
 	}
 }
 
@@ -81,7 +81,7 @@ func TestGetUserInvalidGID(t *testing.T) {
 
 	user, err := GetUser(uuid.NewString())
 	if err == nil {
-		t.Fatalf(`GetUser(InvalidUID) = %q, %q, want "nil", ERROR`, user, err)
+		t.Fatalf(`GetUser(InvalidUID) = %q, "%v", want "nil", ERROR`, user, err)
 	}
 }
 
@@ -92,7 +92,7 @@ func TestGetUserEmptyUID(t *testing.T) {
 
 	user, err := GetUser("")
 	if err == nil {
-		t.Fatalf(`GetUser(EmptyUID) = %q, %q, want "nil", ERROR`, user, err)
+		t.Fatalf(`GetUser(EmptyUID) = %q, "%v", want "nil", ERROR`, user, err)
 	}
 }
 
@@ -101,7 +101,7 @@ func TestGetUserEmptyDB(t *testing.T) {
 
 	user, err := GetUser(uuid.NewString())
 	if err == nil {
-		t.Fatalf(`GetUser(EmptyDB) = %q, %q, want "nil", ERROR`, user, err)
+		t.Fatalf(`GetUser(EmptyDB) = %q, "%v", want "nil", ERROR`, user, err)
 	}
 }
 
@@ -121,14 +121,14 @@ func TestUpdateUserChangeName(t *testing.T) {
 
 	err := UpdateUser(user)
 	if err != nil {
-		t.Fatalf(`UpdateUser(Name) = %q, want "nil"`, err)
+		t.Fatalf(`UpdateUser(Name) = "%v", want "nil"`, err)
 	}
 
 	want := user
 
 	user, err = GetUser(uid)
 	if want != user || err != nil {
-		t.Fatalf(`UpdateUser(Name) = %q, %q, want %q, "nil"`, user, err, want)
+		t.Fatalf(`UpdateUser(Name) = %q, "%v", want %q, "nil"`, user, err, want)
 	}
 
 }
@@ -144,14 +144,14 @@ func TestUpdateUserChangeStatus(t *testing.T) {
 
 	err := UpdateUser(user)
 	if err != nil {
-		t.Fatalf(`UpdateUser(Status) = %q, want "nil"`, err)
+		t.Fatalf(`UpdateUser(Status) = "%v", want "nil"`, err)
 	}
 
 	want := user
 
 	user, err = GetUser(uid)
 	if want != user || err != nil {
-		t.Fatalf(`UpdateUser(Status) = %q, %q, want %q, "nil"`, user, err, want)
+		t.Fatalf(`UpdateUser(Status) = %q, "%v", want %q, "nil"`, user, err, want)
 	}
 }
 
@@ -167,14 +167,14 @@ func TestUpdateUserChangeGID(t *testing.T) {
 
 	err := UpdateUser(user)
 	if err != nil {
-		t.Fatalf(`UpdateUser(GID) = %q, want "nil"`, err)
+		t.Fatalf(`UpdateUser(GID) = "%v", want "nil"`, err)
 	}
 
 	want := user
 
 	user, err = GetUser(uid)
 	if want != user || err != nil {
-		t.Fatalf(`UpdateUser(GID) = %q, %q, want %q, "nil"`, user, err, want)
+		t.Fatalf(`UpdateUser(GID) = %q, "%v", want %q, "nil"`, user, err, want)
 	}
 }
 
@@ -189,7 +189,7 @@ func TestUpdateUserChangeInvalidGID(t *testing.T) {
 
 	err := UpdateUser(user)
 	if err == nil {
-		t.Fatalf(`UpdateUser(InvalidGID) = %q, want ERROR`, err)
+		t.Fatalf(`UpdateUser(InvalidGID) = "%v", want ERROR`, err)
 	}
 
 	want := u.DefUser
@@ -197,7 +197,7 @@ func TestUpdateUserChangeInvalidGID(t *testing.T) {
 
 	user, err = GetUser(uid)
 	if want != user || err != nil {
-		t.Fatalf(`UpdateUser(InvalidGID) = %q, %q, want %q, "nil"`, user, err, want)
+		t.Fatalf(`UpdateUser(InvalidGID) = %q, "%v", want %q, "nil"`, user, err, want)
 	}
 }
 
@@ -215,14 +215,14 @@ func TestUpdateUserAll(t *testing.T) {
 
 	err := UpdateUser(user)
 	if err != nil {
-		t.Fatalf(`UpdateUser(all) = %q, want "nil"`, err)
+		t.Fatalf(`UpdateUser(all) = "%v", want "nil"`, err)
 	}
 
 	want := user
 
 	user, err = GetUser(uid)
 	if want != user || err != nil {
-		t.Fatalf(`UpdateUser(all) = %q, %q, want %q, "nil"`, user, err, want)
+		t.Fatalf(`UpdateUser(all) = %q, "%v", want %q, "nil"`, user, err, want)
 	}
 }
 
@@ -237,7 +237,7 @@ func TestUpdateUserInvalidUID(t *testing.T) {
 
 	err := UpdateUser(user)
 	if err == nil {
-		t.Fatalf(`UpdateUser(InvalidUID) = %q, want ERROR`, err)
+		t.Fatalf(`UpdateUser(InvalidUID) = "%v", want ERROR`, err)
 	}
 
 	want := u.DefUser
@@ -245,7 +245,7 @@ func TestUpdateUserInvalidUID(t *testing.T) {
 
 	user, err = GetUser(uid)
 	if want != user || err != nil {
-		t.Fatalf(`UpdateUser(InvalidUID) = %q, %q, want %q, "nil"`, user, err, want)
+		t.Fatalf(`UpdateUser(InvalidUID) = %q, "%v", want %q, "nil"`, user, err, want)
 	}
 }
 
@@ -260,7 +260,7 @@ func TestUpdateUserEmptyUID(t *testing.T) {
 
 	err := UpdateUser(user)
 	if err == nil {
-		t.Fatalf(`UpdatedUser(EmptyUID) = %q, want ERROR`, err)
+		t.Fatalf(`UpdatedUser(EmptyUID) = "%v", want ERROR`, err)
 	}
 
 	want := u.DefUser
@@ -268,7 +268,7 @@ func TestUpdateUserEmptyUID(t *testing.T) {
 
 	user, err = GetUser(uid)
 	if want != user || err != nil {
-		t.Fatalf(`UpdateUser(EmptyUID) = %q, %q, want %q, "nil"`, user, err, want)
+		t.Fatalf(`UpdateUser(EmptyUID) = %q, "%v", want %q, "nil"`, user, err, want)
 	}
 }
 
@@ -281,12 +281,12 @@ func TestUpdateUserEmptyDB(t *testing.T) {
 
 	err := UpdateUser(user)
 	if err == nil {
-		t.Fatalf(`UpdateUser(EmptyDB) = %q, want ERROR`, err)
+		t.Fatalf(`UpdateUser(EmptyDB) = "%v", want ERROR`, err)
 	}
 
 	user, err = GetUser(user.UID)
 	if err == nil {
-		t.Fatalf(`UpdateUser(EmptyDB) = %q, %q, want "nil", ERROR`, user, err)
+		t.Fatalf(`UpdateUser(EmptyDB) = %q, "%v", want "nil", ERROR`, user, err)
 	}
 }
 
@@ -300,7 +300,7 @@ func TestUpdateUserNoChange(t *testing.T) {
 
 	err := UpdateUser(user)
 	if err != nil {
-		t.Fatalf(`UpdateUser(NoChange) = %q, want "nil"`, err)
+		t.Fatalf(`UpdateUser(NoChange) = "%v", want "nil"`, err)
 	}
 
 	want := u.DefUser
@@ -308,7 +308,7 @@ func TestUpdateUserNoChange(t *testing.T) {
 
 	user, err = GetUser(uid)
 	if want != user || err != nil {
-		t.Fatalf(`UpdateUser(NoChange) = %q, want %q, "nil"`, err, want)
+		t.Fatalf(`UpdateUser(NoChange) = %q, want "%v", "nil"`, err, want)
 	}
 }
 
@@ -317,12 +317,12 @@ func TestDeleteUserValid(t *testing.T) {
 	uid, _ := CreateUser(u.DefUser)
 	err := DeleteUser(uid)
 	if err != nil {
-		t.Fatalf(`DeleteUser(Valid) = %q, want "nil"`, err)
+		t.Fatalf(`DeleteUser(Valid) = "%v", want "nil"`, err)
 	}
 
 	user, err := GetUser(uid)
 	if err == nil {
-		t.Fatalf(`DeletUser(Valid) = %q, %q, want "nil", ERROR`, user, err)
+		t.Fatalf(`DeletUser(Valid) = %q, "%v", want "nil", ERROR`, user, err)
 	}
 }
 
@@ -332,12 +332,12 @@ func TestDeleteUserMulti(t *testing.T) {
 	uid, _ := CreateUser(u.DefUser)
 	err := DeleteUser(uid)
 	if err != nil {
-		t.Fatalf(`DeleteUser(Multi) = %q, want "nil"`, err)
+		t.Fatalf(`DeleteUser(Multi) = "%v", want "nil"`, err)
 	}
 
 	user, err := GetUser(uid)
 	if err == nil {
-		t.Fatalf(`DeleteUser(Multi) = %q, %q, want "nil", ERROR`, user, err)
+		t.Fatalf(`DeleteUser(Multi) = %q, "%v", want "nil", ERROR`, user, err)
 	}
 }
 
@@ -347,7 +347,7 @@ func TestDeleteUserInvalidUID(t *testing.T) {
 
 	err := DeleteUser(uuid.NewString())
 	if err == nil {
-		t.Fatalf(`DeleteUser(InvalidGID) = %q, want ERROR`, err)
+		t.Fatalf(`DeleteUser(InvalidGID) = "%v", want ERROR`, err)
 	}
 
 	want := u.DefUser
@@ -355,7 +355,7 @@ func TestDeleteUserInvalidUID(t *testing.T) {
 
 	user, err := GetUser(uid)
 	if want != user || err != nil {
-		t.Fatalf(`DeletUser(InvalidGID) = %q, %q, want %q, "nil"`, user, err, want)
+		t.Fatalf(`DeletUser(InvalidGID) = %q, "%v", want %q, "nil"`, user, err, want)
 	}
 }
 
@@ -365,7 +365,7 @@ func TestDeletUserEmptyGID(t *testing.T) {
 
 	err := DeleteUser("")
 	if err == nil {
-		t.Fatalf(`DeleteUser(EmptyGID) = %q, want ERROR`, err)
+		t.Fatalf(`DeleteUser(EmptyGID) = "%v", want ERROR`, err)
 	}
 
 	want := u.DefUser
@@ -373,7 +373,7 @@ func TestDeletUserEmptyGID(t *testing.T) {
 
 	user, err := GetUser(uid)
 	if want != user || err != nil {
-		t.Fatalf(`DeletUser(InvalidGID) = %q, %q, want %q, "nil"`, user, err, want)
+		t.Fatalf(`DeletUser(InvalidGID) = %q, "%v", want %q, "nil"`, user, err, want)
 	}
 }
 
@@ -382,7 +382,7 @@ func TestDeleteUserEmptyDB(t *testing.T) {
 
 	err := DeleteUser(uuid.NewString())
 	if err == nil {
-		t.Fatalf(`DeleteUser(EmptyDB) = %q, want ERROR`, err)
+		t.Fatalf(`DeleteUser(EmptyDB) = "%v", want ERROR`, err)
 	}
 }
 
@@ -393,7 +393,7 @@ func TestDeleteUserRepeat(t *testing.T) {
 
 	err := DeleteUser(uid)
 	if err == nil {
-		t.Fatalf(`DeleteUser(Repeat) = %q, want ERROR`, err)
+		t.Fatalf(`DeleteUser(Repeat) = "%v", want ERROR`, err)
 	}
 }
 

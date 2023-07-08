@@ -15,7 +15,7 @@ func TestCreateGameValid(t *testing.T) {
 	msg, err := CreateGame(u.DefGame)
 	_, pe := uuid.Parse(msg)
 	if pe != nil || err != nil {
-		t.Fatalf(`CreateGame(valid) = %q, %q, want "uuid", "nil"`, msg, err)
+		t.Fatalf(`CreateGame(valid) = %q, "%v", want "uuid", "nil"`, msg, err)
 	}
 }
 
@@ -25,7 +25,7 @@ func TestCreateGameMulti(t *testing.T) {
 	msg, err := CreateGame(u.DefGame)
 	_, pe := uuid.Parse(msg)
 	if pe != nil || err != nil {
-		t.Fatalf(`CreateGame(multi-valid) = %q, %q, want "uuid", "nil"`, msg, err)
+		t.Fatalf(`CreateGame(multi-valid) = %q, "%v", want "uuid", "nil"`, msg, err)
 	}
 }
 func TestCreateGameEmptyValues(t *testing.T) {
@@ -36,7 +36,7 @@ func TestCreateGameEmptyValues(t *testing.T) {
 
 	msg, err := CreateGame(game)
 	if msg != "" || err == nil {
-		t.Fatalf(`CreateGame(EmptyVals) = %q, %q, want "", error`, msg, err)
+		t.Fatalf(`CreateGame(EmptyVals) = %q, "%v", want "", error`, msg, err)
 	}
 }
 
@@ -48,7 +48,7 @@ func TestCreateGameInvalidPlrNums(t *testing.T) {
 
 	msg, err := CreateGame(game)
 	if msg != "" || err == nil {
-		t.Fatalf(`CreateGame(InvalidPlrNums) = %q, %q, want "", error`, msg, err)
+		t.Fatalf(`CreateGame(InvalidPlrNums) = %q, "%v", want "", error`, msg, err)
 	}
 }
 
@@ -67,7 +67,7 @@ func TestGetGamesValidSingle(t *testing.T) {
 
 	games, err := GetGames()
 	if want != games[0] || err != nil {
-		t.Fatalf(`GetGames(Valid) = %q, %q, want %q, "nil"`, games, err, want)
+		t.Fatalf(`GetGames(Valid) = %q, "%v", want %q, "nil"`, games, err, want)
 	}
 }
 
@@ -85,7 +85,7 @@ func TestGetGamesValidMulti(t *testing.T) {
 	games, err := GetGames()
 
 	if want[0] != games[0] || want[1] != games[1] || err != nil {
-		t.Fatalf(`GetGames(ValidMulti) = %q, %q, want %q, "nil"`, games, err, want)
+		t.Fatalf(`GetGames(ValidMulti) = %q, "%v", want %q, "nil"`, games, err, want)
 	}
 }
 
@@ -94,7 +94,7 @@ func TestGetGamesEmpty(t *testing.T) {
 	games, err := GetGames()
 
 	if len(games) > 0 || err != nil {
-		t.Fatalf(`GetGames(Empty) = %q, %q, want "[]", "nil"`, games, err)
+		t.Fatalf(`GetGames(Empty) = %q, "%v", want "[]", "nil"`, games, err)
 	}
 }
 
@@ -106,7 +106,7 @@ func TestGetGameValid(t *testing.T) {
 
 	game, err := GetGame(gid)
 	if err != nil {
-		t.Fatalf(`GetGame(valid) = Failed to get game: %q`, err)
+		t.Fatalf(`GetGame(valid) = Failed to get game: "%v"`, err)
 	}
 
 	game.GID = ""
@@ -124,7 +124,7 @@ func TestGetGameMulti(t *testing.T) {
 
 	game, err := GetGame(gid)
 	if err != nil {
-		t.Fatalf(`GetGame(valid) = Failed to get game: %q`, err)
+		t.Fatalf(`GetGame(valid) = Failed to get game: "%v"`, err)
 	}
 
 	game.GID = ""
@@ -141,7 +141,7 @@ func TestGetGameInvalidGID(t *testing.T) {
 
 	_, err := GetGame(uuid.NewString())
 	if err == nil {
-		t.Fatalf(`GetGame(InvalidGID) = %q, want ERROR`, err)
+		t.Fatalf(`GetGame(InvalidGID) = "%v", want ERROR`, err)
 	}
 }
 
@@ -152,7 +152,7 @@ func TestGetGameEmptyGID(t *testing.T) {
 
 	_, err := GetGame("")
 	if err == nil {
-		t.Fatalf(`GetGame(EmptyGID) = %q, want ERROR`, err)
+		t.Fatalf(`GetGame(EmptyGID) = "%v", want ERROR`, err)
 	}
 }
 
@@ -161,7 +161,7 @@ func TestGetGameEmptyDB(t *testing.T) {
 
 	_, err := GetGame(uuid.NewString())
 	if err == nil {
-		t.Fatalf(`GetGame(EmptyDB) = %q, want ERROR`, err)
+		t.Fatalf(`GetGame(EmptyDB) = "%v", want ERROR`, err)
 	}
 }
 
@@ -182,12 +182,12 @@ func TestUpdateGameChangeName(t *testing.T) {
 
 	err := UpdateGame(game)
 	if err != nil {
-		t.Fatalf(`UpdateGame(Name) = %q, want "nil"`, err)
+		t.Fatalf(`UpdateGame(Name) = "%v", want "nil"`, err)
 	}
 
 	games, err := GetGames()
 	if game != games[0] || err != nil {
-		t.Fatalf(`UpdateGame(Name) = %q, %q, want %q, "nil"`, games, err, game)
+		t.Fatalf(`UpdateGame(Name) = %q, "%v", want %q, "nil"`, games, err, game)
 	}
 }
 
@@ -202,12 +202,12 @@ func TestUpdateGameChangeType(t *testing.T) {
 
 	err := UpdateGame(game)
 	if err != nil {
-		t.Fatalf(`UpdateGame(Type) = %q, want "nil"`, err)
+		t.Fatalf(`UpdateGame(Type) = "%v", want "nil"`, err)
 	}
 
 	games, err := GetGames()
 	if game != games[0] || err != nil {
-		t.Fatalf(`UpdateGame(Type) = %q, %q, want %q, "nil"`, games, err, game)
+		t.Fatalf(`UpdateGame(Type) = %q, "%v", want %q, "nil"`, games, err, game)
 	}
 }
 
@@ -222,12 +222,12 @@ func TestUpdateGameChangeStatus(t *testing.T) {
 
 	err := UpdateGame(game)
 	if err != nil {
-		t.Fatalf(`UpdateGame(Status) = %q, want "nil"`, err)
+		t.Fatalf(`UpdateGame(Status) = "%v", want "nil"`, err)
 	}
 
 	games, err := GetGames()
 	if game != games[0] || err != nil {
-		t.Fatalf(`UpdateGame(Status) = %q, %q, want %q, "nil"`, games, err, game)
+		t.Fatalf(`UpdateGame(Status) = %q, "%v", want %q, "nil"`, games, err, game)
 	}
 }
 
@@ -242,12 +242,12 @@ func TestUpdateGameChangeOldStatus(t *testing.T) {
 
 	err := UpdateGame(game)
 	if err != nil {
-		t.Fatalf(`UpdateGame(OldStatus) = %q, want "nil"`, err)
+		t.Fatalf(`UpdateGame(OldStatus) = "%v", want "nil"`, err)
 	}
 
 	games, err := GetGames()
 	if game != games[0] || err != nil {
-		t.Fatalf(`UpdateGame(OldStatus) = %q, %q, want %q, "nil"`, games, err, game)
+		t.Fatalf(`UpdateGame(OldStatus) = %q, "%v", want %q, "nil"`, games, err, game)
 	}
 }
 
@@ -262,12 +262,12 @@ func TestUpdateGameChangeLeader(t *testing.T) {
 
 	err := UpdateGame(game)
 	if err != nil {
-		t.Fatalf(`UpdateGame(Leader) = %q, want "nil"`, err)
+		t.Fatalf(`UpdateGame(Leader) = "%v", want "nil"`, err)
 	}
 
 	games, err := GetGames()
 	if game != games[0] || err != nil {
-		t.Fatalf(`UpdateGame(Leader) = %q, %q, want %q, "nil"`, games, err, game)
+		t.Fatalf(`UpdateGame(Leader) = %q, "%v", want %q, "nil"`, games, err, game)
 	}
 }
 
@@ -282,12 +282,12 @@ func TestUpdateGameChangeMinPlrs(t *testing.T) {
 
 	err := UpdateGame(game)
 	if err != nil {
-		t.Fatalf(`UpdateGame(MinP) = %q, want "nil"`, err)
+		t.Fatalf(`UpdateGame(MinP) = "%v", want "nil"`, err)
 	}
 
 	games, err := GetGames()
 	if game != games[0] || err != nil {
-		t.Fatalf(`UpdateGame(MinP) = %q, %q, want %q, "nil"`, games, err, game)
+		t.Fatalf(`UpdateGame(MinP) = %q, "%v", want %q, "nil"`, games, err, game)
 	}
 }
 
@@ -302,12 +302,12 @@ func TestUpdateGameChangeMaxPlrs(t *testing.T) {
 
 	err := UpdateGame(game)
 	if err != nil {
-		t.Fatalf(`UpdateGame(MaxP) = %q, want "nil"`, err)
+		t.Fatalf(`UpdateGame(MaxP) = "%v", want "nil"`, err)
 	}
 
 	games, err := GetGames()
 	if game != games[0] || err != nil {
-		t.Fatalf(`UpdateGame(MaxP) = %q, %q, want %q, "nil"`, games, err, game)
+		t.Fatalf(`UpdateGame(MaxP) = %q, "%v", want %q, "nil"`, games, err, game)
 	}
 }
 
@@ -322,7 +322,7 @@ func TestUpdateGameChangeMinPlrsHigh(t *testing.T) {
 
 	err := UpdateGame(game)
 	if err == nil {
-		t.Fatalf(`UpdateGame(MinHigh) = %q, want ERROR`, err)
+		t.Fatalf(`UpdateGame(MinHigh) = "%v", want ERROR`, err)
 	}
 
 	game = u.DefGame
@@ -330,7 +330,7 @@ func TestUpdateGameChangeMinPlrsHigh(t *testing.T) {
 
 	games, err := GetGames()
 	if game != games[0] || err != nil {
-		t.Fatalf(`UpdateGame(MinHigh) = %q, %q, want %q, "nil"`, games, err, game)
+		t.Fatalf(`UpdateGame(MinHigh) = %q, "%v", want %q, "nil"`, games, err, game)
 	}
 }
 
@@ -344,7 +344,7 @@ func TestUpdateGameChangeMaxPlrsLow(t *testing.T) {
 
 	err := UpdateGame(game)
 	if err == nil {
-		t.Fatalf(`UpdateGame(MaxLow) = %q, want ERROR`, err)
+		t.Fatalf(`UpdateGame(MaxLow) = "%v", want ERROR`, err)
 	}
 
 	game = u.DefGame
@@ -352,7 +352,7 @@ func TestUpdateGameChangeMaxPlrsLow(t *testing.T) {
 
 	games, err := GetGames()
 	if game != games[0] || err != nil {
-		t.Fatalf(`UpdateGame(MaxLow) = %q, %q, want %q, "nil"`, games, err, game)
+		t.Fatalf(`UpdateGame(MaxLow) = %q, "%v", want %q, "nil"`, games, err, game)
 	}
 }
 
@@ -367,12 +367,12 @@ func TestUpdateGameChangeCurPlrs(t *testing.T) {
 
 	err := UpdateGame(game)
 	if err != nil {
-		t.Fatalf(`UpdateGame(CurP) = %q, want "nil"`, err)
+		t.Fatalf(`UpdateGame(CurP) = "%v", want "nil"`, err)
 	}
 
 	games, err := GetGames()
 	if game != games[0] || err != nil {
-		t.Fatalf(`UpdateGame(CurP) = %q, %q, want %q, "nil"`, games, err, game)
+		t.Fatalf(`UpdateGame(CurP) = %q, "%v", want %q, "nil"`, games, err, game)
 	}
 }
 
@@ -387,7 +387,7 @@ func TestUpdateGameChangeCurHigh(t *testing.T) {
 
 	err := UpdateGame(game)
 	if err == nil {
-		t.Fatalf(`UpdateGame(CurPHigh) = %q, want ERROR`, err)
+		t.Fatalf(`UpdateGame(CurPHigh) = "%v", want ERROR`, err)
 	}
 
 	game = u.DefGame
@@ -395,7 +395,7 @@ func TestUpdateGameChangeCurHigh(t *testing.T) {
 
 	games, err := GetGames()
 	if game != games[0] || err != nil {
-		t.Fatalf(`UpdateGame(CurPHigh) = %q, %q, want %q, "nil"`, games, err, game)
+		t.Fatalf(`UpdateGame(CurPHigh) = %q, "%v", want %q, "nil"`, games, err, game)
 	}
 }
 
@@ -410,12 +410,12 @@ func TestUpdateGameChangeAdditional(t *testing.T) {
 
 	err := UpdateGame(game)
 	if err != nil {
-		t.Fatalf(`UpdateGame(AddRules) = %q, want "nil"`, err)
+		t.Fatalf(`UpdateGame(AddRules) = "%v", want "nil"`, err)
 	}
 
 	games, err := GetGames()
 	if game != games[0] || err != nil {
-		t.Fatalf(`UpdateGame(AddRules) = %q, %q, want %q, "nil"`, games, err, game)
+		t.Fatalf(`UpdateGame(AddRules) = %q, "%v", want %q, "nil"`, games, err, game)
 	}
 }
 
@@ -439,12 +439,12 @@ func TestUpdateGameChangeAll(t *testing.T) {
 
 	err := UpdateGame(game)
 	if err != nil {
-		t.Fatalf(`UpdateGame(All) = %q, want "nil"`, err)
+		t.Fatalf(`UpdateGame(All) = "%v", want "nil"`, err)
 	}
 
 	games, err := GetGames()
 	if game != games[0] || err != nil {
-		t.Fatalf(`UpdateGame(All) = %q, %q, want %q, "nil"`, games, err, game)
+		t.Fatalf(`UpdateGame(All) = %q, "%v", want %q, "nil"`, games, err, game)
 	}
 }
 
@@ -459,7 +459,7 @@ func TestUpdateGameInvalidGID(t *testing.T) {
 
 	err := UpdateGame(game)
 	if err == nil {
-		t.Fatalf(`UpdateGame(InvalidGID) = %q, want ERROR`, err)
+		t.Fatalf(`UpdateGame(InvalidGID) = "%v", want ERROR`, err)
 	}
 
 	game = u.DefGame
@@ -467,7 +467,7 @@ func TestUpdateGameInvalidGID(t *testing.T) {
 
 	games, err := GetGames()
 	if game != games[0] || err != nil {
-		t.Fatalf(`UpdateGame(InvalidGID) = %q, %q, want %q, "nil"`, games, err, game)
+		t.Fatalf(`UpdateGame(InvalidGID) = %q, "%v", want %q, "nil"`, games, err, game)
 	}
 }
 
@@ -482,7 +482,7 @@ func TestUpdateGameEmptyGID(t *testing.T) {
 
 	err := UpdateGame(game)
 	if err == nil {
-		t.Fatalf(`UpdateGame(EmptyGID) = %q, want ERROR`, err)
+		t.Fatalf(`UpdateGame(EmptyGID) = "%v", want ERROR`, err)
 	}
 
 	game = u.DefGame
@@ -490,7 +490,7 @@ func TestUpdateGameEmptyGID(t *testing.T) {
 
 	games, err := GetGames()
 	if game != games[0] || err != nil {
-		t.Fatalf(`UpdateGame(EmptyGID) = %q, %q, want %q, "nil"`, games, err, game)
+		t.Fatalf(`UpdateGame(EmptyGID) = %q, "%v", want %q, "nil"`, games, err, game)
 	}
 }
 
@@ -503,12 +503,12 @@ func TestUpdateGameEmptyDB(t *testing.T) {
 
 	err := UpdateGame(game)
 	if err == nil {
-		t.Fatalf(`UpdateGame(EmptyDB) = %q, want ERROR`, err)
+		t.Fatalf(`UpdateGame(EmptyDB) = "%v", want ERROR`, err)
 	}
 
 	games, err := GetGames()
 	if len(games) > 0 || err != nil {
-		t.Fatalf(`UpdateGame(EmptyDB) - GET = %q, %q, want "[]", "nil"`, games, err)
+		t.Fatalf(`UpdateGame(EmptyDB) - GET = %q, "%v", want "[]", "nil"`, games, err)
 	}
 }
 
@@ -522,12 +522,12 @@ func TestUpdateGameNoChange(t *testing.T) {
 
 	err := UpdateGame(game)
 	if err != nil {
-		t.Fatalf(`UpdateGame(NoChange) = %q, want "nil"`, err)
+		t.Fatalf(`UpdateGame(NoChange) = "%v", want "nil"`, err)
 	}
 
 	games, err := GetGames()
 	if game != games[0] || err != nil {
-		t.Fatalf(`UpdateGame(NoChange) = %q, %q, want %q, "nil"`, games, err, game)
+		t.Fatalf(`UpdateGame(NoChange) = %q, "%v", want %q, "nil"`, games, err, game)
 	}
 }
 
@@ -547,14 +547,14 @@ func TestChangePlayerCountValidIncrease(t *testing.T) {
 
 	err := ChangePlayerCount(game, 1)
 	if err != nil {
-		t.Fatalf(`ChangePlayerCount(ValidIncrease) = %q, want "nil"`, err)
+		t.Fatalf(`ChangePlayerCount(ValidIncrease) = "%v", want "nil"`, err)
 	}
 
 	want := game.CurPlrs + 1
 
 	game, err = GetGame(gid)
 	if game.CurPlrs != want || err != nil {
-		t.Fatalf(`ChangePlayerCount(ValidIncrease) = %q, %q, want %q, "nil"`, game.CurPlrs, err, want)
+		t.Fatalf(`ChangePlayerCount(ValidIncrease) = %d, "%v", want %d, "nil"`, game.CurPlrs, err, want)
 	}
 }
 
@@ -570,14 +570,14 @@ func TestChangePlayerCountValidDecrease(t *testing.T) {
 
 	err := ChangePlayerCount(game, -1)
 	if err != nil {
-		t.Fatalf(`ChangePlayerCount(ValidDecrease) = %q, want "nil"`, err)
+		t.Fatalf(`ChangePlayerCount(ValidDecrease) = "%v", want "nil"`, err)
 	}
 
 	want := game.CurPlrs - 1
 
 	game, err = GetGame(gid)
 	if game.CurPlrs != want || err != nil {
-		t.Fatalf(`ChangePlayerCount(ValidDecrease) = %q, %q, want %q, "nil"`, game.CurPlrs, err, want)
+		t.Fatalf(`ChangePlayerCount(ValidDecrease) = %d, "%v", want %d, "nil"`, game.CurPlrs, err, want)
 	}
 }
 
@@ -593,14 +593,14 @@ func TestChangePlayerCountDoubleIncrease(t *testing.T) {
 	_ = ChangePlayerCount(game, 1)
 	err := ChangePlayerCount(game, 1)
 	if err != nil {
-		t.Fatalf(`ChangePlayerCount(DoubleIncrease) = %q, want "nil"`, err)
+		t.Fatalf(`ChangePlayerCount(DoubleIncrease) = "%v", want "nil"`, err)
 	}
 
 	want := game.CurPlrs + 2
 
 	game, err = GetGame(gid)
 	if game.CurPlrs != want || err != nil {
-		t.Fatalf(`ChangePlayerCount(DoubleIncrease) = %q, %q, want %q, "nil"`, game.CurPlrs, err, want)
+		t.Fatalf(`ChangePlayerCount(DoubleIncrease) = %d, "%v", want %d, "nil"`, game.CurPlrs, err, want)
 	}
 }
 
@@ -616,14 +616,14 @@ func TestChangePlayerCountDoubleDecrease(t *testing.T) {
 	_ = ChangePlayerCount(game, -1)
 	err := ChangePlayerCount(game, -1)
 	if err != nil {
-		t.Fatalf(`ChangePlayerCount(DoubleDecrease) = %q, want "nil"`, err)
+		t.Fatalf(`ChangePlayerCount(DoubleDecrease) = "%v", want "nil"`, err)
 	}
 
 	want := game.CurPlrs - 2
 
 	game, err = GetGame(gid)
 	if game.CurPlrs != want || err != nil {
-		t.Fatalf(`ChangePlayerCount(DoubleDecrease) = %q, %q, want %q, "nil"`, game.CurPlrs, err, want)
+		t.Fatalf(`ChangePlayerCount(DoubleDecrease) = %d, "%v", want %d, "nil"`, game.CurPlrs, err, want)
 	}
 }
 func TestChangePlayerCountIncreaseFullGame(t *testing.T) {
@@ -638,14 +638,14 @@ func TestChangePlayerCountIncreaseFullGame(t *testing.T) {
 
 	err := ChangePlayerCount(game, 1)
 	if err == nil {
-		t.Fatalf(`ChangePlayerCount(FullGameIncrease) = %q, want ERROR`, err)
+		t.Fatalf(`ChangePlayerCount(FullGameIncrease) = "%v", want ERROR`, err)
 	}
 
 	want := game.CurPlrs
 
 	game, err = GetGame(gid)
 	if game.CurPlrs != want || err != nil {
-		t.Fatalf(`ChangePlayerCount(FullGameIncrease) = %q, %q, want %q, "nil"`, game.CurPlrs, err, want)
+		t.Fatalf(`ChangePlayerCount(FullGameIncrease) = %d, "%v", want %d, "nil"`, game.CurPlrs, err, want)
 	}
 }
 
@@ -661,12 +661,12 @@ func TestChangePlayerCountDecreaseToZero(t *testing.T) {
 
 	err := ChangePlayerCount(game, -1)
 	if err != nil {
-		t.Fatalf(`ChangePlayerCount(DecreaseToZero) = %q, want "nil"`, err)
+		t.Fatalf(`ChangePlayerCount(DecreaseToZero) = "%v", want "nil"`, err)
 	}
 
 	game, err = GetGame(gid)
 	if err == nil {
-		t.Fatalf(`ChangePlayerCount(DecreaseToZero) = %q, %q, want "nil", ERROR`, game, err)
+		t.Fatalf(`ChangePlayerCount(DecreaseToZero) = %q, "%v", want "nil", ERROR`, game, err)
 	}
 }
 
@@ -682,14 +682,14 @@ func TestChangePlayerCountNoChange(t *testing.T) {
 
 	err := ChangePlayerCount(game, 0)
 	if err != nil {
-		t.Fatalf(`ChangePlayerCount(NoChange) = %q, want "nil"`, err)
+		t.Fatalf(`ChangePlayerCount(NoChange) = "%v", want "nil"`, err)
 	}
 
 	want := game.CurPlrs
 
 	game, err = GetGame(gid)
 	if game.CurPlrs != want || err != nil {
-		t.Fatalf(`ChangePlayerCount(NoChange) %q, %q, want %q, "nil"`, game.CurPlrs, err, want)
+		t.Fatalf(`ChangePlayerCount(NoChange) %q, "%v", want %q, "nil"`, game.CurPlrs, err, want)
 	}
 }
 
@@ -699,12 +699,12 @@ func TestDeleteGameValid(t *testing.T) {
 	gid, _ := CreateGame(u.DefGame)
 	err := DeleteGame(gid)
 	if err != nil {
-		t.Fatalf(`DeleteGame(Valid) = %q, want "nil"`, err)
+		t.Fatalf(`DeleteGame(Valid) = "%v", want "nil"`, err)
 	}
 
 	games, err := GetGames()
 	if len(games) > 0 || err != nil {
-		t.Fatalf(`DeleteGame(Valid) = %q, %q, want 0, "nil"`, len(games), err)
+		t.Fatalf(`DeleteGame(Valid) = %q, "%v", want 0, "nil"`, len(games), err)
 	}
 }
 
@@ -714,12 +714,12 @@ func TestDeleteGameMulti(t *testing.T) {
 	gid, _ := CreateGame(u.DefGame)
 	err := DeleteGame(gid)
 	if err != nil {
-		t.Fatalf(`DeleteGame(Multi) = %q, want  "nil"`, err)
+		t.Fatalf(`DeleteGame(Multi) = "%v", want  "nil"`, err)
 	}
 
 	games, err := GetGames()
 	if len(games) > 1 || err != nil {
-		t.Fatalf(`DeletGame(Multi) = %q, %q, want 1, "nil"`, len(games), err)
+		t.Fatalf(`DeletGame(Multi) = %q, "%v", want 1, "nil"`, len(games), err)
 	}
 }
 
@@ -729,12 +729,12 @@ func TestDeleteGameInvalidGID(t *testing.T) {
 
 	err := DeleteGame(uuid.NewString())
 	if err == nil {
-		t.Fatalf(`DeleteGame(InvalidGID) = %q, want ERROR`, err)
+		t.Fatalf(`DeleteGame(InvalidGID) = "%v", want ERROR`, err)
 	}
 
 	games, err := GetGames()
 	if len(games) < 1 || err != nil {
-		t.Fatalf(`DeletGame(InvalidGID) = %q, %q, want 0, "nil"`, len(games), err)
+		t.Fatalf(`DeletGame(InvalidGID) = %q, "%v", want 0, "nil"`, len(games), err)
 	}
 }
 
@@ -744,12 +744,12 @@ func TestDeletGameEmptyGID(t *testing.T) {
 
 	err := DeleteGame("")
 	if err == nil {
-		t.Fatalf(`DeleteGame(EmptyGID) = %q, want ERROR`, err)
+		t.Fatalf(`DeleteGame(EmptyGID) = "%v", want ERROR`, err)
 	}
 
 	games, err := GetGames()
 	if len(games) < 1 || err != nil {
-		t.Fatalf(`DeletGame(EmptyGID) = %q, %q, want 0, "nil"`, len(games), err)
+		t.Fatalf(`DeletGame(EmptyGID) = %q, "%v", want 0, "nil"`, len(games), err)
 	}
 }
 
@@ -758,7 +758,7 @@ func TestDeleteGameEmptyDB(t *testing.T) {
 
 	err := DeleteGame(uuid.NewString())
 	if err == nil {
-		t.Fatalf(`DeleteGame(EmptyDB) = %q, want ERROR`, err)
+		t.Fatalf(`DeleteGame(EmptyDB) = "%v", want ERROR`, err)
 	}
 }
 
@@ -769,7 +769,7 @@ func TestDeleteGameRepeat(t *testing.T) {
 
 	err := DeleteGame(gid)
 	if err == nil {
-		t.Fatalf(`DeleteGame(Repeat) = %q, want ERROR`, err)
+		t.Fatalf(`DeleteGame(Repeat) = "%v", want ERROR`, err)
 	}
 }
 
