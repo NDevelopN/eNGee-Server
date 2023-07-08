@@ -123,6 +123,32 @@ func Start(gid string, lid string) error {
 }
 
 func Reset(gid string, lid string) error {
+	game, err := checkLeader(gid, lid)
+	if err != nil {
+		return err
+	}
+
+	game.Status = "Lobby"
+
+	err = g.UpdateGame(game)
+	if err != nil {
+		return fmt.Errorf("failed to update game: %v", err)
+	}
+
+	plrs, err := g.GetGamePlayers(gid)
+	if err != nil {
+		return fmt.Errorf("could not get game players: %v", err)
+	}
+	err = allPlayerStatusUpdate(plrs, "Lobby")
+	if err != nil {
+		return err
+	}
+
+	err = sendUpdate(gid)
+	if err != nil {
+		return fmt.Errorf("failed to broadcast update: %v", err)
+	}
+
 	return nil
 }
 
