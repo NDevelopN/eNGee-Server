@@ -8,6 +8,8 @@ import (
 	u "Engee-Server/user"
 )
 
+var errNotLeader = fmt.Errorf("player is not the game leader")
+
 func replyError(msg utils.GameMsg, err error) (utils.GameMsg, error) {
 	reply := utils.GameMsg{
 		Type:    "Error",
@@ -17,12 +19,31 @@ func replyError(msg utils.GameMsg, err error) (utils.GameMsg, error) {
 	}
 
 	return reply, fmt.Errorf("error handling %v request; %v", msg.Type, err)
+}
 
+func replyACK(msg utils.GameMsg) utils.GameMsg {
+	return utils.GameMsg{
+		Type: "ACK",
+		GID:  msg.GID,
+		UID:  msg.UID,
+	}
 }
 
 type HandlerFunc func(msg utils.GameMsg, game utils.Game) (utils.GameMsg, error)
 
-var typeHandlers = map[string]HandlerFunc{}
+func testHandler(msg utils.GameMsg, game utils.Game) (utils.GameMsg, error) {
+	return replyACK(msg), nil
+}
+
+var typeHandlers = map[string]HandlerFunc{
+	"test": testHandler,
+}
+
+func initialize(msg utils.GameMsg, game utils.Game, handler HandlerFunc) (utils.GameMsg, error) {
+	//TODO is there any generic Gamespace initalization?
+
+	return handler(msg, game)
+}
 
 func GamespaceHandle(msg utils.GameMsg) (utils.GameMsg, error) {
 	game, err := g.GetGame(msg.GID)
@@ -44,7 +65,16 @@ func GamespaceHandle(msg utils.GameMsg) (utils.GameMsg, error) {
 		return replyError(msg, fmt.Errorf("user is not in game provided"))
 	}
 
+	leader := game.Leader == msg.UID
+
 	switch msg.Type {
+	case "Init":
+		if leader {
+			return initialize(msg, game, handler)
+		} else {
+			return replyError(msg, errNotLeader)
+		}
+
 	default:
 		return utils.GameMsg{}, nil
 	}
