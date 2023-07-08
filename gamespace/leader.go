@@ -106,7 +106,7 @@ func Start(gid string, lid string) error {
 
 	err = allPlayerStatusUpdate(plrs, "Play")
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to update game players' status: %v", err)
 	}
 
 	err = g.UpdateGame(game)
@@ -141,7 +141,7 @@ func Reset(gid string, lid string) error {
 	}
 	err = allPlayerStatusUpdate(plrs, "Lobby")
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to update game players' status: %v", err)
 	}
 
 	err = sendUpdate(gid)
