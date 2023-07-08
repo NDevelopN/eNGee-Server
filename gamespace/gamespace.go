@@ -72,6 +72,24 @@ func end(msg utils.GameMsg, game utils.Game, handler HandlerFunc) (utils.GameMsg
 	return handler(msg, game)
 }
 
+func pause(msg utils.GameMsg, game utils.Game, handler HandlerFunc) (utils.GameMsg, error) {
+	err := Pause(msg.GID, msg.UID)
+	if err != nil {
+		return replyError(msg, err)
+	}
+
+	return handler(msg, game)
+}
+
+func remove(msg utils.GameMsg, game utils.Game, handler HandlerFunc) (utils.GameMsg, error) {
+	err := Remove(msg.GID, msg.UID, msg.Content)
+	if err != nil {
+		return replyError(msg, err)
+	}
+
+	return handler(msg, game)
+}
+
 func GamespaceHandle(msg utils.GameMsg) (utils.GameMsg, error) {
 	game, err := g.GetGame(msg.GID)
 	if err != nil {
@@ -116,6 +134,18 @@ func GamespaceHandle(msg utils.GameMsg) (utils.GameMsg, error) {
 	case "End":
 		if leader {
 			return end(msg, game, handler)
+		} else {
+			return replyError(msg, errNotLeader)
+		}
+	case "Pause":
+		if leader {
+			return pause(msg, game, handler)
+		} else {
+			return replyError(msg, errNotLeader)
+		}
+	case "Remove":
+		if leader {
+			return remove(msg, game, handler)
 		} else {
 			return replyError(msg, errNotLeader)
 		}
