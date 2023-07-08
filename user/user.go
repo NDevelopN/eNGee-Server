@@ -35,13 +35,13 @@ func GetUser(uid string) (utils.User, error) {
 }
 
 func joinUserToGame(gid string, uid string) error {
-	user, err := GetUser(uid)
+	u, err := GetUser(uid)
 	if err != nil {
 		return fmt.Errorf("could not find user in database: %v", err)
 	}
 
-	if user.GID != "" {
-		return fmt.Errorf("user already in a game: %v", user.GID)
+	if u.GID != "" {
+		return fmt.Errorf("user already in a game: %v", u.GID)
 	}
 
 	game, err := g.GetGame(gid)
@@ -66,9 +66,9 @@ func joinUserToGame(gid string, uid string) error {
 		return fmt.Errorf("could not change game player count: %v", err)
 	}
 
-	user.GID = gid
+	u.GID = gid
 
-	err = db.UpdateUser(user)
+	err = db.UpdateUser(u)
 	if err != nil {
 		return fmt.Errorf("could not update user in database: %v", err)
 	}
@@ -76,9 +76,9 @@ func joinUserToGame(gid string, uid string) error {
 	return nil
 }
 
-func removeGID(user utils.User) error {
-	user.GID = ""
-	err := db.UpdateUser(user)
+func removeGID(u utils.User) error {
+	u.GID = ""
+	err := db.UpdateUser(u)
 	if err != nil {
 		return fmt.Errorf("could not update user in database: %v", err)
 	}
@@ -87,19 +87,19 @@ func removeGID(user utils.User) error {
 }
 
 func removeUserFromGame(gid string, uid string) error {
-	user, err := GetUser(uid)
+	u, err := GetUser(uid)
 	if err != nil {
 		return fmt.Errorf("could not find user in database: %v", err)
 	}
 
-	if user.GID != gid {
-		return fmt.Errorf("user not in provided game: %v", user.GID)
+	if u.GID != gid {
+		return fmt.Errorf("user not in provided game: %v", u.GID)
 	}
 
 	//TODO can this be more elegant?
 	game, err := g.GetGame(gid)
 	if err != nil {
-		nuErr := removeGID(user)
+		nuErr := removeGID(u)
 		return fmt.Errorf("%v - could not find matching game: %v", nuErr, err)
 	}
 
@@ -108,7 +108,7 @@ func removeUserFromGame(gid string, uid string) error {
 		return fmt.Errorf("could not change game palyer count :%v", err)
 	}
 
-	err = removeGID(user)
+	err = removeGID(u)
 	if err != nil {
 		return err
 	}
@@ -157,5 +157,21 @@ func UpdateUser(n utils.User) error {
 }
 
 func DeleteUser(uid string) error {
+	u, err := GetUser(uid)
+	if err != nil {
+		return fmt.Errorf("could not get user from database: %v", err)
+	}
+
+	if u.GID != "" {
+		err = removeUserFromGame(u.GID, uid)
+		if err != nil {
+			return fmt.Errorf("could not remove user from game: %v", err)
+		}
+	}
+
+	err = db.RemoveUser(uid)
+	if err != nil {
+		return fmt.Errorf("could not delete user from database: %v", err)
+	}
 	return nil
 }
