@@ -178,6 +178,21 @@ func End(gid string, lid string) error {
 }
 
 func Rules(gid string, lid string, game utils.Game) error {
+	_, err := checkLeader(gid, lid)
+	if err != nil {
+		return err
+	}
+
+	err = g.UpdateGame(game)
+	if err != nil {
+		return fmt.Errorf("failed to update game: %v", err)
+	}
+
+	err = sendUpdate(gid)
+	if err != nil {
+		return fmt.Errorf("failed to broadcast update: %v", err)
+	}
+
 	return nil
 }
 
