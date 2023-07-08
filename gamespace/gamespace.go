@@ -2,6 +2,7 @@ package gamespace
 
 import (
 	utils "Engee-Server/utils"
+	"encoding/json"
 	"fmt"
 
 	g "Engee-Server/game"
@@ -90,6 +91,21 @@ func remove(msg utils.GameMsg, game utils.Game, handler HandlerFunc) (utils.Game
 	return handler(msg, game)
 }
 
+func rules(msg utils.GameMsg, game utils.Game, handler HandlerFunc) (utils.GameMsg, error) {
+	var gm utils.Game
+	err := json.Unmarshal([]byte(msg.Content), &gm)
+	if err != nil {
+		return replyError(msg, err)
+	}
+
+	err = Rules(msg.GID, msg.UID, gm)
+	if err != nil {
+		return replyError(msg, err)
+	}
+
+	return handler(msg, game)
+}
+
 func GamespaceHandle(msg utils.GameMsg) (utils.GameMsg, error) {
 	game, err := g.GetGame(msg.GID)
 	if err != nil {
@@ -146,6 +162,12 @@ func GamespaceHandle(msg utils.GameMsg) (utils.GameMsg, error) {
 	case "Remove":
 		if leader {
 			return remove(msg, game, handler)
+		} else {
+			return replyError(msg, errNotLeader)
+		}
+	case "Rules":
+		if leader {
+			return rules(msg, game, handler)
 		} else {
 			return replyError(msg, errNotLeader)
 		}
