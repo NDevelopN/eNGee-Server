@@ -43,7 +43,17 @@ func GetGame(gid string) (u.Game, error) {
 }
 
 func GetGamePlayers(gid string) ([]u.User, error) {
-	return []u.User{}, nil
+	_, err := db.GetGame(gid)
+	if err != nil {
+		return nil, fmt.Errorf("failed to find game in database: %v", err)
+	}
+
+	plrs, err := db.GetGamePlayers(gid)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get players from database: %v", err)
+	}
+
+	return plrs, nil
 }
 
 func UpdateGame(g u.Game) error {
