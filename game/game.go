@@ -47,6 +47,19 @@ func GetGamePlayers(gid string) ([]u.User, error) {
 }
 
 func UpdateGame(g u.Game) error {
+	if g.MinPlrs > g.MaxPlrs {
+		return fmt.Errorf("provided minPlrs is greater than provided maxPlrs")
+	}
+
+	if g.CurPlrs > g.MaxPlrs {
+		return fmt.Errorf("provided curPlrs is greater than provided maxPlrs")
+	}
+
+	err := db.UpdateGame(g)
+	if err != nil {
+		return fmt.Errorf("could not update game in database: %v", err)
+	}
+
 	return nil
 }
 
