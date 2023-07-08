@@ -182,5 +182,26 @@ func Rules(gid string, lid string, game utils.Game) error {
 }
 
 func Remove(gid string, lid string, tid string) error {
+	_, err := checkLeader(gid, lid)
+	if err != nil {
+		return err
+	}
+
+	if tid == lid {
+		return fmt.Errorf("leader cannot remove themselves, must leave")
+	}
+
+	tUser, err := u.GetUser(tid)
+	if err != nil {
+		return fmt.Errorf("failed to get target user: %v", err)
+	}
+
+	tUser.GID = ""
+
+	err = u.UpdateUser(tUser)
+	if err != nil {
+		return fmt.Errorf("failed to update user: %v", err)
+	}
+
 	return nil
 }
