@@ -590,13 +590,16 @@ func TestChangePlayerCountDoubleIncrease(t *testing.T) {
 	gid, _ := CreateGame(u.DefGame)
 	game.GID = gid
 
+	want := game.CurPlrs + 2
+
 	_ = ChangePlayerCount(game, 1)
+
+	game, _ = GetGame(gid)
+
 	err := ChangePlayerCount(game, 1)
 	if err != nil {
 		t.Fatalf(`ChangePlayerCount(DoubleIncrease) = "%v", want "nil"`, err)
 	}
-
-	want := game.CurPlrs + 2
 
 	game, err = GetGame(gid)
 	if game.CurPlrs != want || err != nil {
@@ -613,13 +616,16 @@ func TestChangePlayerCountDoubleDecrease(t *testing.T) {
 	gid, _ := CreateGame(u.DefGame)
 	game.GID = gid
 
+	want := game.CurPlrs - 2
+
 	_ = ChangePlayerCount(game, -1)
+
+	game, _ = GetGame(gid)
+
 	err := ChangePlayerCount(game, -1)
 	if err != nil {
 		t.Fatalf(`ChangePlayerCount(DoubleDecrease) = "%v", want "nil"`, err)
 	}
-
-	want := game.CurPlrs - 2
 
 	game, err = GetGame(gid)
 	if game.CurPlrs != want || err != nil {
@@ -637,6 +643,7 @@ func TestChangePlayerCountIncreaseFullGame(t *testing.T) {
 	game.GID = gid
 
 	err := ChangePlayerCount(game, 1)
+
 	if err == nil {
 		t.Fatalf(`ChangePlayerCount(FullGameIncrease) = "%v", want ERROR`, err)
 	}

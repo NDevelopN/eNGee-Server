@@ -64,6 +64,31 @@ func UpdateGame(g u.Game) error {
 }
 
 func ChangePlayerCount(g u.Game, d int) error {
+	g.CurPlrs += d
+
+	if g.CurPlrs > g.MaxPlrs {
+		return fmt.Errorf("the game is too full: %v/%v", g.CurPlrs, g.MaxPlrs)
+	}
+
+	//TODO add some toggle here
+	if g.CurPlrs < g.MinPlrs && g.Status != "Lobby" {
+		g.Status = "Lobby"
+	}
+
+	if g.CurPlrs <= 0 {
+		err := DeleteGame(g.GID)
+		if err != nil {
+			return fmt.Errorf("could not delete empty game: %v", err)
+		}
+
+		return nil
+	}
+
+	err := UpdateGame(g)
+	if err != nil {
+		return fmt.Errorf("could not update game: %v", err)
+	}
+
 	return nil
 }
 
