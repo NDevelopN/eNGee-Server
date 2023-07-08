@@ -58,5 +58,26 @@ func ChangeStatus(pid string, gid string, status string) error {
 }
 
 func Leave(pid string, gid string) error {
+	plr, err := u.GetUser(pid)
+	if err != nil {
+		return fmt.Errorf("could not get matching player: %v", err)
+	}
+
+	if plr.GID != gid {
+		return fmt.Errorf("mismatch between player GID [%v] and provided GID [%v]", plr.GID, gid)
+	}
+
+	_, err = g.GetGame(gid)
+	if err != nil {
+		return fmt.Errorf("could not get matching game: %v", err)
+	}
+
+	plr.GID = ""
+
+	err = u.UpdateUser(plr)
+	if err != nil {
+		return fmt.Errorf("could not update player: %v", err)
+	}
+
 	return nil
 }
