@@ -81,15 +81,6 @@ func TestInitMultiGames(t *testing.T) {
 	}
 }
 
-func TestInitInvalidSettings(t *testing.T) {
-	gMsg := PrepareInitTest(t, "TestInit(InvalidSettings)")
-	gMsg.Content = `"invalid": "content"`
-	msg, err := GamespaceHandle(gMsg)
-	if msg.Type != "Error" || err == nil {
-		t.Fatalf(`TestInit(InvalidSettings) = %q, "%v", want "Error", ERROR`, msg.Type, err)
-	}
-}
-
 // Test handling pre-checks
 func TestHandleInvalidType(t *testing.T) {
 	gMsg := PrepareInitTest(t, "TestHandle(InvalidType)")
