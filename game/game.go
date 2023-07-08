@@ -68,5 +68,23 @@ func ChangePlayerCount(g u.Game, d int) error {
 }
 
 func DeleteGame(gid string) error {
+	plrs, err := db.GetGamePlayers(gid)
+	if err != nil {
+		return fmt.Errorf("could not get players from database: %v", err)
+	}
+
+	for _, p := range plrs {
+		p.GID = ""
+		err = db.UpdateUser(p)
+		if err != nil {
+			return fmt.Errorf("could not update player (clearing GID) in database: %v", err)
+		}
+	}
+
+	err = db.RemoveGame(gid)
+	if err != nil {
+		return fmt.Errorf("could not delete the game from database: %v", err)
+	}
+
 	return nil
 }
