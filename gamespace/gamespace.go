@@ -52,7 +52,15 @@ func start(msg utils.GameMsg, game utils.Game, handler HandlerFunc) (utils.GameM
 	}
 
 	return handler(msg, game)
+}
 
+func reset(msg utils.GameMsg, game utils.Game, handler HandlerFunc) (utils.GameMsg, error) {
+	err := Reset(msg.GID, msg.UID)
+	if err != nil {
+		return replyError(msg, err)
+	}
+
+	return handler(msg, game)
 }
 
 func GamespaceHandle(msg utils.GameMsg) (utils.GameMsg, error) {
@@ -87,6 +95,12 @@ func GamespaceHandle(msg utils.GameMsg) (utils.GameMsg, error) {
 	case "Start":
 		if leader {
 			return start(msg, game, handler)
+		} else {
+			return replyError(msg, errNotLeader)
+		}
+	case "Reset":
+		if leader {
+			return reset(msg, game, handler)
 		} else {
 			return replyError(msg, errNotLeader)
 		}
