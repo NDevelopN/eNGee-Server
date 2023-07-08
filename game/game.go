@@ -38,7 +38,8 @@ func GetGames() ([]u.Game, error) {
 }
 
 func GetGame(gid string) (u.Game, error) {
-	return u.Game{}, nil
+	//TODO any checks needed here?
+	return db.GetGame(gid)
 }
 
 func GetGamePlayers(gid string) ([]u.User, error) {
