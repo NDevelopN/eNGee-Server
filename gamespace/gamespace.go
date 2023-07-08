@@ -115,6 +115,15 @@ func status(msg utils.GameMsg, game utils.Game, handler HandlerFunc) (utils.Game
 	return handler(msg, game)
 }
 
+func leave(msg utils.GameMsg, game utils.Game, handler HandlerFunc) (utils.GameMsg, error) {
+	err := Leave(msg.UID, msg.GID)
+	if err != nil {
+		return replyError(msg, err)
+	}
+
+	return handler(msg, game)
+}
+
 func GamespaceHandle(msg utils.GameMsg) (utils.GameMsg, error) {
 	game, err := g.GetGame(msg.GID)
 	if err != nil {
@@ -182,6 +191,8 @@ func GamespaceHandle(msg utils.GameMsg) (utils.GameMsg, error) {
 		}
 	case "Status":
 		return status(msg, game, handler)
+	case "Leave":
+		return leave(msg, game, handler)
 	default:
 		return replyError(msg, fmt.Errorf("unknown message type: %v", msg.Type))
 	}
