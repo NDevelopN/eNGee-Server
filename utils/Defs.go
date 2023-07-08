@@ -2,8 +2,12 @@ package utils
 
 type GHandler func(msg GameMsg, broadcast func(string, []byte))
 
-type Player struct {
-	PID    string `json:"pid"`
+type Message interface {
+	[]User | User | []Game | Game | Join | GameMsg | ACK
+}
+
+type User struct {
+	UID    string `json:"uid"`
 	GID    string `json:"gid"`
 	Name   string `json:"name"`
 	Status string `json:"status"`
@@ -23,13 +27,13 @@ type Game struct {
 }
 
 type Join struct {
-	PID string `json:"pid"`
+	UID string `json:"uid"`
 	GID string `json:"gid"`
 }
 
 type GameMsg struct {
 	Type    string `json:"type"`
-	PID     string `json:"pid"`
+	UID     string `json:"uid"`
 	GID     string `json:"gid"`
 	Content string `json:"content"`
 }

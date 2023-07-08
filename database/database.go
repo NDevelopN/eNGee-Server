@@ -2,6 +2,7 @@ package database
 
 import (
 	"database/sql"
+	"fmt"
 	"log"
 
 	_ "github.com/lib/pq"
@@ -51,7 +52,7 @@ func InitDB() {
 	}
 
 	_, err = DB.Query("CREATE TABLE players ( " +
-		"pid 		varchar(80), " +
+		"uid 		varchar(80), " +
 		"gid 		varchar(80), " +
 		"name 		varchar(80), " +
 		"status 	varchar(80) " +
@@ -71,8 +72,7 @@ func InitDB() {
 func GetAllGames() ([]u.Game, error) {
 	rows, err := DB.Query("SELECT * FROM games")
 	if err != nil {
-		log.Printf("[Error] Failed to get games from db: %v", err)
-		return nil, err
+		return nil, fmt.Errorf("db failed: SELECT FROM games: %v", err)
 	}
 	defer rows.Close()
 
@@ -92,15 +92,17 @@ func GetAllGames() ([]u.Game, error) {
 			&gm.AdditionalRules,
 		)
 		if err != nil {
-			log.Printf("[Error] Failed to Scan row in games: %v", err)
-			return nil, err
+			return nil, fmt.Errorf("db failed: Scanning row: %v", err)
 		}
 		gms = append(gms, *gm)
 	}
 
-	if err = rows.Err(); err != nil {
-		log.Printf("[Error] Error while scanning row in games: %v", err)
-		return nil, err
+	err = rows.Err()
+
+	if err == sql.ErrNoRows {
+		return gms, nil
+	} else if err != nil {
+		return nil, fmt.Errorf("db failed: row error: %v", err)
 	}
 
 	return gms, nil
@@ -125,12 +127,9 @@ func GetGame(gid string) (u.Game, error) {
 		&gm.CurPlrs,
 		&gm.AdditionalRules,
 	)
-	if err == sql.ErrNoRows {
-		log.Printf("[Warn] Did not find Game %v", err)
-		return *gm, err
-	} else if err != nil {
-		log.Printf("[Error] while searching for Game %v", err)
-		return *gm, err
+
+	if err != nil {
+		return *gm, fmt.Errorf("db failed: row error: %v", err)
 	}
 
 	return *gm, nil
@@ -167,12 +166,10 @@ func CreateGame(gm u.Game) error {
 		gm.AdditionalRules,
 	)
 	if err != nil {
-		log.Printf("[Error] Could not create game: %v", err)
-		return err
+		return fmt.Errorf("db failed: INSERT INTO games: %v", err)
 	}
 
 	return nil
-
 }
 
 /**
@@ -192,7 +189,7 @@ func UpdateGame(gm u.Game) error {
 			cur_plrs = $9, 
 			add_rules = $10
 		WHERE gid = $1;`
-	_, err := DB.Exec(
+	result, err := DB.Exec(
 		updateStatement,
 		gm.GID,
 		gm.Name,
@@ -205,38 +202,47 @@ func UpdateGame(gm u.Game) error {
 		int(gm.CurPlrs),
 		gm.AdditionalRules,
 	)
+
 	if err != nil {
-		log.Printf("[Error] Failed to update game: %v", err)
+		return fmt.Errorf("db failed: UPDATE games: %v", err)
 	}
 
-	return err
+	ra, err := result.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("db failed: failed to get rows affected: %v", err)
+	}
+
+	if ra <= 0 {
+		return fmt.Errorf("db failed: no rows affected")
+	}
+
+	return nil
 }
 
 /**
 * This function gets all players with the gid matching the given gid
 * These are the players that are in the game
  */
-func GetGamePlayers(gid string) ([]u.Player, error) {
+func GetGamePlayers(gid string) ([]u.User, error) {
 	rows, err := DB.Query("SELECT * FROM players WHERE gid = $1", gid)
 	if err != nil {
-		log.Printf("[Error] Failed to get game players from database: %v", err)
-		return nil, err
+		return nil, fmt.Errorf("db failed: SELECT FROM players: %v", err)
 	}
 	defer rows.Close()
 
-	plrs := make([]u.Player, 0)
+	plrs := make([]u.User, 0)
 	for rows.Next() {
-		plr := new(u.Player)
-		err := rows.Scan(&plr.PID, &plr.GID, &plr.Name, &plr.Status)
+		plr := new(u.User)
+		err := rows.Scan(&plr.UID, &plr.GID, &plr.Name, &plr.Status)
 		if err != nil {
-			log.Printf("[Error] Failed to Scan row in game players: %v", err)
-			return nil, err
+			return nil, fmt.Errorf("db failed: scanning row: %v", err)
 		}
 		plrs = append(plrs, *plr)
 	}
-	if err = rows.Err(); err != nil {
-		log.Printf("[Error] while scanning rows in game players: %v", err)
-		return nil, err
+	if err == sql.ErrNoRows {
+		return plrs, nil
+	} else if err != nil {
+		return nil, fmt.Errorf("db failed: row error")
 	}
 
 	return plrs, nil
@@ -246,8 +252,22 @@ func GetGamePlayers(gid string) ([]u.Player, error) {
 * This function deletes a row on the games table, identified by the given gid
  */
 func RemoveGame(gid string) error {
-	_, err := DB.Query("DELETE FROM games WHERE gid = $1", gid)
-	return err
+	result, err := DB.Exec("DELETE FROM games WHERE gid = $1", gid)
+
+	if err != nil {
+		return fmt.Errorf("db failed: DELETE FROM games: %v", err)
+	}
+
+	ra, err := result.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("db failed: row error: %v", err)
+	}
+
+	if ra <= 0 {
+		return fmt.Errorf("db failed: no rows affected")
+	}
+
+	return nil
 }
 
 /**
@@ -271,20 +291,16 @@ func GetGamePReady(gid string) int {
 }
 
 /**
-* This function returns the player with the given pid
+* This function returns the player with the given uid
  */
-func GetPlayer(pid string) (u.Player, error) {
+func GetUser(uid string) (u.User, error) {
 
-	row := DB.QueryRow("SELECT * FROM players WHERE pid = $1", pid)
+	row := DB.QueryRow("SELECT * FROM players WHERE uid = $1", uid)
 
-	plr := new(u.Player)
-	err := row.Scan(&plr.PID, &plr.GID, &plr.Name, &plr.Status)
-	if err == sql.ErrNoRows {
-		log.Printf("[Error] Did not find Player %v", err)
-		return *plr, err
-	} else if err != nil {
-		log.Printf("[Error] Error searching for player %v", err)
-		return *plr, err
+	plr := new(u.User)
+	err := row.Scan(&plr.UID, &plr.GID, &plr.Name, &plr.Status)
+	if err != nil {
+		return *plr, fmt.Errorf("db failed: row error:  %v", err)
 	}
 
 	return *plr, nil
@@ -293,43 +309,55 @@ func GetPlayer(pid string) (u.Player, error) {
 /**
  * This function adds a single new row to the players table
  */
-func CreatePlayer(plr u.Player) error {
+func CreateUser(user u.User) error {
 	_, err := DB.Exec("INSERT INTO players VALUES($1, $2, $3, $4)",
-		plr.PID,
-		plr.GID,
-		plr.Name,
-		plr.Status,
+		user.UID,
+		user.GID,
+		user.Name,
+		user.Status,
 	)
 	if err != nil {
-		log.Printf("[Error] Could not create player: %v", err)
-		return err
+		return fmt.Errorf("db failed: INSERT INTO players: %v", err)
 	}
 
 	return nil
 }
 
 /**
- * This function updates a row in the players table, identified by the given player's pid
+ * This function updates a row in the players table, identified by the given player's uid
  * All fields are updated in this function
  */
-func UpdatePlayer(plr u.Player) error {
-	_, err := DB.Exec(
+func UpdateUser(user u.User) error {
+	result, err := DB.Exec(
 		"UPDATE players "+
 			"SET "+
 			"gid = $2, "+
 			"name = $3, "+
 			"status = $4 "+
-			"WHERE pid = $1",
-		plr.PID, plr.GID, plr.Name, plr.Status,
+			"WHERE uid = $1",
+		user.UID, user.GID, user.Name, user.Status,
 	)
 
-	return err
+	if err != nil {
+		return fmt.Errorf("db failed: UPDATE players: %v", err)
+	}
+
+	ra, err := result.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("db failed: row error: %v", err)
+	}
+
+	if ra <= 0 {
+		return fmt.Errorf("db failed: no rows affected")
+	}
+
+	return nil
 }
 
 /**
  * This function updates the status field of all players with gids that match the given gid
  */
-func UpdateGamePlayerStatus(gid string, status string) error {
+func UpdateGameUserStatus(gid string, status string) error {
 
 	_, err := DB.Exec(
 		"UPDATE players "+
@@ -338,14 +366,27 @@ func UpdateGamePlayerStatus(gid string, status string) error {
 			"WHERE gid = $1",
 		gid, status)
 
-	return err
-
+	return fmt.Errorf("db failed: UPDATE players: %v", err)
 }
 
 /**
- * This function deletes a row on the palers table, identified by the given pid
+ * This function deletes a row on the palers table, identified by the given uid
  */
-func RemovePlayer(pid string) error {
-	_, err := DB.Query("DELETE FROM players WHERE pid = $1", pid)
-	return err
+func RemoveUser(uid string) error {
+	result, err := DB.Exec("DELETE FROM players WHERE uid = $1", uid)
+
+	if err != nil {
+		return fmt.Errorf("db failed: DELETE FROM players: %v", err)
+	}
+
+	ra, err := result.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("db failed: row error: %v", err)
+	}
+
+	if ra <= 0 {
+		return fmt.Errorf("db failed: no rows affected")
+	}
+
+	return nil
 }
