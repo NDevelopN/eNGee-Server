@@ -33,7 +33,8 @@ func CreateGame(g u.Game) (string, error) {
 }
 
 func GetGames() ([]u.Game, error) {
-	return []u.Game{}, nil
+	//TODO any checks needed here?
+	return db.GetAllGames()
 }
 
 func GetGame(gid string) (u.Game, error) {
