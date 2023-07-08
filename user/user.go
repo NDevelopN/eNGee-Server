@@ -29,7 +29,8 @@ func CreateUser(u utils.User) (string, error) {
 }
 
 func GetUser(uid string) (utils.User, error) {
-	return utils.User{}, nil
+	//TODO any checks needed here?
+	return db.GetUser(uid)
 }
 
 func UpdateUser(n utils.User) error {
