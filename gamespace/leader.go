@@ -153,6 +153,27 @@ func Reset(gid string, lid string) error {
 }
 
 func End(gid string, lid string) error {
+	game, err := checkLeader(gid, lid)
+	if err != nil {
+		return err
+	}
+
+	game.Status = "Ending"
+	err = g.UpdateGame(game)
+	if err != nil {
+		return fmt.Errorf("failed to update game: %v", err)
+	}
+
+	err = sendUpdate(gid)
+	if err != nil {
+		return fmt.Errorf("failed to broadcast update: %v", err)
+	}
+
+	err = g.DeleteGame(gid)
+	if err != nil {
+		return fmt.Errorf("failed to delete game: %v", err)
+	}
+
 	return nil
 }
 
