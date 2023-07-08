@@ -106,6 +106,15 @@ func rules(msg utils.GameMsg, game utils.Game, handler HandlerFunc) (utils.GameM
 	return handler(msg, game)
 }
 
+func status(msg utils.GameMsg, game utils.Game, handler HandlerFunc) (utils.GameMsg, error) {
+	err := ChangeStatus(msg.UID, msg.GID, msg.Content)
+	if err != nil {
+		return replyError(msg, err)
+	}
+
+	return handler(msg, game)
+}
+
 func GamespaceHandle(msg utils.GameMsg) (utils.GameMsg, error) {
 	game, err := g.GetGame(msg.GID)
 	if err != nil {
@@ -171,6 +180,8 @@ func GamespaceHandle(msg utils.GameMsg) (utils.GameMsg, error) {
 		} else {
 			return replyError(msg, errNotLeader)
 		}
+	case "Status":
+		return status(msg, game, handler)
 	default:
 		return replyError(msg, fmt.Errorf("unknown message type: %v", msg.Type))
 	}
