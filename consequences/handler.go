@@ -7,12 +7,60 @@ import (
 	"fmt"
 	"log"
 	"strings"
+	"time"
 )
 
 func changeState(state string, gid string) {
 	cVar := CVars[gid]
 	cVar.State = state
 	CVars[gid] = cVar
+}
+
+func timer(gid string) {
+
+	cVars, err := GetConState(gid)
+	if err != nil {
+		log.Printf("[Error] getting state for timer: %v", err)
+		return
+	}
+
+	if cVars.Timer == 0 {
+		return
+	}
+
+	upd := utils.GameMsg{
+		Type: "Timer",
+		GID:  gid,
+	}
+
+	state := cVars.State
+
+	for cVars.Timer > 0 {
+		t := time.Now()
+		if state == "Pause" || state == "Lobby" {
+			time.Sleep(time.Millisecond * 10)
+			continue
+		}
+
+		time.Sleep(time.Second * 1)
+
+		elapsed := time.Since(t)
+		cVars.Timer -= int(elapsed)
+
+		upd.Content = fmt.Sprintf("%d", cVars.Timer)
+
+		updatePlayers(upd)
+	}
+
+	nextState(gid)
+}
+
+func nextState(gid string) {
+	//TODO
+}
+
+func updatePlayers(utils.GameMsg) {
+	//TODO
 }
 
 func initialize(msg utils.GameMsg) (utils.GameMsg, error) {
@@ -73,7 +121,38 @@ func initialize(msg utils.GameMsg) (utils.GameMsg, error) {
 }
 
 func start(msg utils.GameMsg) (utils.GameMsg, error) {
-	return utils.GameMsg{}, nil
+	cVars := CVars[msg.GID]
+	cVars.Stories = make(map[string][]string)
+	plrs, err := g.GetGamePlayers(msg.GID)
+	if err != nil {
+		return utils.ReplyError(msg, fmt.Errorf("error getting game players: %v", err))
+	}
+
+	for _, p := range plrs {
+		cVars.Stories[p.UID] = []string{}
+	}
+
+	cVars.State = "Prompts"
+	cVars.Timer = cVars.Settings.Timer1
+
+	CVars[msg.GID] = cVars
+
+	go timer(msg.GID)
+
+	prompts, err := json.Marshal(cVars.Settings.Prompts)
+	if err != nil {
+		return utils.ReplyError(msg, fmt.Errorf("error marshalling prompts: %v", err))
+	}
+
+	upd := utils.GameMsg{
+		Type:    "Prompt",
+		GID:     msg.GID,
+		Content: string(prompts),
+	}
+
+	updatePlayers(upd)
+
+	return utils.ReplyACK(msg), nil
 }
 
 func reset(msg utils.GameMsg) (utils.GameMsg, error) {
