@@ -33,11 +33,13 @@ func timer(gid string) {
 		GID:  gid,
 	}
 
-	state := cVars.State
-
 	for cVars.Timer > 0 {
 		t := time.Now()
-		if state == "Pause" || state == "Lobby" {
+		if cVars.State == "Lobby" {
+			return
+		}
+
+		if cVars.State == "Pause" {
 			time.Sleep(time.Millisecond * 10)
 			continue
 		}
@@ -156,11 +158,29 @@ func start(msg utils.GameMsg) (utils.GameMsg, error) {
 }
 
 func reset(msg utils.GameMsg) (utils.GameMsg, error) {
-	return utils.GameMsg{}, nil
+	cVars := CVars[msg.GID]
+	cVars.State = "Lobby"
+	cVars.Stories = make(map[string][]string)
+
+	CVars[msg.GID] = cVars
+
+	resp, err := initialize(msg)
+	if err != nil {
+		return utils.ReplyError(msg, fmt.Errorf("error resetting to current settings: %v", err))
+	}
+
+	return resp, nil
 }
 
 func end(msg utils.GameMsg) (utils.GameMsg, error) {
-	return utils.GameMsg{}, nil
+	_, err := reset(msg)
+	if err != nil {
+		return utils.ReplyError(msg, fmt.Errorf("error ending settings: %v", err))
+	}
+
+	delete(CVars, msg.GID)
+
+	return utils.ReplyACK(msg), nil
 }
 
 func pause(msg utils.GameMsg) (utils.GameMsg, error) {

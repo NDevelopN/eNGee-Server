@@ -517,8 +517,8 @@ func TestReset(t *testing.T) {
 	want := createWant("Lobby", lid, []string{}, testSettings.Timer1)
 
 	cVars, err := GetConState(gid)
-	if !cmp.Equal(cVars, want) || err == nil {
-		t.Fatalf(`TestReset() = %q, "%v", want %q, ERROR`, cVars, nil, want)
+	if !cmp.Equal(cVars, want) || err != nil {
+		t.Fatalf(`TestReset() = %q, "%v", want %q, "nil"`, cVars, nil, want)
 	}
 
 }
