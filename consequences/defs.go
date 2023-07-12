@@ -15,6 +15,7 @@ type ConSettings struct {
 
 type ConVars struct {
 	State    string
+	SusState string
 	Settings ConSettings
 	Stories  map[string][]string
 	Timer    int
@@ -43,8 +44,8 @@ var defStory = []string{
 var testSettings = ConSettings{
 	Rounds:  1,
 	Shuffle: 1,
-	Timer1:  60,
-	Timer2:  300,
+	Timer1:  10,
+	Timer2:  10,
 	Prompts: defPrompts,
 }
 

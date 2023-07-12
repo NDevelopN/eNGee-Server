@@ -13,6 +13,8 @@ import (
 	"github.com/google/go-cmp/cmp"
 )
 
+const waitForTimeout = true
+
 func prepareConGame(t *testing.T, testName string, userCount int) (string, string, []string) {
 	db.InitDB()
 
@@ -105,7 +107,7 @@ func createWant(state string, lid string, users []string, timer int) ConVars {
 func checkTimeout(t *testing.T, testName string, timer int, gid string, want bool) {
 
 	//TODO add toggle for timeouts
-	if false {
+	if !waitForTimeout {
 		return
 	}
 
@@ -443,6 +445,7 @@ func TestPauseTimer(t *testing.T) {
 	}
 
 	want := createWant("Pause", lid, users, testSettings.Timer1)
+	want.SusState = "Prompts"
 
 	cVars, err := GetConState(gid)
 	if !cmp.Equal(cVars, want) || err != nil {

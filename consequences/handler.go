@@ -18,13 +18,7 @@ func changeState(state string, gid string) {
 
 func timer(gid string) {
 
-	cVars, err := GetConState(gid)
-	if err != nil {
-		log.Printf("[Error] getting state for timer: %v", err)
-		return
-	}
-
-	if cVars.Timer == 0 {
+	if CVars[gid].Timer == 0 {
 		return
 	}
 
@@ -33,7 +27,8 @@ func timer(gid string) {
 		GID:  gid,
 	}
 
-	for cVars.Timer > 0 {
+	for CVars[gid].Timer > 0 {
+		cVars := CVars[gid]
 		t := time.Now()
 		if cVars.State == "Lobby" {
 			return
@@ -48,6 +43,8 @@ func timer(gid string) {
 
 		elapsed := time.Since(t)
 		cVars.Timer -= int(elapsed)
+
+		CVars[gid] = cVars
 
 		upd.Content = fmt.Sprintf("%d", cVars.Timer)
 
@@ -184,7 +181,27 @@ func end(msg utils.GameMsg) (utils.GameMsg, error) {
 }
 
 func pause(msg utils.GameMsg) (utils.GameMsg, error) {
-	return utils.GameMsg{}, nil
+	cVars := CVars[msg.GID]
+
+	if cVars.State == "Pause" {
+		cVars.State = cVars.SusState
+		cVars.SusState = ""
+	} else {
+		cVars.SusState = cVars.State
+		cVars.State = "Pause"
+	}
+
+	CVars[msg.GID] = cVars
+
+	upd := utils.GameMsg{
+		Type:    "State",
+		GID:     msg.GID,
+		Content: cVars.State,
+	}
+
+	updatePlayers(upd)
+
+	return utils.ReplyACK(msg), nil
 }
 
 func rules(msg utils.GameMsg) (utils.GameMsg, error) {
