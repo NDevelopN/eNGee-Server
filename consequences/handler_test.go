@@ -124,7 +124,7 @@ func checkTimeout(t *testing.T, testName string, timer int, gid string, want boo
 }
 
 func TestInitValid(t *testing.T) {
-	lid, gid, _ := prepareConGame(t, "TestInit(Valid)", 3)
+	gid, lid, _ := prepareConGame(t, "TestInit(Valid)", 3)
 
 	gMsg := utils.GameMsg{
 		Type: "Init",
@@ -146,7 +146,7 @@ func TestInitValid(t *testing.T) {
 }
 
 func TestInitZeroRounds(t *testing.T) {
-	lid, gid, _ := prepareConGame(t, "TestInit(ZeroRounds)", 3)
+	gid, lid, _ := prepareConGame(t, "TestInit(ZeroRounds)", 3)
 
 	rules := testSettings
 	rules.Rounds = 0
@@ -170,7 +170,7 @@ func TestInitZeroRounds(t *testing.T) {
 }
 
 func TestInitNegativeRounds(t *testing.T) {
-	lid, gid, _ := prepareConGame(t, "TestInit(NegativeRounds)", 3)
+	gid, lid, _ := prepareConGame(t, "TestInit(NegativeRounds)", 3)
 
 	rules := testSettings
 	rules.Rounds = -1
@@ -194,7 +194,7 @@ func TestInitNegativeRounds(t *testing.T) {
 }
 
 func TestInitZeroShuffle(t *testing.T) {
-	lid, gid, _ := prepareConGame(t, "TestInit(ZeroShuffle)", 3)
+	gid, lid, _ := prepareConGame(t, "TestInit(ZeroShuffle)", 3)
 
 	rules := testSettings
 	rules.Shuffle = 0
@@ -218,7 +218,7 @@ func TestInitZeroShuffle(t *testing.T) {
 }
 
 func TestInitInvalidShuffle(t *testing.T) {
-	lid, gid, _ := prepareConGame(t, "TestInit(InvalidShuffle)", 3)
+	gid, lid, _ := prepareConGame(t, "TestInit(InvalidShuffle)", 3)
 
 	rules := testSettings
 	rules.Shuffle = 99
@@ -242,7 +242,7 @@ func TestInitInvalidShuffle(t *testing.T) {
 }
 
 func TestInitZeroTimer1(t *testing.T) {
-	lid, gid, _ := prepareConGame(t, "TestInit(ZeroTimer)", 3)
+	gid, lid, _ := prepareConGame(t, "TestInit(ZeroTimer)", 3)
 
 	rules := testSettings
 	rules.Timer1 = 0
@@ -266,7 +266,7 @@ func TestInitZeroTimer1(t *testing.T) {
 }
 
 func TestNegativeTimer(t *testing.T) {
-	lid, gid, _ := prepareConGame(t, "TestInit(ZeroTimer)", 3)
+	gid, lid, _ := prepareConGame(t, "TestInit(ZeroTimer)", 3)
 
 	rules := testSettings
 	rules.Timer1 = -1
@@ -290,7 +290,7 @@ func TestNegativeTimer(t *testing.T) {
 }
 
 func TestInitZeroTimer2(t *testing.T) {
-	lid, gid, _ := prepareConGame(t, "TestInit(ZeroTimer)", 3)
+	gid, lid, _ := prepareConGame(t, "TestInit(ZeroTimer)", 3)
 
 	rules := testSettings
 	rules.Timer2 = 0
@@ -314,7 +314,7 @@ func TestInitZeroTimer2(t *testing.T) {
 }
 
 func TestInitEmptyPrompts(t *testing.T) {
-	lid, gid, _ := prepareConGame(t, "TestInit(EmptyPrompts)", 3)
+	gid, lid, _ := prepareConGame(t, "TestInit(EmptyPrompts)", 3)
 
 	rules := testSettings
 	rules.Prompts = []string{}
@@ -337,7 +337,7 @@ func TestInitEmptyPrompts(t *testing.T) {
 }
 
 func TestInitSinglePrompt(t *testing.T) {
-	lid, gid, _ := prepareConGame(t, "TestInit(SinglePrompt)", 3)
+	gid, lid, _ := prepareConGame(t, "TestInit(SinglePrompt)", 3)
 
 	rules := testSettings
 	rules.Prompts = []string{"Single Prompt"}
@@ -360,7 +360,7 @@ func TestInitSinglePrompt(t *testing.T) {
 }
 
 func TestInitInvalidStruct(t *testing.T) {
-	lid, gid, _ := prepareConGame(t, "TestInit(InvalidStruct)", 3)
+	gid, lid, _ := prepareConGame(t, "TestInit(InvalidStruct)", 3)
 
 	rs, _ := json.Marshal(defPlr)
 
@@ -381,7 +381,7 @@ func TestInitInvalidStruct(t *testing.T) {
 }
 
 func TestInitEmpty(t *testing.T) {
-	lid, gid, _ := prepareConGame(t, "TestInit(Invalid)", 3)
+	gid, lid, _ := prepareConGame(t, "TestInit(Invalid)", 3)
 
 	game, _ := g.GetGame(gid)
 	game.AdditionalRules = ""
