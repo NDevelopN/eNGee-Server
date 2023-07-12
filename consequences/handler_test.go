@@ -16,6 +16,8 @@ import (
 func prepareConGame(t *testing.T, testName string, userCount int) (string, string, []string) {
 	db.InitDB()
 
+	CVars = make(map[string]ConVars)
+
 	gid, err := g.CreateGame(defGame)
 	if err != nil {
 		t.Fatalf(`%v = failed to prepare conGame (creating game): %v`, testName, err)
@@ -141,7 +143,7 @@ func TestInitValid(t *testing.T) {
 
 	cVars, err := GetConState(gid)
 	if !cmp.Equal(cVars, want) || err != nil {
-		t.Fatalf(`TestInit(Valid) = %q, "%v", want %q, "nil"`, cVars, nil, want)
+		t.Fatalf(`TestInit(Valid) = %q, "%v", want %q, "nil"`, cVars, err, want)
 	}
 }
 
