@@ -2,6 +2,7 @@ package consequences
 
 import (
 	g "Engee-Server/game"
+	u "Engee-Server/user"
 	"Engee-Server/utils"
 	"encoding/json"
 	"fmt"
@@ -208,8 +209,86 @@ func rules(msg utils.GameMsg) (utils.GameMsg, error) {
 	return utils.GameMsg{}, nil
 }
 
+/**
+func checkAllDone(gid string, status string) {
+	plrs, err := g.GetGamePlayers(gid)
+	if err != nil {
+
+	}
+
+	for _, p := range plrs {
+		if p.
+	}
+
+}
+*/
+
+func checkPhaseChange(gid string, status string) bool {
+	plrs, err := g.GetGamePlayers(gid)
+	if err != nil {
+		log.Printf("[Error] getting game players when checking phase change: %v", err)
+		return false
+	}
+
+	count := len(plrs)
+
+	for _, p := range plrs {
+		if p.Status == status {
+			count--
+		}
+	}
+
+	return count == 0
+}
+
+func updatePlrPhase(user utils.User, msg utils.GameMsg) (utils.GameMsg, error) {
+	reply, err := updatePlr(user, msg)
+	if err == nil {
+		if checkPhaseChange(msg.GID, msg.Content) {
+			nextState(msg.GID)
+		}
+	}
+
+	return reply, err
+}
+
+func updatePlr(user utils.User, msg utils.GameMsg) (utils.GameMsg, error) {
+	user.Status = msg.Content
+	err := u.UpdateUser(user)
+	if err != nil {
+		return utils.ReplyError(msg, fmt.Errorf("could not update user status: %v", err))
+	}
+	return utils.ReplyACK(msg), nil
+
+}
+
 func status(msg utils.GameMsg) (utils.GameMsg, error) {
-	return utils.GameMsg{}, nil
+	user, err := u.GetUser(msg.UID)
+	if err != nil {
+		return utils.ReplyError(msg, fmt.Errorf("could not get user: %v", err))
+	}
+	cVar := CVars[msg.GID]
+
+	switch msg.Content {
+	case "Replying":
+		if cVar.State == "Prompts" {
+			return updatePlr(user, msg)
+		}
+	case "Replied":
+		if cVar.State == "Prompts" {
+			return updatePlrPhase(user, msg)
+		}
+	case "Reading":
+		if cVar.State == "Stories" {
+			return updatePlr(user, msg)
+		}
+	case "Read":
+		if cVar.State == "Stories" {
+			return updatePlrPhase(user, msg)
+		}
+	}
+
+	return utils.ReplyError(msg, fmt.Errorf("invalid status %v for %v", msg.Content, cVar.State))
 }
 
 func leave(msg utils.GameMsg) (utils.GameMsg, error) {

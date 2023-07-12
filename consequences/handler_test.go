@@ -610,7 +610,7 @@ func TestStatusPhaseChange(t *testing.T) {
 		Type:    "Status",
 		UID:     lid,
 		GID:     gid,
-		Content: "Replied",
+		Content: "Read",
 	}
 
 	changeState("Stories", gid)
@@ -637,8 +637,8 @@ func TestStatusPhaseChange(t *testing.T) {
 	}
 
 	plr, err := u.GetUser(lid)
-	if plr.Status != "Reading" || err != nil {
-		t.Fatalf(`TestStatus(ConSpec) = %q, "%v", want "Reading, "nil"`, plr.Status, err)
+	if plr.Status != "Read" || err != nil {
+		t.Fatalf(`TestStatus(ConSpec) = %q, "%v", want "Read, "nil"`, plr.Status, err)
 	}
 }
 
