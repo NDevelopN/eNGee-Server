@@ -6,20 +6,21 @@ import (
 )
 
 type ConSettings struct {
-	Rounds  int `json:"rounds"`
-	Shuffle int `json:"shuffle"`
-
+	Rounds  int      `json:"rounds"`
+	Shuffle int      `json:"shuffle"`
+	Timer1  int      `json:"timer1"`
+	Timer2  int      `json:"timer2"`
 	Prompts []string `json:"prompts"`
 }
 
-type Stories map[string][]string
-
 type ConVars struct {
-	settings ConSettings
-	stories  Stories
+	State    string
+	Settings ConSettings
+	Stories  map[string][]string
+	Timer    int
 }
 
-type gVars map[string]ConVars
+var CVars map[string]ConVars
 
 var defPrompts = []string{
 	"Name of First Character",
@@ -30,9 +31,20 @@ var defPrompts = []string{
 	"Consequences of the Scene",
 }
 
+var defStory = []string{
+	"Character 1",
+	"Character 2",
+	"Location",
+	"Action 1",
+	"Action 2",
+	"Consequence",
+}
+
 var testSettings = ConSettings{
 	Rounds:  1,
 	Shuffle: 1,
+	Timer1:  60,
+	Timer2:  300,
 	Prompts: defPrompts,
 }
 
