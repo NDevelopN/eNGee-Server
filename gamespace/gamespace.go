@@ -14,7 +14,7 @@ var errNotLeader = fmt.Errorf("player is not the game leader")
 func initialize(msg utils.GameMsg, game utils.Game, handler HandlerFunc) (utils.GameMsg, error) {
 	//TODO is there any generic Gamespace initalization?
 
-	return handler(msg, game)
+	return handler(msg)
 }
 
 func start(msg utils.GameMsg, game utils.Game, handler HandlerFunc) (utils.GameMsg, error) {
@@ -23,7 +23,7 @@ func start(msg utils.GameMsg, game utils.Game, handler HandlerFunc) (utils.GameM
 		return utils.ReplyError(msg, err)
 	}
 
-	return handler(msg, game)
+	return handler(msg)
 }
 
 func reset(msg utils.GameMsg, game utils.Game, handler HandlerFunc) (utils.GameMsg, error) {
@@ -32,7 +32,7 @@ func reset(msg utils.GameMsg, game utils.Game, handler HandlerFunc) (utils.GameM
 		return utils.ReplyError(msg, err)
 	}
 
-	return handler(msg, game)
+	return handler(msg)
 }
 
 func end(msg utils.GameMsg, game utils.Game, handler HandlerFunc) (utils.GameMsg, error) {
@@ -41,7 +41,7 @@ func end(msg utils.GameMsg, game utils.Game, handler HandlerFunc) (utils.GameMsg
 		return utils.ReplyError(msg, err)
 	}
 
-	return handler(msg, game)
+	return handler(msg)
 }
 
 func pause(msg utils.GameMsg, game utils.Game, handler HandlerFunc) (utils.GameMsg, error) {
@@ -50,7 +50,7 @@ func pause(msg utils.GameMsg, game utils.Game, handler HandlerFunc) (utils.GameM
 		return utils.ReplyError(msg, err)
 	}
 
-	return handler(msg, game)
+	return handler(msg)
 }
 
 func remove(msg utils.GameMsg, game utils.Game, handler HandlerFunc) (utils.GameMsg, error) {
@@ -59,7 +59,7 @@ func remove(msg utils.GameMsg, game utils.Game, handler HandlerFunc) (utils.Game
 		return utils.ReplyError(msg, err)
 	}
 
-	return handler(msg, game)
+	return handler(msg)
 }
 
 func rules(msg utils.GameMsg, game utils.Game, handler HandlerFunc) (utils.GameMsg, error) {
@@ -74,7 +74,7 @@ func rules(msg utils.GameMsg, game utils.Game, handler HandlerFunc) (utils.GameM
 		return utils.ReplyError(msg, err)
 	}
 
-	return handler(msg, game)
+	return handler(msg)
 }
 
 func status(msg utils.GameMsg, game utils.Game, handler HandlerFunc) (utils.GameMsg, error) {
@@ -83,7 +83,7 @@ func status(msg utils.GameMsg, game utils.Game, handler HandlerFunc) (utils.Game
 		return utils.ReplyError(msg, err)
 	}
 
-	return handler(msg, game)
+	return handler(msg)
 }
 
 func leave(msg utils.GameMsg, game utils.Game, handler HandlerFunc) (utils.GameMsg, error) {
@@ -92,7 +92,7 @@ func leave(msg utils.GameMsg, game utils.Game, handler HandlerFunc) (utils.GameM
 		return utils.ReplyError(msg, err)
 	}
 
-	return handler(msg, game)
+	return handler(msg)
 }
 
 func GamespaceHandle(msg utils.GameMsg) (utils.GameMsg, error) {
