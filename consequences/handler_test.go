@@ -692,7 +692,7 @@ func TestReplyValid(t *testing.T) {
 	story, _ := json.Marshal(defStory)
 
 	gMsg := utils.GameMsg{
-		Type:    "Story",
+		Type:    "Reply",
 		UID:     lid,
 		GID:     gid,
 		Content: string(story),
@@ -713,24 +713,33 @@ func TestReplyValid(t *testing.T) {
 }
 
 func TestReplyPhaseChange(t *testing.T) {
-	gid, lid, users := startConGame(t, "TestReply(Valid)", 2)
+	gid, lid, users := startConGame(t, "TestReply(PhaseChange)", 2)
 
 	story, _ := json.Marshal(defStory)
 
 	gMsg := utils.GameMsg{
-		Type:    "Story",
-		UID:     lid,
+		Type:    "Reply",
 		GID:     gid,
 		Content: string(story),
 	}
 
-	msg, err := Handle(gMsg)
-	if msg.Type != "ACK" || err != nil {
-		t.Fatalf(`TestReply(Valid) = %q "%v", want "ACK", "nil"`, msg, err)
+	want := createWant("Stories", lid, users, testSettings.Timer1)
+	for i, user := range users {
+		gMsg.UID = user
+		_, err := Handle(gMsg)
+		if err != nil {
+			t.Fatalf(`TestReply(PhaseChange) [%d] = "%v", want "nil"`, i, err)
+		}
+		want.Stories[user] = defStory
 	}
 
-	want := createWant("Stories", lid, users, testSettings.Timer1)
+	gMsg.UID = lid
 	want.Stories[lid] = defStory
+
+	msg, err := Handle(gMsg)
+	if msg.Type != "ACK" || err != nil {
+		t.Fatalf(`TestReply(PhaseChange) = %q "%v", want "ACK", "nil"`, msg, err)
+	}
 
 	cVars, err := GetConState(gid)
 	if !cmp.Equal(cVars, want) || err != nil {

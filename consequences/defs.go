@@ -16,9 +16,10 @@ type ConSettings struct {
 type ConVars struct {
 	State    string
 	SusState string
+	Round    int
+	Timer    int
 	Settings ConSettings
 	Stories  map[string][]string
-	Timer    int
 }
 
 var CVars map[string]ConVars
