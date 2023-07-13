@@ -292,7 +292,11 @@ func status(msg utils.GameMsg) (utils.GameMsg, error) {
 }
 
 func leave(msg utils.GameMsg) (utils.GameMsg, error) {
-	return utils.GameMsg{}, nil
+	cVars := CVars[msg.GID]
+	delete(cVars.Stories, msg.UID)
+	CVars[msg.GID] = cVars
+
+	return utils.ReplyACK(msg), nil
 }
 
 func reply(msg utils.GameMsg) (utils.GameMsg, error) {
