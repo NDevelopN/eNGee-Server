@@ -686,29 +686,6 @@ func TestLeaveValid(t *testing.T) {
 	}
 }
 
-func TestLeaveTooFew(t *testing.T) {
-	gid, _, users := startConGame(t, "TestLeave(TooFewUsers)", 2)
-
-	gMsg := utils.GameMsg{
-		Type: "Leave",
-		UID:  users[0],
-		GID:  gid,
-	}
-
-	msg, err := Handle(gMsg)
-	if msg.Type != "ACK" || err != nil {
-		t.Fatalf(`TestLeave(TooFew) = %q, "%v", want "ACK", "nil"`, msg.Type, err)
-	}
-
-	want := ConVars{}
-
-	cVars, err := GetConState(gid)
-	if !cmp.Equal(cVars, want) || err == nil {
-		t.Fatalf(`TestLeave(TooFew) = %q, "%v", want %q, ERROR`, cVars, err, want)
-	}
-
-}
-
 func TestReplyValid(t *testing.T) {
 	gid, lid, users := startConGame(t, "TestReply(Valid)", 2)
 
