@@ -11,12 +11,6 @@ import (
 	"time"
 )
 
-func changeState(state string, gid string) {
-	cVar := CVars[gid]
-	cVar.State = state
-	CVars[gid] = cVar
-}
-
 func timer(msg utils.GameMsg) {
 
 	gid := msg.GID
@@ -66,6 +60,9 @@ func nextState(msg utils.GameMsg) {
 		if cVars.Round < cVars.Settings.Rounds {
 			cVars.State = "Prompts"
 			cVars.Round++
+			for i, _ := range cVars.Stories {
+				cVars.Stories[i] = []string{}
+			}
 		} else {
 			reset(msg)
 			return

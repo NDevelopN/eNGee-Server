@@ -613,7 +613,9 @@ func TestStatusPhaseChange(t *testing.T) {
 		Content: "Read",
 	}
 
-	changeState("Stories", gid)
+	cVar := CVars[gid]
+	cVar.State = "Stories"
+	CVars[gid] = cVar
 
 	for i, user := range users {
 		gMsg.UID = user
@@ -623,7 +625,8 @@ func TestStatusPhaseChange(t *testing.T) {
 		}
 	}
 
-	want := createWant("Stories", lid, users, testSettings.Timer2)
+	want := createWant("Prompts", lid, users, testSettings.Timer2)
+	want.Round++
 	gMsg.UID = lid
 
 	msg, err := Handle(gMsg)
@@ -633,7 +636,7 @@ func TestStatusPhaseChange(t *testing.T) {
 
 	cVars, err := GetConState(gid)
 	if !cmp.Equal(cVars, want) || err != nil {
-		t.Fatalf(`TestStatus(PhaseChange) = %q, "%v", want "ACK", "nil"`, cVars, err)
+		t.Fatalf(`TestStatus(PhaseChange) = %q, "%v", want %q, "nil"`, cVars, err, want)
 	}
 
 	plr, err := u.GetUser(lid)
