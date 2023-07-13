@@ -826,3 +826,30 @@ func TestReplyEmptyLine(t *testing.T) {
 		t.Fatalf(`TestReply(EmptyLine) = %q, "%v", want %q, "nil"`, cVars, err, want)
 	}
 }
+
+func TestReplyDuplicate(t *testing.T) {
+	gid, lid, users := startConGame(t, "TestReply(Duplicate)", 2)
+
+	story, _ := json.Marshal(defStory)
+
+	gMsg := utils.GameMsg{
+		Type:    "Reply",
+		UID:     lid,
+		GID:     gid,
+		Content: string(story),
+	}
+
+	_, _ = Handle(gMsg)
+	msg, err := Handle(gMsg)
+	if msg.Type != "Error" || err == nil {
+		t.Fatalf(`TestReply(Valid) = %q "%v", want "Error", ERROR`, msg, err)
+	}
+
+	want := createWant("Prompts", lid, users, testSettings.Timer1)
+	want.Stories[lid] = defStory
+
+	cVars, err := GetConState(gid)
+	if !cmp.Equal(cVars, want) || err != nil {
+		t.Fatalf(`TestReply(Valid) = %q, "%v", want %q, "nil"`, cVars, err, want)
+	}
+}
