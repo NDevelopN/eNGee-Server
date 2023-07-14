@@ -70,6 +70,14 @@ func nextState(msg utils.GameMsg) {
 	}
 
 	CVars[msg.GID] = cVars
+
+	upd := utils.GameMsg{
+		Type:    "State",
+		GID:     msg.GID,
+		Content: cVars.State,
+	}
+
+	updatePlayers(upd)
 }
 
 func updatePlayers(utils.GameMsg) {
