@@ -60,7 +60,7 @@ func nextState(msg utils.GameMsg) {
 		if cVars.Round < cVars.Settings.Rounds {
 			cVars.State = "Prompts"
 			cVars.Round++
-			for i, _ := range cVars.Stories {
+			for i := range cVars.Stories {
 				cVars.Stories[i] = []string{}
 			}
 		} else {
