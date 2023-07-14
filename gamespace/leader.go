@@ -22,12 +22,6 @@ func checkLeader(gid string, lid string) (utils.Game, error) {
 	return game, nil
 }
 
-func sendUpdate(gid string) error {
-	//TODO
-
-	return nil
-}
-
 func allPlayerStatusUpdate(plrs []utils.User, status string) error {
 	for _, plr := range plrs {
 		plr.Status = status
@@ -60,7 +54,13 @@ func Pause(gid string, lid string) error {
 		return fmt.Errorf("failed to update game: %v", err)
 	}
 
-	err = sendUpdate(gid)
+	upd := utils.GameMsg{
+		Type:    "Status",
+		GID:     gid,
+		Content: game.Status,
+	}
+
+	err = utils.Broadcast(upd)
 	if err != nil {
 		return fmt.Errorf("failed to broadcast update: %v", err)
 	}
@@ -114,9 +114,15 @@ func Start(gid string, lid string) error {
 		return fmt.Errorf("failed to update game: %v", err)
 	}
 
-	err = sendUpdate(gid)
+	upd := utils.GameMsg{
+		Type:    "Status",
+		GID:     gid,
+		Content: game.Status,
+	}
+
+	err = utils.Broadcast(upd)
 	if err != nil {
-		return fmt.Errorf("failed to broadcast update: %v", err)
+		return fmt.Errorf("could not broadcast update: %v", err)
 	}
 
 	return nil
@@ -144,9 +150,15 @@ func Reset(gid string, lid string) error {
 		return fmt.Errorf("failed to update game players' status: %v", err)
 	}
 
-	err = sendUpdate(gid)
+	upd := utils.GameMsg{
+		Type:    "Status",
+		GID:     gid,
+		Content: game.Status,
+	}
+
+	err = utils.Broadcast(upd)
 	if err != nil {
-		return fmt.Errorf("failed to broadcast update: %v", err)
+		return fmt.Errorf("could not broadcast update: %v", err)
 	}
 
 	return nil
@@ -164,7 +176,12 @@ func End(gid string, lid string) error {
 		return fmt.Errorf("failed to update game: %v", err)
 	}
 
-	err = sendUpdate(gid)
+	upd := utils.GameMsg{
+		Type: "End",
+		GID:  gid,
+	}
+
+	err = utils.Broadcast(upd)
 	if err != nil {
 		return fmt.Errorf("failed to broadcast update: %v", err)
 	}
@@ -188,12 +205,7 @@ func Rules(gid string, lid string, game utils.Game) error {
 		return fmt.Errorf("failed to update game: %v", err)
 	}
 
-	err = sendUpdate(gid)
-	if err != nil {
-		return fmt.Errorf("failed to broadcast update: %v", err)
-	}
-
-	return nil
+	return Reset(gid, lid)
 }
 
 func Remove(gid string, lid string, tid string) error {
@@ -218,5 +230,17 @@ func Remove(gid string, lid string, tid string) error {
 		return fmt.Errorf("failed to update user: %v", err)
 	}
 
-	return nil
+	//TODO add reason why
+	rMsg := utils.GameMsg{
+		Type: "Removal",
+		GID:  gid,
+		UID:  tid,
+	}
+
+	err = utils.SingleMessage(rMsg)
+	if err != nil {
+		return fmt.Errorf("[%v] + could not inform user of their removal: %v", updatePlayerList(gid), err)
+	}
+
+	return updatePlayerList(gid)
 }

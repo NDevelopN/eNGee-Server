@@ -67,7 +67,7 @@ func Connect(c *gin.Context) {
 
 	err = utils.AddConnection(join.GID, join.UID, conn)
 	if err != nil {
-		log.Print("[Error] adding connection to pool: %v", err)
+		log.Printf("[Error] adding connection to pool: %v", err)
 	}
 }
 

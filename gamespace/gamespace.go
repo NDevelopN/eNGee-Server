@@ -11,6 +11,30 @@ import (
 
 var errNotLeader = fmt.Errorf("player is not the game leader")
 
+func updatePlayerList(gid string) error {
+	plrs, err := g.GetGamePlayers(gid)
+	if err != nil {
+		return fmt.Errorf("could not get game players: %v", err)
+	}
+
+	pList, err := json.Marshal(plrs)
+	if err != nil {
+		return fmt.Errorf("could not marshal player list: %v", err)
+	}
+	msg := utils.GameMsg{
+		Type:    "PList",
+		GID:     gid,
+		Content: string(pList),
+	}
+
+	err = utils.Broadcast(msg)
+	if err != nil {
+		return fmt.Errorf("could not broadcast player list: %v", err)
+	}
+
+	return nil
+}
+
 func initialize(msg utils.GameMsg, game utils.Game, handler HandlerFunc) (utils.GameMsg, error) {
 	//TODO is there any generic Gamespace initalization?
 

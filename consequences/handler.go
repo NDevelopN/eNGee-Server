@@ -45,7 +45,7 @@ func timer(msg utils.GameMsg) {
 
 		upd.Content = fmt.Sprintf("%d", cVars.Timer)
 
-		updatePlayers(upd)
+		utils.Broadcast(upd)
 	}
 
 	nextState(msg)
@@ -77,11 +77,7 @@ func nextState(msg utils.GameMsg) {
 		Content: cVars.State,
 	}
 
-	updatePlayers(upd)
-}
-
-func updatePlayers(utils.GameMsg) {
-	//TODO
+	utils.Broadcast(upd)
 }
 
 func initialize(msg utils.GameMsg) (utils.GameMsg, error) {
@@ -169,7 +165,7 @@ func start(msg utils.GameMsg) (utils.GameMsg, error) {
 		Content: string(prompts),
 	}
 
-	updatePlayers(upd)
+	utils.Broadcast(upd)
 
 	return utils.ReplyACK(msg), nil
 }
@@ -219,7 +215,7 @@ func pause(msg utils.GameMsg) (utils.GameMsg, error) {
 		Content: cVars.State,
 	}
 
-	updatePlayers(upd)
+	utils.Broadcast(upd)
 
 	return utils.ReplyACK(msg), nil
 }

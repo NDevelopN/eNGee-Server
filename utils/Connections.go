@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"encoding/json"
 	"fmt"
 
 	"github.com/gorilla/websocket"
@@ -28,6 +29,53 @@ func GetConnections(gid string) (map[string]*websocket.Conn, error) {
 	}
 
 	return pool, nil
+}
+
+func Broadcast(msg GameMsg) error {
+	pool, k := connPools[msg.GID]
+	if !k {
+		return fmt.Errorf("no connection pool found for given gid: %v", msg.GID)
+	}
+
+	if len(pool) == 0 {
+		return fmt.Errorf("no connections found in the pool")
+	}
+
+	message, err := json.Marshal(msg)
+	if err != nil {
+		return fmt.Errorf("failed to marshal message: %v", err)
+	}
+
+	for _, c := range pool {
+		c.WriteMessage(websocket.TextMessage, message)
+	}
+
+	return nil
+}
+
+func SingleMessage(msg GameMsg) error {
+	pool, k := connPools[msg.GID]
+	if !k {
+		return fmt.Errorf("no connection pool found for given gid: %v", msg.GID)
+	}
+
+	if len(pool) == 0 {
+		return fmt.Errorf("no connections found in the pool")
+	}
+
+	conn, k := pool[msg.UID]
+	if !k {
+		return fmt.Errorf("no connection found for given uid in pool: %v", msg.UID)
+	}
+
+	message, err := json.Marshal(msg)
+	if err != nil {
+		return fmt.Errorf("failed to marshal message: %v", err)
+	}
+
+	conn.WriteMessage(websocket.TextMessage, message)
+
+	return nil
 }
 
 func AddConnection(gid string, uid string, conn *websocket.Conn) error {

@@ -54,7 +54,7 @@ func ChangeStatus(pid string, gid string, status string) error {
 		return fmt.Errorf("could not update user: %v", err)
 	}
 
-	return nil
+	return updatePlayerList(gid)
 }
 
 func Leave(pid string, gid string) error {
@@ -79,5 +79,5 @@ func Leave(pid string, gid string) error {
 		return fmt.Errorf("could not update player: %v", err)
 	}
 
-	return nil
+	return updatePlayerList(gid)
 }
