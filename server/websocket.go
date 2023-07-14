@@ -17,24 +17,6 @@ import (
 	gs "Engee-Server/gamespace"
 )
 
-var connPool = map[string]map[string]*websocket.Conn{}
-
-func AddConnectionPool(gid string) {
-	//TODO ?
-	connPool[gid] = map[string]*websocket.Conn{}
-}
-
-func GetConnection(gid string, uid string) (*websocket.Conn, error) {
-	if connPool[gid] == nil {
-		return nil, fmt.Errorf("no connection pool found for given gid: %v", gid)
-	}
-	if connPool[gid][uid] == nil {
-		return nil, fmt.Errorf("no connection found for given uid: %v", uid)
-	}
-
-	return connPool[gid][uid], nil
-}
-
 func Connect(c *gin.Context) {
 	w := c.Writer
 	r := c.Request
@@ -77,13 +59,19 @@ func Connect(c *gin.Context) {
 		return
 	}
 
-	err = upgradeConnection(w, r)
+	conn, err := upgradeConnection(w, r)
 	if err != nil {
 		log.Printf("[Error] upgrading connection: %v", err)
+		return
+	}
+
+	err = utils.AddConnection(join.GID, join.UID, conn)
+	if err != nil {
+		log.Print("[Error] adding connection to pool: %v", err)
 	}
 }
 
-func upgradeConnection(w http.ResponseWriter, r *http.Request) error {
+func upgradeConnection(w http.ResponseWriter, r *http.Request) (*websocket.Conn, error) {
 
 	var upgrader = websocket.Upgrader{}
 
@@ -92,13 +80,13 @@ func upgradeConnection(w http.ResponseWriter, r *http.Request) error {
 	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
 		http.Error(w, "Failed to upgrade websocket connection", http.StatusInternalServerError)
-		return fmt.Errorf("failed to create a websocket connection: %v", err)
+		return nil, fmt.Errorf("failed to create a websocket connection: %v", err)
 	}
 
 	// Maintain the connection
 	go handleIncoming(conn)
 
-	return nil
+	return conn, nil
 }
 
 func handleIncoming(conn *websocket.Conn) {

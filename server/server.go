@@ -146,7 +146,7 @@ func postGames(c *gin.Context) {
 		return
 	}
 
-	AddConnectionPool(gid)
+	u.AddConnectionPool(gid)
 
 	game.GID = gid
 
