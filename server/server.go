@@ -66,7 +66,7 @@ func intake(c *gin.Context) ([]byte, http.ResponseWriter) {
 	return reqBody, w
 }
 
-func getID(c *gin.Context) (string, error) {
+func GetID(c *gin.Context) (string, error) {
 	r := c.Request
 
 	path := r.URL.Path
@@ -116,7 +116,7 @@ func getGames(c *gin.Context) {
 func deleteGames(c *gin.Context) {
 	w := c.Writer
 
-	gid, err := getID(c)
+	gid, err := GetID(c)
 	if err != nil {
 		http.Error(w, "Could not get game ID from request path", http.StatusBadRequest)
 		log.Printf("[Error] Getting game ID: %v", err)
@@ -181,7 +181,7 @@ func putGames(c *gin.Context) {
 		return
 	}
 
-	gid, err := getID(c)
+	gid, err := GetID(c)
 	if err != nil {
 		http.Error(w, "Could not get game ID from request path", http.StatusBadRequest)
 		log.Printf("[Error] Getting game ID: %v", err)
@@ -247,7 +247,7 @@ func putUsers(c *gin.Context) {
 		return
 	}
 
-	uid, err := getID(c)
+	uid, err := GetID(c)
 
 	if err != nil {
 		http.Error(w, "Could not get user ID from request path", http.StatusBadRequest)
@@ -262,7 +262,7 @@ func putUsers(c *gin.Context) {
 		return
 	}
 
-	if user.GID != uid {
+	if user.UID != uid {
 		http.Error(w, "Mismatching request target and user ID", http.StatusBadRequest)
 		log.Printf("[Error] Mismatching request target: %v, %v", uid, user.GID)
 		return
@@ -284,7 +284,7 @@ func putUsers(c *gin.Context) {
 func deleteUsers(c *gin.Context) {
 	w := c.Writer
 
-	uid, err := getID(c)
+	uid, err := GetID(c)
 	if err != nil {
 		http.Error(w, "Could not get user ID from request path", http.StatusBadRequest)
 		log.Printf("[Error] Getting user ID: %v", err)

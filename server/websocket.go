@@ -3,7 +3,6 @@ package server
 import (
 	"encoding/json"
 	"fmt"
-	"io"
 	"log"
 	"net/http"
 
@@ -21,41 +20,26 @@ func Connect(c *gin.Context) {
 	w := c.Writer
 	r := c.Request
 
-	// Extract join message from request
-	reqBody, err := io.ReadAll(r.Body)
+	uid, err := GetID(c)
 	if err != nil {
-		http.Error(w, "Failed to read request body", http.StatusBadRequest)
-		log.Printf("[Error] reading ws request body: %v", err)
+		http.Error(w, "Could not get user ID from request path", http.StatusBadRequest)
+		log.Printf("[Error] Getting user ID: %v", err)
 		return
 	}
 
-	var join utils.Join
-	err = json.Unmarshal(reqBody, &join)
+	user, err := u.GetUser(uid)
 	if err != nil {
-		http.Error(w, "Failed to parse request body", http.StatusBadRequest)
-		log.Printf("[Error] parsing ws request body: %v", err)
+		http.Error(w, "Failed to get user with matching ID", http.StatusBadRequest)
+		log.Printf("[Error] Getting User: %v", err)
 		return
 	}
 
 	// Check if the provided GID matches an existing game
-	_, err = g.GetGame(join.GID)
+
+	_, err = g.GetGame(user.GID)
 	if err != nil {
 		http.Error(w, "Failed to get matching game", http.StatusBadRequest)
 		log.Printf("[Error] getting game with requested GID: %v", err)
-		return
-	}
-
-	//Check if the provided PID matches an existing player
-	user, err := u.GetUser(join.UID)
-	if err != nil {
-		http.Error(w, "Failed to get matching user", http.StatusBadRequest)
-		log.Printf("[Errror] getting user with matching UID: %v", err)
-		return
-	}
-
-	if user.GID != join.GID {
-		http.Error(w, "Player is no in matching game", http.StatusBadRequest)
-		log.Printf("[Error] user.GID (%v) does not match provided GID (%v)", user.GID, join.GID)
 		return
 	}
 
@@ -65,7 +49,7 @@ func Connect(c *gin.Context) {
 		return
 	}
 
-	err = utils.AddConnection(join.GID, join.UID, conn)
+	err = utils.AddConnection(user.GID, user.UID, conn)
 	if err != nil {
 		log.Printf("[Error] adding connection to pool: %v", err)
 	}
