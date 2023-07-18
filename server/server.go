@@ -16,8 +16,26 @@ import (
 	u "Engee-Server/utils"
 )
 
+func CORSMiddleware() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		c.Header("Access-Control-Allow-Origin", "*")
+		c.Header("Access-Control-Allow-Methods", "*")
+		c.Header("Access-Control-Allow-Headers", "*")
+
+		if c.Request.Method == "OPTIONS" {
+			c.Writer.WriteHeader(http.StatusOK)
+			c.Writer.Write([]byte(""))
+		}
+
+		c.Next()
+	}
+}
+
 func Serve() {
 	router := gin.Default()
+
+	router.Use(CORSMiddleware())
+
 	router.GET("/games", getGames)
 	router.POST("/games", postGames)
 	router.PUT("/games/:id", putGames)
@@ -30,7 +48,7 @@ func Serve() {
 	//This special case creates a websocket connection
 	router.GET("/games/:id", Connect)
 
-	router.Run("localhost:8080")
+	router.Run("localhost:8090")
 }
 
 func intake(c *gin.Context) ([]byte, http.ResponseWriter) {
@@ -44,6 +62,7 @@ func intake(c *gin.Context) ([]byte, http.ResponseWriter) {
 		return nil, nil
 	}
 
+	log.Printf("Received: %v", reqBody)
 	return reqBody, w
 }
 
