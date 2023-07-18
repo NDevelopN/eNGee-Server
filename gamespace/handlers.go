@@ -1,6 +1,7 @@
 package gamespace
 
 import (
+	consequences "Engee-Server/consequences"
 	utils "Engee-Server/utils"
 )
 
@@ -11,5 +12,6 @@ func TestHandler(msg utils.GameMsg) (utils.GameMsg, error) {
 }
 
 var TypeHandlers = map[string]HandlerFunc{
-	"test": TestHandler,
+	"test":         TestHandler,
+	"consequences": consequences.Handle,
 }
