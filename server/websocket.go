@@ -34,9 +34,7 @@ func Connect(c *gin.Context) {
 		return
 	}
 
-	// Check if the provided GID matches an existing game
-
-	_, err = g.GetGame(user.GID)
+	game, err := g.GetGame(user.GID)
 	if err != nil {
 		http.Error(w, "Failed to get matching game", http.StatusBadRequest)
 		log.Printf("[Error] getting game with requested GID: %v", err)
@@ -45,14 +43,39 @@ func Connect(c *gin.Context) {
 
 	conn, err := upgradeConnection(w, r)
 	if err != nil {
+		http.Error(w, "Failed to upgrade to websocket connection", http.StatusInternalServerError)
 		log.Printf("[Error] upgrading connection: %v", err)
 		return
 	}
 
 	err = utils.AddConnection(user.GID, user.UID, conn)
 	if err != nil {
+		http.Error(w, "Failed to add connection to pool", http.StatusInternalServerError)
 		log.Printf("[Error] adding connection to pool: %v", err)
 	}
+
+	gInfo, err := json.Marshal(game)
+	if err != nil {
+		http.Error(w, "Failed to marshal game information", http.StatusInternalServerError)
+		log.Printf("[Error] Failed to game info: %v", err)
+		return
+	}
+
+	msg := utils.GameMsg{
+		Type:    "Info",
+		UID:     user.UID,
+		GID:     user.GID,
+		Content: string(gInfo),
+	}
+
+	reply, err := json.Marshal(msg)
+	if err != nil {
+		http.Error(w, "Failed to marshal welcome message", http.StatusInternalServerError)
+		log.Printf("[Error] Failed to marshal message: %v", err)
+		return
+	}
+
+	conn.WriteMessage(websocket.TextMessage, reply)
 }
 
 func upgradeConnection(w http.ResponseWriter, r *http.Request) (*websocket.Conn, error) {
