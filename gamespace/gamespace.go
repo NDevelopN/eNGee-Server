@@ -22,7 +22,7 @@ func updatePlayerList(gid string) error {
 		return fmt.Errorf("could not marshal player list: %v", err)
 	}
 	msg := utils.GameMsg{
-		Type:    "PList",
+		Type:    "Players",
 		GID:     gid,
 		Content: string(pList),
 	}
