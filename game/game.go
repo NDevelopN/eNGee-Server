@@ -2,13 +2,13 @@ package game
 
 import (
 	db "Engee-Server/database"
-	u "Engee-Server/utils"
+	"Engee-Server/utils"
 	"fmt"
 
 	"github.com/google/uuid"
 )
 
-func CreateGame(g u.Game) (string, error) {
+func CreateGame(g utils.Game) (string, error) {
 	if g.Name == "" {
 		return "", fmt.Errorf("provided game name is empty")
 	}
@@ -32,17 +32,17 @@ func CreateGame(g u.Game) (string, error) {
 	return g.GID, nil
 }
 
-func GetGames() ([]u.Game, error) {
+func GetGames() ([]utils.Game, error) {
 	//TODO any checks needed here?
 	return db.GetAllGames()
 }
 
-func GetGame(gid string) (u.Game, error) {
+func GetGame(gid string) (utils.Game, error) {
 	//TODO any checks needed here?
 	return db.GetGame(gid)
 }
 
-func GetGamePlayers(gid string) ([]u.User, error) {
+func GetGamePlayers(gid string) ([]utils.User, error) {
 	_, err := db.GetGame(gid)
 	if err != nil {
 		return nil, fmt.Errorf("failed to find game in database: %v", err)
@@ -56,7 +56,7 @@ func GetGamePlayers(gid string) ([]u.User, error) {
 	return plrs, nil
 }
 
-func UpdateGame(g u.Game) error {
+func UpdateGame(g utils.Game) error {
 	if g.MinPlrs > g.MaxPlrs {
 		return fmt.Errorf("provided minPlrs is greater than provided maxPlrs")
 	}
@@ -73,7 +73,7 @@ func UpdateGame(g u.Game) error {
 	return nil
 }
 
-func ChangePlayerCount(g u.Game, d int) error {
+func ChangePlayerCount(g utils.Game, d int) error {
 	g.CurPlrs += d
 
 	if g.CurPlrs > g.MaxPlrs {
