@@ -12,8 +12,10 @@ import (
 	"github.com/google/uuid"
 
 	g "Engee-Server/game"
+	gamespace "Engee-Server/gamespace"
 	p "Engee-Server/user"
 	u "Engee-Server/utils"
+	utils "Engee-Server/utils"
 )
 
 func CORSMiddleware() gin.HandlerFunc {
@@ -168,6 +170,34 @@ func postGames(c *gin.Context) {
 	u.AddConnectionPool(gid)
 
 	game.GID = gid
+
+	msg := utils.GameMsg{
+		Type: "Init",
+		UID:  game.Leader,
+		GID:  game.GID,
+	}
+
+	user, err := p.GetUser(game.Leader)
+	if err != nil {
+		http.Error(w, "Failed to get leader", http.StatusBadRequest)
+		log.Printf("[Error] Failed to get user matching leader id: %v", err)
+		return
+	}
+
+	user.GID = game.GID
+	err = p.UpdateUser(user)
+	if err != nil {
+		http.Error(w, "Failed to update leader", http.StatusInternalServerError)
+		log.Printf("[Error] Failed to get update leader user: %v", err)
+		return
+	}
+
+	_, err = gamespace.GamespaceHandle(msg)
+	if err != nil {
+		http.Error(w, "Failed to initialize gamespace", http.StatusInternalServerError)
+		log.Printf("[Error] Failed to initialize game: %v", err)
+		return
+	}
 
 	err = reply(w, game)
 	if err != nil {

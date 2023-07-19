@@ -81,6 +81,10 @@ func nextState(msg utils.GameMsg) {
 }
 
 func initialize(msg utils.GameMsg) (utils.GameMsg, error) {
+	if CVars == nil || len(CVars) == 0 {
+		CVars = make(map[string]ConVars)
+	}
+
 	game, err := g.GetGame(msg.GID)
 	if err != nil {
 		return utils.ReplyError(msg, fmt.Errorf("could not get game from GID: %v", err))
@@ -90,9 +94,13 @@ func initialize(msg utils.GameMsg) (utils.GameMsg, error) {
 	decoder := json.NewDecoder(strings.NewReader(game.AdditionalRules))
 	decoder.DisallowUnknownFields()
 
-	err = decoder.Decode(&settings)
-	if err != nil {
-		return utils.ReplyError(msg, fmt.Errorf("could not parse additional rules: %v", err))
+	if game.AdditionalRules != "" {
+		err = decoder.Decode(&settings)
+		if err != nil {
+			return utils.ReplyError(msg, fmt.Errorf("could not parse additional rules: %v", err))
+		}
+	} else {
+		settings = testSettings
 	}
 
 	if settings.Rounds < 0 {
@@ -270,7 +278,16 @@ func status(msg utils.GameMsg) (utils.GameMsg, error) {
 	}
 	cVar := CVars[msg.GID]
 
+	//TODO
 	switch msg.Content {
+	case "Ready":
+		if cVar.State == "Lobby" {
+			return utils.ReplyACK(msg), nil
+		}
+	case "Not Ready":
+		if cVar.State == "Lobby" {
+			return utils.ReplyACK(msg), nil
+		}
 	case "Replying":
 		if cVar.State == "Prompts" {
 			return updatePlr(user, msg)
