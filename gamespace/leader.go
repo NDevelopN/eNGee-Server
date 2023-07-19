@@ -4,6 +4,7 @@ import (
 	g "Engee-Server/game"
 	u "Engee-Server/user"
 	utils "Engee-Server/utils"
+	"encoding/json"
 	"fmt"
 	"log"
 )
@@ -145,7 +146,7 @@ func Reset(gid string, lid string) error {
 	if err != nil {
 		return fmt.Errorf("could not get game players: %v", err)
 	}
-	err = allPlayerStatusUpdate(plrs, "Lobby")
+	err = allPlayerStatusUpdate(plrs, "Not Ready")
 	if err != nil {
 		return fmt.Errorf("failed to update game players' status: %v", err)
 	}
@@ -203,6 +204,22 @@ func Rules(gid string, lid string, game utils.Game) error {
 	err = g.UpdateGame(game)
 	if err != nil {
 		return fmt.Errorf("failed to update game: %v", err)
+	}
+
+	gm, err := json.Marshal(game)
+	if err != nil {
+		return fmt.Errorf("failed to marshal game update: %v", err)
+	}
+
+	upd := utils.GameMsg{
+		Type:    "Update",
+		GID:     gid,
+		Content: string(gm),
+	}
+
+	err = utils.Broadcast(upd)
+	if err != nil {
+		return fmt.Errorf("failed to broadcast game update: %v", err)
 	}
 
 	return Reset(gid, lid)
