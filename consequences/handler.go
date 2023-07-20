@@ -81,7 +81,7 @@ func nextState(msg utils.GameMsg) {
 }
 
 func initialize(msg utils.GameMsg) (utils.GameMsg, error) {
-	if CVars == nil || len(CVars) == 0 {
+	if len(CVars) == 0 {
 		CVars = make(map[string]ConVars)
 	}
 
@@ -100,7 +100,7 @@ func initialize(msg utils.GameMsg) (utils.GameMsg, error) {
 			return utils.ReplyError(msg, fmt.Errorf("could not parse additional rules: %v", err))
 		}
 	} else {
-		settings = testSettings
+		settings = defSettings
 	}
 
 	if settings.Rounds < 0 {
@@ -229,7 +229,7 @@ func pause(msg utils.GameMsg) (utils.GameMsg, error) {
 }
 
 func rules(msg utils.GameMsg) (utils.GameMsg, error) {
-	return utils.GameMsg{}, nil
+	return utils.ReplyACK(msg), nil
 }
 
 func checkStatusPhaseChange(gid string, status string) bool {

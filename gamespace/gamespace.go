@@ -11,9 +11,15 @@ import (
 
 var errNotLeader = fmt.Errorf("player is not the game leader")
 
-func updatePlayerList(gid string) error {
+func UpdatePlayerList(gid string) error {
 	plrs, err := g.GetGamePlayers(gid)
-	if err != nil {
+	if len(plrs) == 0 || err != nil {
+		game, err := g.GetGame(gid)
+		if err != nil {
+			return fmt.Errorf("could not get game: %v", err)
+		}
+		End(gid, game.Leader)
+
 		return fmt.Errorf("could not get game players: %v", err)
 	}
 
@@ -21,6 +27,7 @@ func updatePlayerList(gid string) error {
 	if err != nil {
 		return fmt.Errorf("could not marshal player list: %v", err)
 	}
+
 	msg := utils.GameMsg{
 		Type:    "Players",
 		GID:     gid,

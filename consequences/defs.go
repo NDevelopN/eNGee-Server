@@ -50,6 +50,14 @@ var testSettings = ConSettings{
 	Prompts: defPrompts,
 }
 
+var defSettings = ConSettings{
+	Rounds:  1,
+	Shuffle: 1,
+	Timer1:  0,
+	Timer2:  0,
+	Prompts: defPrompts,
+}
+
 var ts, _ = json.Marshal(testSettings)
 
 var defGame = utils.Game{

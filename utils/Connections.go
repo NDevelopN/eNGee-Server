@@ -9,6 +9,11 @@ import (
 
 var connPools = map[string]map[string]*websocket.Conn{}
 
+func CheckConnection(gid string, uid string) bool {
+	_, found := connPools[gid][uid]
+	return found
+}
+
 func AddConnectionPool(gid string) error {
 	_, k := connPools[gid]
 	if k {

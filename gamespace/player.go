@@ -4,6 +4,7 @@ import (
 	g "Engee-Server/game"
 	u "Engee-Server/user"
 	utils "Engee-Server/utils"
+	"encoding/json"
 	"fmt"
 )
 
@@ -54,7 +55,7 @@ func ChangeStatus(pid string, gid string, status string) error {
 		return fmt.Errorf("could not update user: %v", err)
 	}
 
-	return updatePlayerList(gid)
+	return UpdatePlayerList(gid)
 }
 
 func Leave(pid string, gid string) error {
@@ -79,5 +80,29 @@ func Leave(pid string, gid string) error {
 		return fmt.Errorf("could not update player: %v", err)
 	}
 
-	return updatePlayerList(gid)
+	plr.Status = "Leaving"
+
+	pString, err := json.Marshal(plr)
+	if err != nil {
+		return fmt.Errorf("could not marshal player for message: %v", err)
+	}
+
+	msg := utils.GameMsg{
+		Type:    "Player",
+		GID:     gid,
+		UID:     pid,
+		Content: string(pString),
+	}
+
+	err = utils.SingleMessage(msg)
+	if err != nil {
+		return fmt.Errorf("could not send player removal message: %v", err)
+	}
+
+	err = utils.RemoveConnection(gid, plr.UID)
+	if err != nil {
+		return fmt.Errorf("could not remove connection: %v", err)
+	}
+
+	return UpdatePlayerList(gid)
 }

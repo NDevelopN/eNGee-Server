@@ -7,6 +7,7 @@ import (
 	"log"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
@@ -167,7 +168,23 @@ func postGames(c *gin.Context) {
 		return
 	}
 
+	aborted := false
+
+	go func() {
+		time.Sleep(5 * time.Second)
+		plrs, err := g.GetGamePlayers(gid)
+		if len(plrs) == 0 || err != nil {
+			log.Printf("[Error] no players found for game after creation: %v", err)
+			g.DeleteGame(gid)
+			aborted = true
+		}
+	}()
+
 	u.AddConnectionPool(gid)
+
+	if aborted {
+		return
+	}
 
 	game.GID = gid
 
@@ -177,10 +194,19 @@ func postGames(c *gin.Context) {
 		GID:  game.GID,
 	}
 
+	if aborted {
+		return
+	}
+
 	user, err := p.GetUser(game.Leader)
 	if err != nil {
+		g.DeleteGame(gid)
 		http.Error(w, "Failed to get leader", http.StatusBadRequest)
 		log.Printf("[Error] Failed to get user matching leader id: %v", err)
+		return
+	}
+
+	if aborted {
 		return
 	}
 
@@ -192,6 +218,10 @@ func postGames(c *gin.Context) {
 		return
 	}
 
+	if aborted {
+		return
+	}
+
 	_, err = gamespace.GamespaceHandle(msg)
 	if err != nil {
 		http.Error(w, "Failed to initialize gamespace", http.StatusInternalServerError)
@@ -199,10 +229,14 @@ func postGames(c *gin.Context) {
 		return
 	}
 
+	if aborted {
+		return
+	}
 	err = reply(w, game)
 	if err != nil {
 		log.Printf("[Error] Replying: %v", err)
 	}
+
 }
 
 func putGames(c *gin.Context) {

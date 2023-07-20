@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
@@ -48,6 +49,8 @@ func Connect(c *gin.Context) {
 		return
 	}
 
+	conn.SetCloseHandler(handleClose)
+
 	err = utils.AddConnection(user.GID, user.UID, conn)
 	if err != nil {
 		http.Error(w, "Failed to add connection to pool", http.StatusInternalServerError)
@@ -76,6 +79,9 @@ func Connect(c *gin.Context) {
 	}
 
 	conn.WriteMessage(websocket.TextMessage, reply)
+
+	go handleIncoming(user.GID, user.UID)
+
 }
 
 func upgradeConnection(w http.ResponseWriter, r *http.Request) (*websocket.Conn, error) {
@@ -90,18 +96,45 @@ func upgradeConnection(w http.ResponseWriter, r *http.Request) (*websocket.Conn,
 		return nil, fmt.Errorf("failed to create a websocket connection: %v", err)
 	}
 
-	// Maintain the connection
-	go handleIncoming(conn)
-
 	return conn, nil
 }
 
-func handleIncoming(conn *websocket.Conn) {
-	for {
+func handleClose(code int, text string) error {
+	if code == websocket.CloseNoStatusReceived {
+		return fmt.Errorf("connnection closed: without status")
+	}
+
+	return fmt.Errorf("connection closed: %v", text)
+}
+
+func handleIncoming(gid string, uid string) {
+	pool, err := utils.GetConnections(gid)
+	if err != nil {
+		log.Printf("[Error] getting connection for handler: %v", err)
+	}
+	conn := pool[uid]
+
+	for utils.CheckConnection(gid, uid) {
 		messageType, data, err := conn.ReadMessage()
 		if err != nil {
-			log.Printf("[Error] Failed to read message: %v", err)
-			continue
+			if strings.Split(err.Error(), ":")[0] == "connection closed" {
+				log.Printf("[Close] connection closed: %v", err)
+				utils.RemoveConnection(gid, uid)
+				msg := utils.GameMsg{
+					Type: "Leave",
+					GID:  gid,
+					UID:  uid,
+				}
+
+				_, err = gs.GamespaceHandle(msg)
+				if err != nil {
+					conn.Close()
+				}
+				return
+			} else {
+				log.Printf("[Error] Failed to read message: %v", err)
+				continue
+			}
 		}
 
 		if messageType != websocket.TextMessage {

@@ -33,6 +33,22 @@ func allPlayerStatusUpdate(plrs []utils.User, status string) error {
 		}
 	}
 
+	pList, err := json.Marshal(plrs)
+	if err != nil {
+		return fmt.Errorf("failed to marshal player list for status update: %v", err)
+	}
+
+	upd := utils.GameMsg{
+		Type:    "Players",
+		GID:     plrs[0].GID,
+		Content: string(pList),
+	}
+
+	err = utils.Broadcast(upd)
+	if err != nil {
+		return fmt.Errorf("could not broacast update: %v", err)
+	}
+
 	return nil
 }
 
@@ -256,8 +272,8 @@ func Remove(gid string, lid string, tid string) error {
 
 	err = utils.SingleMessage(rMsg)
 	if err != nil {
-		return fmt.Errorf("[%v] + could not inform user of their removal: %v", updatePlayerList(gid), err)
+		return fmt.Errorf("[%v] + could not inform user of their removal: %v", UpdatePlayerList(gid), err)
 	}
 
-	return updatePlayerList(gid)
+	return UpdatePlayerList(gid)
 }
