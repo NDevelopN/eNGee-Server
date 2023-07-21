@@ -196,6 +196,6 @@ func GamespaceHandle(msg utils.GameMsg) (utils.GameMsg, error) {
 	case "Leave":
 		return leave(msg, game, handler)
 	default:
-		return utils.ReplyError(msg, fmt.Errorf("unknown message type: %v", msg.Type))
+		return handler(msg)
 	}
 }

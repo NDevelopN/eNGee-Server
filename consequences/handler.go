@@ -56,6 +56,7 @@ func nextState(msg utils.GameMsg) {
 	switch cVars.State {
 	case "Prompts":
 		cVars.State = "Stories"
+		sendShuffle(msg.GID)
 	case "Stories":
 		if cVars.Round < cVars.Settings.Rounds {
 			cVars.State = "Prompts"
@@ -63,6 +64,7 @@ func nextState(msg utils.GameMsg) {
 			for i := range cVars.Stories {
 				cVars.Stories[i] = []string{}
 			}
+			sendPrompts(msg)
 		} else {
 			reset(msg)
 			return
@@ -70,14 +72,6 @@ func nextState(msg utils.GameMsg) {
 	}
 
 	CVars[msg.GID] = cVars
-
-	upd := utils.GameMsg{
-		Type:    "State",
-		GID:     msg.GID,
-		Content: cVars.State,
-	}
-
-	utils.Broadcast(upd)
 }
 
 func initialize(msg utils.GameMsg) (utils.GameMsg, error) {
@@ -162,13 +156,18 @@ func start(msg utils.GameMsg) (utils.GameMsg, error) {
 
 	go timer(msg)
 
+	return sendPrompts(msg)
+}
+
+func sendPrompts(msg utils.GameMsg) (utils.GameMsg, error) {
+	cVars := CVars[msg.GID]
 	prompts, err := json.Marshal(cVars.Settings.Prompts)
 	if err != nil {
 		return utils.ReplyError(msg, fmt.Errorf("error marshalling prompts: %v", err))
 	}
 
 	upd := utils.GameMsg{
-		Type:    "Prompt",
+		Type:    "Prompts",
 		GID:     msg.GID,
 		Content: string(prompts),
 	}
@@ -218,7 +217,7 @@ func pause(msg utils.GameMsg) (utils.GameMsg, error) {
 	CVars[msg.GID] = cVars
 
 	upd := utils.GameMsg{
-		Type:    "State",
+		Type:    "ConState",
 		GID:     msg.GID,
 		Content: cVars.State,
 	}
@@ -358,12 +357,78 @@ func reply(msg utils.GameMsg) (utils.GameMsg, error) {
 		Content: "Replied",
 	}
 
-	resp, err := status(statMsg)
+	_, err = status(statMsg)
 	if err != nil {
 		return utils.ReplyError(msg, fmt.Errorf("could not update status after accepting replies: %v", err))
 	}
 
+	var resp = utils.GameMsg{}
+
+	if cVars.State != "Prompts" {
+		resp = utils.GameMsg{
+			Type:    "ConState",
+			GID:     msg.GID,
+			Content: "Wait",
+		}
+	} else {
+		resp = utils.ReplyACK(msg)
+	}
+
 	return resp, nil
+}
+
+func shuffle(stories map[string][]string) map[string][]string {
+
+	//Used to allow int based index into map
+	key := map[int]string{}
+	shuffled := map[string][]string{}
+
+	i := 0
+	for k := range stories {
+		key[i] = k
+		shuffled[k] = []string{}
+		i++
+	}
+
+	i = 0
+	for i = 0; i < len(stories); i++ {
+		list := []string{}
+		for j := 0; j < len(stories[key[i]]); j++ {
+			list = append(list, stories[key[(i+j)%len(stories)]][j])
+		}
+		shuffled[key[i]] = list
+	}
+
+	return shuffled
+}
+
+func sendShuffle(gid string) {
+
+	cVars := CVars[gid]
+	shuffled := shuffle(cVars.Stories)
+
+	for k, s := range shuffled {
+		story, err := json.Marshal(s)
+		if err != nil {
+			upd := utils.GameMsg{
+				Type:    "Error",
+				GID:     gid,
+				Content: "Could not marshal stories",
+			}
+
+			utils.Broadcast(upd)
+			reset(upd)
+		}
+
+		upd := utils.GameMsg{
+			Type:    "Story",
+			UID:     k,
+			GID:     gid,
+			Content: string(story),
+		}
+
+		utils.SingleMessage(upd)
+	}
 }
 
 func Handle(msg utils.GameMsg) (utils.GameMsg, error) {
@@ -391,7 +456,7 @@ func Handle(msg utils.GameMsg) (utils.GameMsg, error) {
 	case "Reply":
 		return reply(msg)
 	default:
-		return utils.ReplyError(msg, fmt.Errorf("unknown message type: %v", msg.Type))
+		return utils.ReplyError(msg, fmt.Errorf("unknown consequences message type: %v", msg.Type))
 	}
 }
 
