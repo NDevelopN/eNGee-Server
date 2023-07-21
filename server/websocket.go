@@ -150,8 +150,6 @@ func handleIncoming(gid string, uid string) {
 			continue
 		}
 
-		log.Printf("[Request] Received message: %v", msg)
-
 		msg, err = gs.GamespaceHandle(msg)
 		if err != nil {
 			log.Printf("[Error] Handling message: %v", err)

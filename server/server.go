@@ -65,7 +65,6 @@ func intake(c *gin.Context) ([]byte, http.ResponseWriter) {
 		return nil, nil
 	}
 
-	log.Printf("Received: %v", reqBody)
 	return reqBody, w
 }
 

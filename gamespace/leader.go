@@ -6,7 +6,6 @@ import (
 	utils "Engee-Server/utils"
 	"encoding/json"
 	"fmt"
-	"log"
 )
 
 func checkLeader(gid string, lid string) (utils.Game, error) {
@@ -106,8 +105,7 @@ func Start(gid string, lid string) error {
 
 	//TODO is there a better way?
 	ready := 0
-	for i, plr := range plrs {
-		log.Printf("player %d: %v", i, plr)
+	for _, plr := range plrs {
 		if plr.Status == "Ready" {
 			ready++
 		}
