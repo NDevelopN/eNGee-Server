@@ -103,7 +103,6 @@ func Start(gid string, lid string) error {
 		return fmt.Errorf("could not get game players: %v", err)
 	}
 
-	//TODO is there a better way?
 	ready := 0
 	for _, plr := range plrs {
 		if plr.Status == "Ready" {
@@ -111,7 +110,6 @@ func Start(gid string, lid string) error {
 		}
 	}
 
-	//TODO add toggle for this requirement
 	if ready <= game.CurPlrs/2 {
 		return fmt.Errorf("less than half of the game players are ready (%d/%d)", ready, game.CurPlrs)
 	}
@@ -261,7 +259,6 @@ func Remove(gid string, lid string, tid string) error {
 		return fmt.Errorf("failed to update user: %v", err)
 	}
 
-	//TODO add reason why
 	rMsg := utils.GameMsg{
 		Type: "Removal",
 		GID:  gid,

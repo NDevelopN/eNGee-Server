@@ -30,7 +30,6 @@ func CreateUser(u utils.User) (string, error) {
 }
 
 func GetUser(uid string) (utils.User, error) {
-	//TODO any checks needed here?
 	return db.GetUser(uid)
 }
 
@@ -96,7 +95,6 @@ func removeUserFromGame(gid string, uid string) error {
 		return fmt.Errorf("user not in provided game: %v", u.GID)
 	}
 
-	//TODO can this be more elegant?
 	game, err := g.GetGame(gid)
 	if err != nil {
 		nuErr := removeGID(u)

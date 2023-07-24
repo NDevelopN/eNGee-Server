@@ -105,8 +105,6 @@ func createWant(state string, lid string, users []string, timer int) ConVars {
 }
 
 func checkTimeout(t *testing.T, testName string, timer int, gid string, want bool) {
-
-	//TODO add toggle for timeouts
 	if !waitForTimeout {
 		return
 	}

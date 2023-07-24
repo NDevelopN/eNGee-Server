@@ -33,12 +33,10 @@ func CreateGame(g utils.Game) (string, error) {
 }
 
 func GetGames() ([]utils.Game, error) {
-	//TODO any checks needed here?
 	return db.GetAllGames()
 }
 
 func GetGame(gid string) (utils.Game, error) {
-	//TODO any checks needed here?
 	return db.GetGame(gid)
 }
 
@@ -80,7 +78,6 @@ func ChangePlayerCount(g utils.Game, d int) error {
 		return fmt.Errorf("the game is too full: %v/%v", g.CurPlrs, g.MaxPlrs)
 	}
 
-	//TODO add some toggle here
 	if g.CurPlrs < g.MinPlrs && g.Status != "Lobby" {
 		g.Status = "Lobby"
 	}

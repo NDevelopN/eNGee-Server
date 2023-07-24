@@ -43,8 +43,6 @@ func UpdatePlayerList(gid string) error {
 }
 
 func initialize(msg utils.GameMsg, game utils.Game, handler HandlerFunc) (utils.GameMsg, error) {
-	//TODO is there any generic Gamespace initalization?
-
 	return handler(msg)
 }
 

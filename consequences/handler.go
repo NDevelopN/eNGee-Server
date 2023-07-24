@@ -101,7 +101,6 @@ func initialize(msg utils.GameMsg) (utils.GameMsg, error) {
 		return utils.ReplyError(msg, fmt.Errorf("rounds must not be less than 0: %v", settings.Rounds))
 	}
 
-	//TODO
 	highestShuffle := 3
 
 	if settings.Shuffle < 0 {
@@ -277,7 +276,6 @@ func status(msg utils.GameMsg) (utils.GameMsg, error) {
 	}
 	cVar := CVars[msg.GID]
 
-	//TODO
 	switch msg.Content {
 	case "Ready":
 		if cVar.State == "Lobby" {

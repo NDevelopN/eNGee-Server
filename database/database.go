@@ -16,11 +16,9 @@ var DB *sql.DB
 * This function initializes the database connection
 * It checks for existing tables and currently removes them
 * It then creates the games and players tables
-* TODO: An external file with more permanent storage of tables
  */
 func InitDB() {
 	var err error
-	//TODO config file
 	DB, err = sql.Open("postgres", "postgres://ngdbu:ngp@localhost/ngdb")
 	if err != nil {
 		log.Fatalf("[Error] Failed to open connection to sql server: %v", err)
