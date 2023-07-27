@@ -83,14 +83,14 @@ func GetID(c *gin.Context) (string, error) {
 	return id, nil
 }
 
-func reply[m u.Message](w http.ResponseWriter, msg m) error {
+func reply[m u.Message](w http.ResponseWriter, msg m, code int) error {
 	response, err := json.Marshal(msg)
 	if err != nil {
 		http.Error(w, "Could not marshal response", http.StatusInternalServerError)
 		return fmt.Errorf("could not marshal message: %v", err)
 	}
 
-	w.WriteHeader(http.StatusOK)
+	w.WriteHeader(code)
 	_, err = w.Write(response)
 	if err != nil {
 		http.Error(w, "Could not write response", http.StatusInternalServerError)
@@ -109,7 +109,7 @@ func getGames(c *gin.Context) {
 		log.Printf("[Error] Getting game list")
 	}
 
-	err = reply(w, games)
+	err = reply(w, games, http.StatusOK)
 	if err != nil {
 		log.Printf("[Error] Replying: %v", err)
 	}
@@ -130,20 +130,6 @@ func deleteGames(c *gin.Context) {
 		log.Printf("[Error] Deleting game: %v", err)
 		return
 	}
-
-	err = reply(w, u.ACK{})
-	if err != nil {
-		log.Printf("[Error] Replying: %v", err)
-	}
-
-	game, err := g.GetGame(gid)
-	if err != nil {
-		http.Error(w, "Failed to delete game", http.StatusInternalServerError)
-		log.Printf("[Error] Deleting game: %v", err)
-		return
-	}
-
-	err = reply(w, game)
 	if err != nil {
 		log.Printf("[Error] Replying: %v", err)
 	}
@@ -229,7 +215,7 @@ func postGames(c *gin.Context) {
 	if aborted {
 		return
 	}
-	err = reply(w, game)
+	err = reply(w, game, http.StatusCreated)
 	if err != nil {
 		log.Printf("[Error] Replying: %v", err)
 	}
@@ -269,7 +255,7 @@ func putGames(c *gin.Context) {
 		return
 	}
 
-	err = reply(w, u.ACK{})
+	err = reply(w, u.Response{Cause: "Accept", Message: "Game updated successfully"}, http.StatusAccepted)
 	if err != nil {
 		log.Printf("[Error] Replying: %v", err)
 	}
@@ -295,7 +281,7 @@ func postUsers(c *gin.Context) {
 
 	user.UID = uid
 
-	err = reply(w, user)
+	err = reply(w, user, http.StatusCreated)
 	if err != nil {
 		log.Printf("[Error] Replying: %v", err)
 	}
@@ -336,7 +322,7 @@ func putUsers(c *gin.Context) {
 		return
 	}
 
-	err = reply(w, u.ACK{})
+	err = reply(w, u.Response{Cause: "Accept", Message: "User updated successfully"}, http.StatusAccepted)
 	if err != nil {
 		log.Printf("[Error] Replying: %v", err)
 	}
@@ -358,7 +344,7 @@ func deleteUsers(c *gin.Context) {
 		return
 	}
 
-	err = reply(w, u.ACK{})
+	err = reply(w, u.Response{Cause: "Accept", Message: "User deleted successfully"}, http.StatusAccepted)
 	if err != nil {
 		log.Printf("[Error] Replying: %v", err)
 	}
