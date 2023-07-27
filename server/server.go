@@ -14,9 +14,8 @@ import (
 
 	g "Engee-Server/game"
 	gamespace "Engee-Server/gamespace"
-	p "Engee-Server/user"
-	u "Engee-Server/utils"
-	utils "Engee-Server/utils"
+	u "Engee-Server/user"
+	"Engee-Server/utils"
 )
 
 func CORSMiddleware() gin.HandlerFunc {
@@ -83,7 +82,7 @@ func GetID(c *gin.Context) (string, error) {
 	return id, nil
 }
 
-func reply[m u.Message](w http.ResponseWriter, msg m, code int) error {
+func reply[m utils.Message](w http.ResponseWriter, msg m, code int) error {
 	response, err := json.Marshal(msg)
 	if err != nil {
 		http.Error(w, "Could not marshal response", http.StatusInternalServerError)
@@ -138,7 +137,7 @@ func deleteGames(c *gin.Context) {
 func postGames(c *gin.Context) {
 	reqBody, w := intake(c)
 
-	var game u.Game
+	var game utils.Game
 	err := json.Unmarshal(reqBody, &game)
 	if err != nil {
 		http.Error(w, "Failed to parse request body", http.StatusBadRequest)
@@ -181,7 +180,7 @@ func postGames(c *gin.Context) {
 		return
 	}
 
-	user, err := p.GetUser(game.Leader)
+	user, err := u.GetUser(game.Leader)
 	if err != nil {
 		g.DeleteGame(gid)
 		http.Error(w, "Failed to get leader", http.StatusBadRequest)
@@ -194,7 +193,7 @@ func postGames(c *gin.Context) {
 	}
 
 	user.GID = game.GID
-	err = p.UpdateUser(user)
+	err = u.UpdateUser(user)
 	if err != nil {
 		http.Error(w, "Failed to update leader", http.StatusInternalServerError)
 		log.Printf("[Error] Failed to get update leader user: %v", err)
@@ -234,7 +233,7 @@ func putGames(c *gin.Context) {
 		log.Printf("[Error] Getting game ID: %v", err)
 	}
 
-	var game u.Game
+	var game utils.Game
 	err = json.Unmarshal(reqBody, &game)
 	if err != nil {
 		http.Error(w, "Failed to parse request body", http.StatusBadRequest)
@@ -255,7 +254,7 @@ func putGames(c *gin.Context) {
 		return
 	}
 
-	err = reply(w, u.Response{Cause: "Accept", Message: "Game updated successfully"}, http.StatusAccepted)
+	err = reply(w, utils.Response{Cause: "Accept", Message: "Game updated successfully"}, http.StatusAccepted)
 	if err != nil {
 		log.Printf("[Error] Replying: %v", err)
 	}
@@ -264,7 +263,7 @@ func putGames(c *gin.Context) {
 func postUsers(c *gin.Context) {
 	reqBody, w := intake(c)
 
-	var user u.User
+	var user utils.User
 	err := json.Unmarshal(reqBody, &user)
 	if err != nil {
 		http.Error(w, "Failed to parse request body", http.StatusBadRequest)
@@ -272,7 +271,7 @@ func postUsers(c *gin.Context) {
 		return
 	}
 
-	uid, err := p.CreateUser(user)
+	uid, err := u.CreateUser(user)
 	if err != nil {
 		http.Error(w, "Failed to create user", http.StatusInternalServerError)
 		log.Printf("[Error] Creating game: %v", err)
@@ -301,7 +300,7 @@ func putUsers(c *gin.Context) {
 		log.Printf("[Error] Getting user ID: %v", err)
 	}
 
-	var user u.User
+	var user utils.User
 	err = json.Unmarshal(reqBody, &user)
 	if err != nil {
 		http.Error(w, "Failed to parse request body", http.StatusBadRequest)
@@ -315,14 +314,14 @@ func putUsers(c *gin.Context) {
 		return
 	}
 
-	err = p.UpdateUser(user)
+	err = u.UpdateUser(user)
 	if err != nil {
 		http.Error(w, "Failed to update user", http.StatusInternalServerError)
 		log.Printf("[Error] Updating user: %v", err)
 		return
 	}
 
-	err = reply(w, u.Response{Cause: "Accept", Message: "User updated successfully"}, http.StatusAccepted)
+	err = reply(w, utils.Response{Cause: "Accept", Message: "User updated successfully"}, http.StatusAccepted)
 	if err != nil {
 		log.Printf("[Error] Replying: %v", err)
 	}
@@ -337,14 +336,14 @@ func deleteUsers(c *gin.Context) {
 		log.Printf("[Error] Getting user ID: %v", err)
 	}
 
-	err = p.DeleteUser(uid)
+	err = u.DeleteUser(uid)
 	if err != nil {
 		http.Error(w, "Failed to delete user", http.StatusInternalServerError)
 		log.Printf("[Error] Deleting user: %v", err)
 		return
 	}
 
-	err = reply(w, u.Response{Cause: "Accept", Message: "User deleted successfully"}, http.StatusAccepted)
+	err = reply(w, utils.Response{Cause: "Accept", Message: "User deleted successfully"}, http.StatusAccepted)
 	if err != nil {
 		log.Printf("[Error] Replying: %v", err)
 	}
