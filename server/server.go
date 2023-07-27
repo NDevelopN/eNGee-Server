@@ -129,6 +129,8 @@ func deleteGames(c *gin.Context) {
 		log.Printf("[Error] Deleting game: %v", err)
 		return
 	}
+
+	err = reply(w, utils.Response{Cause: "Accept", Message: "Game deleted successfully"}, http.StatusAccepted)
 	if err != nil {
 		log.Printf("[Error] Replying: %v", err)
 	}
