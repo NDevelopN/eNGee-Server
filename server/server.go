@@ -43,6 +43,7 @@ func Serve() {
 	router.PUT("/games/:id", putGames)
 	router.DELETE("/games/:id", deleteGames)
 
+	router.GET("/users/:id", getUsers)
 	router.POST("/users", postUsers)
 	router.PUT("/users/:id", putUsers)
 	router.DELETE("/users/:id", deleteUsers)
@@ -259,6 +260,29 @@ func putGames(c *gin.Context) {
 	err = reply(w, utils.Response{Cause: "Accept", Message: "Game updated successfully"}, http.StatusAccepted)
 	if err != nil {
 		log.Printf("[Error] Replying: %v", err)
+	}
+}
+
+func getUsers(c *gin.Context) {
+	w := c.Writer
+
+	uid, err := GetID(c)
+	if err != nil {
+		http.Error(w, "Could not get user ID from request path", http.StatusBadRequest)
+		log.Printf("[Error] Getting user ID: %v", err)
+		return
+	}
+
+	user, err := u.GetUser(uid)
+	if err != nil {
+		http.Error(w, "Failed to get matching user", http.StatusInternalServerError)
+		log.Printf("[Error] Getting user: %v", err)
+		return
+	}
+
+	err = reply(w, user, http.StatusOK)
+	if err != nil {
+		log.Printf("[Error] Replying to GetUser: %v", err)
 	}
 }
 
