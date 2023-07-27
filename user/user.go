@@ -16,6 +16,9 @@ func CreateUser(u utils.User) (string, error) {
 		return "", errors.New("user name is empty")
 	}
 
+	if u.UID != "" {
+		return "", fmt.Errorf("a new user should not have a UID: %v", u.UID)
+	}
 	if u.GID != "" {
 		return "", fmt.Errorf("a new user should not have a GID: %v", u.GID)
 	}
