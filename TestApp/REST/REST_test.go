@@ -289,7 +289,7 @@ func TestCreateGameErrors(t *testing.T) {
 			Leader: "-", MinPlrs: 1, MaxPlrs: 5, CurPlrs: 0, AdditionalRules: "",
 		},
 		{
-			//Create Game with Old Status **
+			//Create Game with Old Status
 			GID: "", Name: "TestGame", Type: "test", Status: "Lobby", OldStatus: "Lobby",
 			Leader: "-", MinPlrs: 1, MaxPlrs: 5, CurPlrs: 0, AdditionalRules: "",
 		},
@@ -304,7 +304,7 @@ func TestCreateGameErrors(t *testing.T) {
 			Leader: "", MinPlrs: 1, MaxPlrs: 5, CurPlrs: 0, AdditionalRules: "",
 		},
 		{
-			//Create Game with Invalid MinPlrs (-1) **
+			//Create Game with Invalid MinPlrs (-1)
 			GID: "", Name: "TestGame", Type: "test", Status: "Lobby", OldStatus: "",
 			Leader: "-", MinPlrs: -1, MaxPlrs: 5, CurPlrs: 0, AdditionalRules: "",
 		},
@@ -314,7 +314,7 @@ func TestCreateGameErrors(t *testing.T) {
 			Leader: "-", MinPlrs: 6, MaxPlrs: 5, CurPlrs: 0, AdditionalRules: "",
 		},
 		{
-			//Create Game with CurPlrs != 0 **
+			//Create Game with CurPlrs != 0
 			GID: "", Name: "TestGame", Type: "test", Status: "Lobby", OldStatus: "",
 			Leader: "-", MinPlrs: 1, MaxPlrs: 5, CurPlrs: 1, AdditionalRules: "",
 		},
