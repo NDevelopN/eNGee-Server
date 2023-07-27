@@ -132,8 +132,13 @@ func TestDeleteUserValid(t *testing.T) {
 }
 
 func TestCreateGameValid(t *testing.T) {
+	rUser, _ := c.PostUser(t, c.User)
+
+	game := c.Game
+	game.Leader = rUser.UID
+
 	testCases := []utils.Game{
-		c.Game,
+		game,
 	}
 
 	fmt.Print("CreateGame(valid)\n")
