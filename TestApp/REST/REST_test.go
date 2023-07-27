@@ -17,18 +17,21 @@ func TestCreateUserValid(t *testing.T) {
 	fmt.Print("CreateUser(valid)\n")
 
 	for _, user := range testCases {
-		t.Run(fmt.Sprintf("GID: %s, UID:  %s, Name: %s, Status: %s", user.GID, user.UID, user.Name, user.Status), func(t *testing.T) {
-			rUser, eMsg := c.PostUser(t, user)
-			if eMsg.Cause != "" || rUser.UID == "" {
-				t.Fatalf(`Received: %q, %q, want UID, ""`, rUser.UID, eMsg.Cause)
-			}
+		t.Run(fmt.Sprintf("GID: %s, UID:  %s, Name: %s, Status: %s",
+			user.GID, user.UID, user.Name, user.Status),
 
-			user.UID = rUser.UID
+			func(t *testing.T) {
+				rUser, err := c.PostUser(t, user)
+				if rUser.UID == "" || err != nil {
+					t.Fatalf(`Received: %q, %v, want UID, "nil"`, rUser.UID, err)
+				}
 
-			if rUser != user {
-				t.Fatalf(`Received user: %v, expected user: %v`, rUser, user)
-			}
-		})
+				user.UID = rUser.UID
+
+				if rUser != user {
+					t.Fatalf(`Received user: %v, expected user: %v`, rUser, user)
+				}
+			})
 	}
 }
 
@@ -43,12 +46,15 @@ func TestCreateUserErrors(t *testing.T) {
 	fmt.Print("CreateUser(error)\n")
 
 	for _, user := range testCases {
-		t.Run(fmt.Sprintf("GID: %s, UID:  %s, Name: %s, Status: %s", user.GID, user.UID, user.Name, user.Status), func(t *testing.T) {
-			rUser, eMsg := c.PostUser(t, user)
-			if eMsg.Cause != "Error" || rUser.UID != "" {
-				t.Fatalf(`Received: %q, %q, want "", "Error"`, rUser.UID, eMsg.Cause)
-			}
-		})
+		t.Run(fmt.Sprintf("GID: %s, UID:  %s, Name: %s, Status: %s",
+			user.GID, user.UID, user.Name, user.Status),
+
+			func(t *testing.T) {
+				rUser, err := c.PostUser(t, user)
+				if rUser.UID != "" || err == nil {
+					t.Fatalf(`Received: %q, %v, want "", ERROR`, rUser.UID, err)
+				}
+			})
 	}
 
 }
@@ -61,14 +67,17 @@ func TestGetUserValid(t *testing.T) {
 	fmt.Print("GetUser(valid)\n")
 
 	for _, user := range testCases {
-		t.Run(fmt.Sprintf("GID: %s, UID:  %s, Name: %s, Status: %s", user.GID, user.UID, user.Name, user.Status), func(t *testing.T) {
-			rUser, eMsg := c.PostUser(t, user)
+		t.Run(fmt.Sprintf("GID: %s, UID:  %s, Name: %s, Status: %s",
+			user.GID, user.UID, user.Name, user.Status),
 
-			nUser, eMsg := c.GetUser(t, rUser.UID)
-			if nUser != rUser || eMsg.Cause != "" {
-				t.Fatalf(`Received: %v, %q, want: %v, ""`, nUser, eMsg.Cause, rUser)
-			}
-		})
+			func(t *testing.T) {
+				rUser, _ := c.PostUser(t, user)
+
+				nUser, err := c.GetUser(t, rUser.UID)
+				if nUser != rUser || err != nil {
+					t.Fatalf(`Received: %v, %q, want: %v, "nil"`, nUser, err, rUser)
+				}
+			})
 	}
 }
 
@@ -85,13 +94,17 @@ func TestUpdateUserValid(t *testing.T) {
 
 	fmt.Print("UpdateUser(valid)\n")
 	for _, user := range testCases {
-		t.Run(fmt.Sprintf("GID: %s, UID:  %s, Name: %s, Status: %s", user.GID, user.UID, user.Name, user.Status), func(t *testing.T) {
+		t.Run(fmt.Sprintf("GID: %s, UID:  %s, Name: %s, Status: %s",
+			user.GID, user.UID, user.Name, user.Status),
 
-			nUser, eMsg := c.PutUser(t, user)
-			if nUser != user || eMsg.Cause != "" {
-				t.Fatalf(`Received: %v, %q, want: %v, ""`, nUser, eMsg.Cause, user)
-			}
-		})
+			func(t *testing.T) {
+				want := "Accept"
+
+				reply, err := c.PutUser(t, user)
+				if reply.Cause != want || err != nil {
+					t.Fatalf(`Received: %q, %v, want: %q, "nil"`, reply.Cause, err, want)
+				}
+			})
 	}
 }
 
@@ -102,15 +115,19 @@ func TestDeleteUserValid(t *testing.T) {
 
 	fmt.Print("DeleteUser(valid)\n")
 	for _, user := range testCases {
-		t.Run(fmt.Sprintf("GID: %s, UID:  %s, Name: %s, Status: %s", user.GID, user.UID, user.Name, user.Status), func(t *testing.T) {
-			rUser, eMsg := c.PostUser(t, user)
+		t.Run(fmt.Sprintf("GID: %s, UID:  %s, Name: %s, Status: %s",
+			user.GID, user.UID, user.Name, user.Status),
 
-			want := "Accept"
-			eMsg = c.DeleteUser(t, rUser.UID)
-			if eMsg.Cause != want {
-				t.Fatalf(`Received: %q, want: %q`, eMsg.Cause, want)
-			}
-		})
+			func(t *testing.T) {
+				rUser, _ := c.PostUser(t, user)
+
+				want := "Accept"
+
+				reply, err := c.DeleteUser(t, rUser.UID)
+				if reply.Cause != want || err != nil {
+					t.Fatalf(`Received: %q, %v, want: %q, "nil"`, reply.Cause, err, want)
+				}
+			})
 	}
 }
 
@@ -127,10 +144,11 @@ func TestCreateGameValid(t *testing.T) {
 			" MaxPlrs: %d, CurPlrs: %d, AdditionalRules: %s",
 			game.GID, game.Name, game.Type, game.Status, game.OldStatus, game.Leader,
 			game.MinPlrs, game.MaxPlrs, game.CurPlrs, game.AdditionalRules),
+
 			func(t *testing.T) {
-				rGame, eMsg := c.PostGame(t, game)
-				if eMsg.Cause != "" || rGame.GID == "" {
-					t.Fatalf(`Received: %q, %q, want GID, ""`, rGame.GID, eMsg.Cause)
+				rGame, err := c.PostGame(t, game)
+				if rGame.GID == "" || err != err {
+					t.Fatalf(`Received: %q, %v, want GID, "nil"`, rGame.GID, err)
 				}
 
 				game.GID = rGame.GID
@@ -157,11 +175,11 @@ func TestGetGamesValid(t *testing.T) {
 			game.MinPlrs, game.MaxPlrs, game.CurPlrs, game.AdditionalRules),
 
 			func(t *testing.T) {
-				rGame, eMsg := c.PostGame(t, game)
+				rGame, _ := c.PostGame(t, game)
 
-				nGame, eMsg := c.GetGame(t, rGame.GID)
-				if nGame != rGame || eMsg.Cause != "" {
-					t.Fatalf(`Received: %v, %q, want: %v, ""`, nGame, eMsg.Cause, rGame)
+				nGame, err := c.GetGame(t, rGame.GID)
+				if nGame != rGame || err != nil {
+					t.Fatalf(`Received: %v, %q, want: %v, ""`, nGame, err, rGame)
 				}
 			})
 	}
@@ -212,10 +230,11 @@ func TestUpdateGameValid(t *testing.T) {
 			game.MinPlrs, game.MaxPlrs, game.CurPlrs, game.AdditionalRules),
 
 			func(t *testing.T) {
+				want := "Accept"
 
-				nGame, eMsg := c.PutGame(t, game)
-				if nGame != game || eMsg.Cause != "" {
-					t.Fatalf(`Received: %v, %q, want: %v, ""`, nGame, eMsg.Cause, game)
+				reply, err := c.PutGame(t, game)
+				if reply.Cause != want || err != nil {
+					t.Fatalf(`Received: %q, %v, want: %q, "nil"`, reply.Cause, err, want)
 				}
 			})
 	}
@@ -234,14 +253,15 @@ func TestDeleteGameValid(t *testing.T) {
 			" MaxPlrs: %d, CurPlrs: %d, AdditionalRules: %s",
 			game.GID, game.Name, game.Type, game.Status, game.OldStatus, game.Leader,
 			game.MinPlrs, game.MaxPlrs, game.CurPlrs, game.AdditionalRules),
-			func(t *testing.T) {
 
-				rGame, eMsg := c.PostGame(t, game)
+			func(t *testing.T) {
+				rGame, _ := c.PostGame(t, game)
 
 				want := "Accept"
-				eMsg = c.DeleteGame(t, rGame.GID)
-				if eMsg.Cause != want {
-					t.Fatalf(`Received: %q, want: %q`, eMsg.Cause, want)
+
+				reply, err := c.DeleteGame(t, rGame.GID)
+				if reply.Cause != want || err != nil {
+					t.Fatalf(`Received: %q, want: %q`, err, want)
 				}
 			})
 	}
