@@ -4,6 +4,7 @@ import (
 	db "Engee-Server/database"
 	"Engee-Server/utils"
 	"fmt"
+	"log"
 
 	"github.com/google/uuid"
 )
@@ -96,7 +97,7 @@ func UpdateGame(g utils.Game) error {
 	}
 
 	if og.CurPlrs != g.CurPlrs {
-		return fmt.Errorf("cannot change curPlrs")
+		return fmt.Errorf("cannot change curPlrs: Old (%v) New (%v)", og.CurPlrs, g.CurPlrs)
 	}
 
 	_, err = db.GetUser(g.Leader)
@@ -167,6 +168,70 @@ func DeleteGame(gid string) error {
 	err = db.RemoveGame(gid)
 	if err != nil {
 		return fmt.Errorf("could not delete the game from database: %v", err)
+	}
+
+	return nil
+}
+
+func JoinGame(gid string, uid string) error {
+	game, err := db.GetGame(gid)
+	if err != nil {
+		return fmt.Errorf("could not find game in database: %v", err)
+	}
+
+	if game.CurPlrs >= game.MaxPlrs {
+		return fmt.Errorf("not enough space in game for new player: %v/%v", game.CurPlrs, game.MaxPlrs)
+	}
+
+	if game.Leader == "" {
+		game.Leader = uid
+	}
+
+	game.CurPlrs++
+	err = db.UpdateGame(game)
+	if err != nil {
+		return fmt.Errorf("could not update game: %v", err)
+	}
+
+	return nil
+}
+
+func LeaveGame(gid string, uid string) error {
+	game, err := db.GetGame(gid)
+
+	if err != nil {
+		return fmt.Errorf("could not find game in database: %v", err)
+	}
+
+	if game.Leader == uid {
+		plrs, err := db.GetGamePlayers(gid)
+		if err != nil {
+			return fmt.Errorf("could not find players in database: %v", err)
+		}
+		var leader string
+
+		for _, p := range plrs {
+			if p.UID != uid {
+				leader = p.UID
+				break
+			}
+		}
+
+		if leader == "" {
+			err = DeleteGame(gid)
+			if err != nil {
+				log.Printf("[Error] Could not delete game with no leader: %v", err)
+			}
+		} else {
+			game.Leader = leader
+		}
+	}
+
+	game.CurPlrs--
+
+	err = db.UpdateGame(game)
+	if err != nil {
+		return fmt.Errorf("could not update game: %v", err)
 	}
 
 	return nil

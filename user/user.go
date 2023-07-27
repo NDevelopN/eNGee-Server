@@ -51,26 +51,9 @@ func joinUserToGame(gid string, uid string) error {
 		return fmt.Errorf("user already in a game: %v", u.GID)
 	}
 
-	game, err := g.GetGame(gid)
+	err = g.JoinGame(gid, uid)
 	if err != nil {
-		return fmt.Errorf("could not find game in database: %v", err)
-	}
-
-	if game.CurPlrs == game.MaxPlrs {
-		return fmt.Errorf("not enough space in game for new player: %v/%v", game.CurPlrs, game.MaxPlrs)
-	}
-
-	if game.Leader == "" {
-		game.Leader = uid
-		err = g.UpdateGame(game)
-		if err != nil {
-			return fmt.Errorf("could not update (empty) game leader: %v", err)
-		}
-	}
-
-	err = g.ChangePlayerCount(game, 1)
-	if err != nil {
-		return fmt.Errorf("could not change game player count: %v", err)
+		return fmt.Errorf("could not update game with user: %v", err)
 	}
 
 	u.GID = gid
@@ -103,15 +86,9 @@ func removeUserFromGame(gid string, uid string) error {
 		return fmt.Errorf("user not in provided game: %v", u.GID)
 	}
 
-	game, err := g.GetGame(gid)
+	err = g.LeaveGame(gid, uid)
 	if err != nil {
-		nuErr := removeGID(u)
-		return fmt.Errorf("%v - could not find matching game: %v", nuErr, err)
-	}
-
-	err = g.ChangePlayerCount(game, -1)
-	if err != nil {
-		return fmt.Errorf("could not change game palyer count :%v", err)
+		return fmt.Errorf("could not update game without user: %v", err)
 	}
 
 	err = removeGID(u)
