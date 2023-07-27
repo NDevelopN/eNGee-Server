@@ -166,8 +166,12 @@ func TestCreateGameValid(t *testing.T) {
 }
 
 func TestGetGamesValid(t *testing.T) {
+	rUser, _ := c.PostUser(t, c.User)
+	g := c.Game
+	g.Leader = rUser.UID
+
 	testCases := []utils.Game{
-		c.Game,
+		g,
 	}
 
 	fmt.Print("GetGame(valid)\n")
@@ -191,7 +195,11 @@ func TestGetGamesValid(t *testing.T) {
 }
 
 func TestUpdateGameValid(t *testing.T) {
-	rGame, _ := c.PostGame(t, c.Game)
+	rUser, _ := c.PostUser(t, c.User)
+	g := c.Game
+	g.Leader = rUser.UID
+
+	rGame, _ := c.PostGame(t, g)
 
 	testCases := []utils.Game{
 		{
@@ -246,8 +254,12 @@ func TestUpdateGameValid(t *testing.T) {
 }
 
 func TestDeleteGameValid(t *testing.T) {
+	rUser, _ := c.PostUser(t, c.User)
+	g := c.Game
+	g.Leader = rUser.UID
+
 	testCases := []utils.Game{
-		c.Game,
+		g,
 	}
 
 	fmt.Print("DeleteGame(valid)\n")
