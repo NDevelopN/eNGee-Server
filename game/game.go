@@ -89,6 +89,11 @@ func UpdateGame(g utils.Game) error {
 		return fmt.Errorf("cannot set game leader to empty string")
 	}
 
+	_, err := db.GetUser(g.Leader)
+	if err != nil {
+		return fmt.Errorf("cannot find user to match leader ID")
+	}
+
 	if g.MinPlrs > g.MaxPlrs {
 		return fmt.Errorf("provided minPlrs is greater than provided maxPlrs")
 	}
@@ -97,7 +102,7 @@ func UpdateGame(g utils.Game) error {
 		return fmt.Errorf("provided curPlrs is greater than provided maxPlrs")
 	}
 
-	err := db.UpdateGame(g)
+	err = db.UpdateGame(g)
 	if err != nil {
 		return fmt.Errorf("could not update game in database: %v", err)
 	}
