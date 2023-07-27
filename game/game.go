@@ -105,6 +105,10 @@ func UpdateGame(g utils.Game) error {
 		return fmt.Errorf("cannot find user to match leader ID")
 	}
 
+	if g.MinPlrs < 0 {
+		return fmt.Errorf("provided minPlrs is negative: %v", g.MinPlrs)
+	}
+
 	if g.MinPlrs > g.MaxPlrs {
 		return fmt.Errorf("provided minPlrs is greater than provided maxPlrs")
 	}
