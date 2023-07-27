@@ -33,6 +33,10 @@ func CreateGame(g utils.Game) (string, error) {
 		return "", fmt.Errorf("a new game must have CurPlrs == 0: %v", g.CurPlrs)
 	}
 
+	if g.OldStatus != "" {
+		return "", fmt.Errorf("a new game must not have an OldStatus: %v", g.OldStatus)
+	}
+
 	g.GID = uuid.NewString()
 	g.Status = "Lobby"
 
