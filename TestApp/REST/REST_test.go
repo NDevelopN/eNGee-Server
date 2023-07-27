@@ -25,6 +25,7 @@ func TestCreateUserValid(t *testing.T) {
 				}
 
 				user.UID = rUser.UID
+				user.Status = "New"
 
 				if rUser != user {
 					t.Fatalf(`Received user: %v, expected user: %v`, rUser, user)
