@@ -11,7 +11,7 @@ import (
 
 const url = "http://localhost:8090/"
 
-func PostUser(t *testing.T, user utils.User) (utils.User, utils.Issue) {
+func PostUser(t *testing.T, user utils.User) (utils.User, utils.Response) {
 	postBody, _ := json.Marshal(user)
 	responseBody := bytes.NewBuffer(postBody)
 	resp, err := http.Post(url+"users", "application/json", responseBody)
@@ -26,7 +26,7 @@ func PostUser(t *testing.T, user utils.User) (utils.User, utils.Issue) {
 	}
 
 	var nUser utils.User
-	eMsg := utils.Issue{Cause: "", Message: ""}
+	eMsg := utils.Response{Cause: "", Message: ""}
 	err = json.Unmarshal((body), &nUser)
 	if err != nil {
 		err = json.Unmarshal((body), &eMsg)
@@ -38,7 +38,7 @@ func PostUser(t *testing.T, user utils.User) (utils.User, utils.Issue) {
 	return nUser, eMsg
 }
 
-func GetUser(t *testing.T, uid string) (utils.User, utils.Issue) {
+func GetUser(t *testing.T, uid string) (utils.User, utils.Response) {
 	resp, err := http.Get(url + "users/" + uid)
 	if err != nil {
 		t.Fatalf("Get failed: %v", err)
@@ -51,7 +51,7 @@ func GetUser(t *testing.T, uid string) (utils.User, utils.Issue) {
 	}
 
 	var nUser utils.User
-	eMsg := utils.Issue{Cause: "", Message: ""}
+	eMsg := utils.Response{Cause: "", Message: ""}
 	err = json.Unmarshal((body), &nUser)
 	if err != nil {
 		err = json.Unmarshal((body), &eMsg)
@@ -64,7 +64,7 @@ func GetUser(t *testing.T, uid string) (utils.User, utils.Issue) {
 
 }
 
-func PutUser(t *testing.T, user utils.User) (utils.User, utils.Issue) {
+func PutUser(t *testing.T, user utils.User) (utils.User, utils.Response) {
 	putBody, _ := json.Marshal(user)
 	responseBody := bytes.NewBuffer(putBody)
 	resp, err := http.NewRequest(http.MethodPut, url+"users", responseBody)
@@ -79,7 +79,7 @@ func PutUser(t *testing.T, user utils.User) (utils.User, utils.Issue) {
 	}
 
 	var nUser utils.User
-	eMsg := utils.Issue{Cause: "", Message: ""}
+	eMsg := utils.Response{Cause: "", Message: ""}
 	err = json.Unmarshal((body), &nUser)
 	if err != nil {
 		err = json.Unmarshal((body), &eMsg)
@@ -91,7 +91,7 @@ func PutUser(t *testing.T, user utils.User) (utils.User, utils.Issue) {
 	return nUser, eMsg
 }
 
-func DeleteUser(t *testing.T, uid string) utils.Issue {
+func DeleteUser(t *testing.T, uid string) utils.Response {
 	resp, err := http.NewRequest(http.MethodDelete, url+"users/"+uid, bytes.NewBuffer([]byte(uid)))
 	if err != nil {
 		t.Fatalf("Delete failed: %v", err)
@@ -103,7 +103,7 @@ func DeleteUser(t *testing.T, uid string) utils.Issue {
 		t.Fatalf("Failed to read response body: %v", err)
 	}
 
-	eMsg := utils.Issue{Cause: "", Message: ""}
+	eMsg := utils.Response{Cause: "", Message: ""}
 	err = json.Unmarshal((body), &eMsg)
 	if err != nil {
 		t.Fatalf("Could not parse reply: %v", err)
@@ -113,7 +113,7 @@ func DeleteUser(t *testing.T, uid string) utils.Issue {
 
 }
 
-func PostGame(t *testing.T, game utils.Game) (utils.Game, utils.Issue) {
+func PostGame(t *testing.T, game utils.Game) (utils.Game, utils.Response) {
 	postBody, _ := json.Marshal(game)
 	responseBody := bytes.NewBuffer(postBody)
 	resp, err := http.Post(url+"games", "application/json", responseBody)
@@ -128,7 +128,7 @@ func PostGame(t *testing.T, game utils.Game) (utils.Game, utils.Issue) {
 	}
 
 	var nGame utils.Game
-	eMsg := utils.Issue{Cause: "", Message: ""}
+	eMsg := utils.Response{Cause: "", Message: ""}
 	err = json.Unmarshal((body), &nGame)
 	if err != nil {
 		err = json.Unmarshal((body), &eMsg)
@@ -140,7 +140,7 @@ func PostGame(t *testing.T, game utils.Game) (utils.Game, utils.Issue) {
 	return nGame, eMsg
 }
 
-func GetGame(t *testing.T, gid string) (utils.Game, utils.Issue) {
+func GetGame(t *testing.T, gid string) (utils.Game, utils.Response) {
 	resp, err := http.Get(url + "games/" + gid)
 	if err != nil {
 		t.Fatalf("Get failed: %v", err)
@@ -153,7 +153,7 @@ func GetGame(t *testing.T, gid string) (utils.Game, utils.Issue) {
 	}
 
 	var nGame utils.Game
-	eMsg := utils.Issue{Cause: "", Message: ""}
+	eMsg := utils.Response{Cause: "", Message: ""}
 	err = json.Unmarshal((body), &nGame)
 	if err != nil {
 		err = json.Unmarshal((body), &eMsg)
@@ -166,7 +166,7 @@ func GetGame(t *testing.T, gid string) (utils.Game, utils.Issue) {
 
 }
 
-func PutGame(t *testing.T, game utils.Game) (utils.Game, utils.Issue) {
+func PutGame(t *testing.T, game utils.Game) (utils.Game, utils.Response) {
 	putBody, _ := json.Marshal(game)
 	responseBody := bytes.NewBuffer(putBody)
 	resp, err := http.NewRequest(http.MethodPut, url+"games", responseBody)
@@ -181,7 +181,7 @@ func PutGame(t *testing.T, game utils.Game) (utils.Game, utils.Issue) {
 	}
 
 	var nGame utils.Game
-	eMsg := utils.Issue{Cause: "", Message: ""}
+	eMsg := utils.Response{Cause: "", Message: ""}
 	err = json.Unmarshal((body), &nGame)
 	if err != nil {
 		err = json.Unmarshal((body), &eMsg)
@@ -193,7 +193,7 @@ func PutGame(t *testing.T, game utils.Game) (utils.Game, utils.Issue) {
 	return nGame, eMsg
 }
 
-func DeleteGame(t *testing.T, gid string) utils.Issue {
+func DeleteGame(t *testing.T, gid string) utils.Response {
 	resp, err := http.NewRequest(http.MethodDelete, url+"games/"+gid, bytes.NewBuffer([]byte(gid)))
 	if err != nil {
 		t.Fatalf("Delete failed: %v", err)
@@ -205,7 +205,7 @@ func DeleteGame(t *testing.T, gid string) utils.Issue {
 		t.Fatalf("Failed to read response body: %v", err)
 	}
 
-	eMsg := utils.Issue{Cause: "", Message: ""}
+	eMsg := utils.Response{Cause: "", Message: ""}
 	err = json.Unmarshal((body), &eMsg)
 	if err != nil {
 		t.Fatalf("Could not parse reply: %v", err)
