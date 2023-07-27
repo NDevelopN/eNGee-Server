@@ -77,6 +77,10 @@ func UpdateGame(g utils.Game) error {
 		return fmt.Errorf("cannot set game name to empty string")
 	}
 
+	if g.Type == "" {
+		return fmt.Errorf("cannot set game type to empty string")
+	}
+
 	if g.MinPlrs > g.MaxPlrs {
 		return fmt.Errorf("provided minPlrs is greater than provided maxPlrs")
 	}
