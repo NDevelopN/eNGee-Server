@@ -19,7 +19,13 @@ func CreateUser(u utils.User) (string, error) {
 	if u.GID != "" {
 		return "", fmt.Errorf("a new user should not have a GID: %v", u.GID)
 	}
+
+	if u.Status != "" {
+		return "", fmt.Errorf("a new user should not have a status: %v", u.Status)
+	}
+
 	u.UID = uuid.NewString()
+	u.Status = "New"
 
 	err := db.CreateUser(u)
 	if err != nil {
