@@ -179,8 +179,6 @@ func postGames(c *gin.Context) {
 		}
 	}()
 
-	u.AddConnectionPool(gid)
-
 	if aborted {
 		return
 	}
