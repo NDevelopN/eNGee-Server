@@ -62,6 +62,7 @@ func TestCreateUserErrors(t *testing.T) {
 				if rUser.UID != "" || err == nil {
 					t.Fatalf(`Received: %q, %v, want "", ERROR`, rUser.UID, err)
 				}
+				t.Log(err)
 			})
 	}
 
@@ -185,6 +186,7 @@ func TestUpdateUserError(t *testing.T) {
 				if err == nil || reply.Cause != want {
 					t.Fatalf(`Received: %q, %v, want: %q, ERROR`, reply.Cause, err, want)
 				}
+				t.Log(err)
 			})
 	}
 }
@@ -232,6 +234,7 @@ func TestDeleteUserError(t *testing.T) {
 				if reply.Cause != want || err == nil {
 					t.Fatalf(`Received: %q, %v, want: %q, ERROR`, reply.Cause, err, want)
 				}
+				t.Log(err)
 			})
 	}
 }
@@ -340,6 +343,7 @@ func TestCreateGameErrors(t *testing.T) {
 				if rGame != game {
 					t.Fatalf(`Received game: %v, expected game: %v`, rGame, game)
 				}
+				t.Log(err)
 			})
 	}
 }
@@ -391,6 +395,7 @@ func TestGetGamesErrors(t *testing.T) {
 				if nGame.GID != want || err == nil {
 					t.Fatalf(`Received: %q, %v, want: %q, ERROR`, nGame, err, want)
 				}
+				t.Log(err)
 			})
 	}
 }
@@ -455,6 +460,7 @@ func TestUpdateGameValid(t *testing.T) {
 				if reply.Cause != want || err != nil {
 					t.Fatalf(`Received: %q, %v, want: %q, "nil"`, reply.Cause, err, want)
 				}
+				t.Log(err)
 			})
 	}
 }
@@ -543,6 +549,7 @@ func TestUpdateGameErrors(t *testing.T) {
 				if reply.Cause != want || err == nil {
 					t.Fatalf(`Received: %q, %v, want: %q, ERROR`, reply.Cause, err, want)
 				}
+				t.Log(err)
 			})
 	}
 }
@@ -602,6 +609,7 @@ func TestDeleteGameErrors(t *testing.T) {
 				if reply.Cause != want || err == nil {
 					t.Fatalf(`Received: %q, %v, want: %q, ERROR`, reply.Cause, err, want)
 				}
+				t.Log(err)
 			})
 	}
 }
