@@ -1,10 +1,14 @@
 package utils
 
+import "errors"
+
 type GHandler func(msg GameMsg, broadcast func(string, []byte))
 
 type Message interface {
 	[]User | User | []Game | Game | Join | GameMsg | ACK
 }
+
+var ErrWarn = errors.New("Warning")
 
 type User struct {
 	UID    string `json:"uid"`
@@ -36,6 +40,11 @@ type GameMsg struct {
 	UID     string `json:"uid"`
 	GID     string `json:"gid"`
 	Content string `json:"content"`
+}
+
+type Response struct {
+	Cause   string `json:"cause"`
+	Message string `json:"message"`
 }
 
 type ACK struct {
