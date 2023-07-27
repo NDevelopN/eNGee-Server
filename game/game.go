@@ -29,6 +29,10 @@ func CreateGame(g utils.Game) (string, error) {
 		return "", fmt.Errorf("provided minPlrs is negative")
 	}
 
+	if g.CurPlrs != 0 {
+		return "", fmt.Errorf("a new game must have CurPlrs == 0: %v", g.CurPlrs)
+	}
+
 	g.GID = uuid.NewString()
 	g.Status = "Lobby"
 
