@@ -23,6 +23,22 @@ func AddConnectionPool(gid string) error {
 	return nil
 }
 
+func RemoveConnectionPool(gid string) error {
+	_, k := connPools[gid]
+	if !k {
+		return fmt.Errorf("connection pool not found: %v", gid)
+	}
+
+	for i := range connPools[gid] {
+		err := RemoveConnection(gid, i)
+		if err != nil {
+			return fmt.Errorf("could not remove all connections from pool :%v", err)
+		}
+	}
+
+	return nil
+}
+
 func GetConnections(gid string) (map[string]*websocket.Conn, error) {
 	pool, k := connPools[gid]
 	if !k {
@@ -106,10 +122,12 @@ func RemoveConnection(gid string, uid string) error {
 		return err
 	}
 
-	_, k := pool[uid]
+	conn, k := pool[uid]
 	if !k {
 		return fmt.Errorf("no connection found for given uid: %v", uid)
 	}
+
+	conn.Close()
 
 	delete(pool, uid)
 	connPools[gid] = pool

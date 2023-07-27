@@ -29,6 +29,8 @@ func CreateGame(g utils.Game) (string, error) {
 		return "", fmt.Errorf("failed to create game in database: %v", err)
 	}
 
+	utils.AddConnectionPool(g.GID)
+
 	return g.GID, nil
 }
 
@@ -112,6 +114,8 @@ func DeleteGame(gid string) error {
 			return fmt.Errorf("could not update player (clearing GID) in database: %v", err)
 		}
 	}
+
+	utils.RemoveConnectionPool(gid)
 
 	err = db.RemoveGame(gid)
 	if err != nil {
