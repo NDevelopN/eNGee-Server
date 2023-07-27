@@ -13,6 +13,10 @@ func CreateGame(g utils.Game) (string, error) {
 		return "", fmt.Errorf("provided game name is empty")
 	}
 
+	if g.GID != "" {
+		return "", fmt.Errorf("a new game must not have a GID: %v", g.GID)
+	}
+
 	if g.Type == "" {
 		return "", fmt.Errorf("provided game type is empty")
 	}
