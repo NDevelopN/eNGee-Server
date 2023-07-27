@@ -171,7 +171,9 @@ func postGames(c *gin.Context) {
 		return
 	}
 
+	//TODO
 	game.GID = gid
+	game.CurPlrs = 1
 
 	msg := utils.GameMsg{
 		Type: "Init",
@@ -304,7 +306,9 @@ func postUsers(c *gin.Context) {
 		return
 	}
 
+	//TODO
 	user.UID = uid
+	user.Status = "New"
 
 	err = reply(w, user, http.StatusCreated)
 	if err != nil {
