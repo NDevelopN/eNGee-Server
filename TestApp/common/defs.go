@@ -5,7 +5,7 @@ import "Engee-Server/utils"
 var Game = utils.Game{
 	GID:             "",
 	Name:            "TestGame",
-	Type:            "TestType",
+	Type:            "test",
 	Status:          "Lobby",
 	OldStatus:       "",
 	Leader:          "",
