@@ -73,6 +73,11 @@ func GetGamePlayers(gid string) ([]utils.User, error) {
 }
 
 func UpdateGame(g utils.Game) error {
+	og, err := db.GetGame(g.GID)
+	if err != nil {
+		return fmt.Errorf("cannot find game in database to update: %v", err)
+	}
+
 	if g.Name == "" {
 		return fmt.Errorf("cannot set game name to empty string")
 	}
@@ -80,6 +85,7 @@ func UpdateGame(g utils.Game) error {
 	if g.Type == "" {
 		return fmt.Errorf("cannot set game type to empty string")
 	}
+	//TODO get list of gametypes and compare
 
 	if g.Status == "" {
 		return fmt.Errorf("cannot set game status to empty string")
@@ -89,7 +95,11 @@ func UpdateGame(g utils.Game) error {
 		return fmt.Errorf("cannot set game leader to empty string")
 	}
 
-	_, err := db.GetUser(g.Leader)
+	if og.CurPlrs != g.CurPlrs {
+		return fmt.Errorf("cannot change curPlrs")
+	}
+
+	_, err = db.GetUser(g.Leader)
 	if err != nil {
 		return fmt.Errorf("cannot find user to match leader ID")
 	}
@@ -99,7 +109,7 @@ func UpdateGame(g utils.Game) error {
 	}
 
 	if g.CurPlrs > g.MaxPlrs {
-		return fmt.Errorf("provided curPlrs is greater than provided maxPlrs")
+		return fmt.Errorf("provided maxPlrs is less than curPlrs")
 	}
 
 	err = db.UpdateGame(g)
