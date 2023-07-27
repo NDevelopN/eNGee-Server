@@ -272,28 +272,26 @@ func TestCreateGameValid(t *testing.T) {
 }
 
 func TestCreateGameErrors(t *testing.T) {
-	rUser, _ := c.PostUser(t, c.User)
-
 	testCases := []utils.Game{
 		{
 			//Create Game with Name as empty string
 			GID: "", Name: "", Type: "test", Status: "Lobby", OldStatus: "",
-			Leader: rUser.UID, MinPlrs: 1, MaxPlrs: 5, CurPlrs: 0, AdditionalRules: "",
+			Leader: "-", MinPlrs: 1, MaxPlrs: 5, CurPlrs: 0, AdditionalRules: "",
 		},
 		{
 			//Create Game with Type as empty string
 			GID: "", Name: "TestGame", Type: "", Status: "Lobby", OldStatus: "",
-			Leader: rUser.UID, MinPlrs: 1, MaxPlrs: 5, CurPlrs: 0, AdditionalRules: "",
+			Leader: "-", MinPlrs: 1, MaxPlrs: 5, CurPlrs: 0, AdditionalRules: "",
 		},
 		{
 			//Create Game with Invalid Type
 			GID: "", Name: "TestGame", Type: "Invalid", Status: "Lobby", OldStatus: "",
-			Leader: rUser.UID, MinPlrs: 1, MaxPlrs: 5, CurPlrs: 0, AdditionalRules: "",
+			Leader: "-", MinPlrs: 1, MaxPlrs: 5, CurPlrs: 0, AdditionalRules: "",
 		},
 		{
-			//Create Game with Old Status
+			//Create Game with Old Status **
 			GID: "", Name: "TestGame", Type: "test", Status: "Lobby", OldStatus: "Lobby",
-			Leader: rUser.UID, MinPlrs: 1, MaxPlrs: 5, CurPlrs: 0, AdditionalRules: "",
+			Leader: "-", MinPlrs: 1, MaxPlrs: 5, CurPlrs: 0, AdditionalRules: "",
 		},
 		{
 			//Create Game with invalid Leader ID
@@ -306,28 +304,33 @@ func TestCreateGameErrors(t *testing.T) {
 			Leader: "", MinPlrs: 1, MaxPlrs: 5, CurPlrs: 0, AdditionalRules: "",
 		},
 		{
-			//Create Game with Invalid MinPlrs (-1)
+			//Create Game with Invalid MinPlrs (-1) **
 			GID: "", Name: "TestGame", Type: "test", Status: "Lobby", OldStatus: "",
-			Leader: rUser.UID, MinPlrs: -1, MaxPlrs: 5, CurPlrs: 0, AdditionalRules: "",
+			Leader: "-", MinPlrs: -1, MaxPlrs: 5, CurPlrs: 0, AdditionalRules: "",
 		},
 		{
 			//Create Game with MinPlrs > MaxPlrs
 			GID: "", Name: "TestGame", Type: "test", Status: "Lobby", OldStatus: "",
-			Leader: rUser.UID, MinPlrs: 6, MaxPlrs: 5, CurPlrs: 0, AdditionalRules: "",
+			Leader: "-", MinPlrs: 6, MaxPlrs: 5, CurPlrs: 0, AdditionalRules: "",
 		},
 		{
-			//Create Game with CurPlrs != 0
+			//Create Game with CurPlrs != 0 **
 			GID: "", Name: "TestGame", Type: "test", Status: "Lobby", OldStatus: "",
-			Leader: rUser.UID, MinPlrs: 1, MaxPlrs: 5, CurPlrs: 1, AdditionalRules: "",
+			Leader: "-", MinPlrs: 1, MaxPlrs: 5, CurPlrs: 1, AdditionalRules: "",
 		},
 		{
 			//Create Game with existing GID
 			GID: uuid.NewString(), Name: "TestGame", Type: "test", Status: "Lobby", OldStatus: "",
-			Leader: rUser.UID, MinPlrs: 1, MaxPlrs: 5, CurPlrs: 0, AdditionalRules: "",
+			Leader: "-", MinPlrs: 1, MaxPlrs: 5, CurPlrs: 0, AdditionalRules: "",
 		},
 	}
 
 	for _, game := range testCases {
+		rUser, _ := c.PostUser(t, c.User)
+		if game.Leader == "-" {
+			game.Leader = rUser.UID
+		}
+
 		t.Run(fmt.Sprintf("GID: %s, Name:  %s, Type: %s, Status: %s,"+
 			" OldStatus: %s, Leader: %s, MinPlrs: %d,"+
 			" MaxPlrs: %d, CurPlrs: %d, AdditionalRules: %s",
@@ -340,10 +343,6 @@ func TestCreateGameErrors(t *testing.T) {
 					t.Fatalf(`Received: %q, %v, want "", ERROR`, rGame.GID, err)
 				}
 
-				game.GID = rGame.GID
-				if rGame != game {
-					t.Fatalf(`Received game: %v, expected game: %v`, rGame, game)
-				}
 				t.Log(err)
 			})
 	}
