@@ -5,7 +5,6 @@ import (
 	g "Engee-Server/game"
 	utils "Engee-Server/utils"
 
-	"errors"
 	"fmt"
 
 	"github.com/google/uuid"
@@ -13,7 +12,7 @@ import (
 
 func CreateUser(u utils.User) (string, error) {
 	if u.Name == "" {
-		return "", errors.New("user name is empty")
+		return "", fmt.Errorf("user name is empty")
 	}
 
 	if u.UID != "" {
