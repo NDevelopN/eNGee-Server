@@ -27,7 +27,7 @@ func PostUser(t *testing.T, user utils.User) (utils.User, error) {
 	}
 
 	if resp.StatusCode != http.StatusCreated {
-		return user, fmt.Errorf(string(body))
+		return utils.User{}, fmt.Errorf("%d: %s", resp.StatusCode, string(body))
 	}
 
 	var nUser utils.User
@@ -52,7 +52,7 @@ func GetUser(t *testing.T, uid string) (utils.User, error) {
 	}
 
 	if resp.StatusCode != http.StatusOK {
-		return utils.User{}, fmt.Errorf(string(body))
+		return utils.User{}, fmt.Errorf("%d: %s", resp.StatusCode, string(body))
 	}
 
 	var nUser utils.User
@@ -86,7 +86,7 @@ func PutUser(t *testing.T, user utils.User) (utils.Response, error) {
 	}
 
 	if resp.StatusCode != http.StatusAccepted {
-		return utils.Response{}, fmt.Errorf(string(body))
+		return utils.Response{}, fmt.Errorf("%d: %s", resp.StatusCode, string(body))
 	}
 
 	var reply utils.Response
@@ -116,7 +116,7 @@ func DeleteUser(t *testing.T, uid string) (utils.Response, error) {
 	}
 
 	if resp.StatusCode != http.StatusAccepted {
-		return utils.Response{}, fmt.Errorf(string(body))
+		return utils.Response{}, fmt.Errorf("%d: %s", resp.StatusCode, string(body))
 	}
 
 	var reply utils.Response
@@ -144,7 +144,7 @@ func PostGame(t *testing.T, game utils.Game) (utils.Game, error) {
 	}
 
 	if resp.StatusCode != http.StatusCreated {
-		return game, fmt.Errorf(string(body))
+		return utils.Game{}, fmt.Errorf("%d: %s", resp.StatusCode, string(body))
 	}
 
 	var nGame utils.Game
@@ -169,7 +169,7 @@ func GetGame(t *testing.T, gid string) (utils.Game, error) {
 	}
 
 	if resp.StatusCode != http.StatusOK {
-		return utils.Game{}, fmt.Errorf(string(body))
+		return utils.Game{}, fmt.Errorf("%d: %s", resp.StatusCode, string(body))
 	}
 
 	var nGame utils.Game
@@ -203,7 +203,7 @@ func PutGame(t *testing.T, game utils.Game) (utils.Response, error) {
 	}
 
 	if resp.StatusCode != http.StatusAccepted {
-		return utils.Response{}, fmt.Errorf(string(body))
+		return utils.Response{}, fmt.Errorf("%d: %s", resp.StatusCode, string(body))
 	}
 
 	var reply utils.Response
@@ -233,10 +233,10 @@ func DeleteGame(t *testing.T, gid string) (utils.Response, error) {
 	}
 
 	if resp.StatusCode != http.StatusAccepted {
-		return utils.Response{}, fmt.Errorf(string(body))
+		return utils.Response{}, fmt.Errorf("%d: %s", resp.StatusCode, string(body))
 	}
 
-	reply := utils.Response{Cause: "", Message: ""}
+	var reply utils.Response
 	err = json.Unmarshal((body), &reply)
 	if err != nil {
 		t.Fatalf("DeleteGame: Could not parse reply: %v", err)
