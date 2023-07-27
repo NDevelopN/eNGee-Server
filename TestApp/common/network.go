@@ -67,7 +67,7 @@ func GetUser(t *testing.T, uid string) (utils.User, error) {
 func PutUser(t *testing.T, user utils.User) (utils.Response, error) {
 	putBody, _ := json.Marshal(user)
 	responseBody := bytes.NewBuffer(putBody)
-	req, err := http.NewRequest(http.MethodPut, url+"users", responseBody)
+	req, err := http.NewRequest(http.MethodPut, url+"users/"+user.UID, responseBody)
 
 	if err != nil {
 		t.Fatalf("PutUser: Request failed: %v", err)
@@ -186,7 +186,7 @@ func PutGame(t *testing.T, game utils.Game) (utils.Response, error) {
 	putBody, _ := json.Marshal(game)
 	responseBody := bytes.NewBuffer(putBody)
 
-	req, err := http.NewRequest(http.MethodPut, url+"games", responseBody)
+	req, err := http.NewRequest(http.MethodPut, url+"games/"+game.GID, responseBody)
 	if err != nil {
 		t.Fatalf("PutGame: Request failed: %v", err)
 	}
