@@ -21,6 +21,10 @@ func CreateGame(g utils.Game) (string, error) {
 		return "", fmt.Errorf("provided minPlrs is greater than provided maxPlrs")
 	}
 
+	if g.MinPlrs < 0 {
+		return "", fmt.Errorf("provided minPlrs is negative")
+	}
+
 	g.GID = uuid.NewString()
 	g.Status = "Lobby"
 
