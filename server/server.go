@@ -7,7 +7,6 @@ import (
 	"log"
 	"net/http"
 	"strings"
-	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
@@ -155,22 +154,6 @@ func postGames(c *gin.Context) {
 		return
 	}
 
-	aborted := false
-
-	go func() {
-		time.Sleep(5 * time.Second)
-		plrs, err := g.GetGamePlayers(gid)
-		if len(plrs) == 0 || err != nil {
-			log.Printf("[Error] no players found for game after creation: %v", err)
-			g.DeleteGame(gid)
-			aborted = true
-		}
-	}()
-
-	if aborted {
-		return
-	}
-
 	//TODO
 	game.GID = gid
 	game.CurPlrs = 1
@@ -181,44 +164,41 @@ func postGames(c *gin.Context) {
 		GID:  game.GID,
 	}
 
-	if aborted {
-		return
-	}
-
 	user, err := u.GetUser(game.Leader)
 	if err != nil {
-		g.DeleteGame(gid)
-		http.Error(w, "Failed to get leader", http.StatusBadRequest)
 		log.Printf("[Error] Failed to get user matching leader id: %v", err)
-		return
-	}
+		err = g.DeleteGame(gid)
+		if err != nil {
+			log.Printf("[Error] Failed to delete game with no leader: %v", err)
+		}
 
-	if aborted {
+		http.Error(w, "Failed to get leader", http.StatusBadRequest)
 		return
 	}
 
 	user.GID = game.GID
 	err = u.UpdateUser(user)
 	if err != nil {
-		http.Error(w, "Failed to update leader", http.StatusInternalServerError)
 		log.Printf("[Error] Failed to get update leader user: %v", err)
-		return
-	}
-
-	if aborted {
+		err = g.DeleteGame(gid)
+		if err != nil {
+			log.Printf("[Error] Failed to delete game with invalid leader: %v", err)
+		}
+		http.Error(w, "Failed to update leader", http.StatusInternalServerError)
 		return
 	}
 
 	_, err = gamespace.GamespaceHandle(msg)
 	if err != nil {
-		http.Error(w, "Failed to initialize gamespace", http.StatusInternalServerError)
 		log.Printf("[Error] Failed to initialize game: %v", err)
+		err = g.DeleteGame(gid)
+		if err != nil {
+			log.Printf("[Error] Failed to delete game with failed Init: %v", err)
+		}
+		http.Error(w, "Failed to initialize gamespace", http.StatusInternalServerError)
 		return
 	}
 
-	if aborted {
-		return
-	}
 	err = reply(w, game, http.StatusCreated)
 	if err != nil {
 		log.Printf("[Error] Replying: %v", err)
