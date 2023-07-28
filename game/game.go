@@ -179,7 +179,7 @@ func ChangePlayerCount(g utils.Game, d int) error {
 func DeleteGame(gid string) error {
 	plrs, err := db.GetGamePlayers(gid)
 	if err != nil {
-		return fmt.Errorf("could not get players from database: %v", err)
+		log.Printf("[Warn] Deleting game -- Could not get player from database: %v", err)
 	}
 
 	for _, p := range plrs {
@@ -247,7 +247,7 @@ func LeaveGame(gid string, uid string) error {
 		if leader == "" {
 			err = DeleteGame(gid)
 			if err != nil {
-				log.Printf("[Error] Could not delete game with no leader: %v", err)
+				log.Printf("[Error] Could not delete game after leader left: %v", err)
 			}
 		} else {
 			game.Leader = leader
