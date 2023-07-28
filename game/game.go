@@ -9,6 +9,22 @@ import (
 	"github.com/google/uuid"
 )
 
+func checkType(gType string) bool {
+	tList, err := db.GetGameTypes()
+	if err != nil {
+		log.Printf("[Error] could not get game types from database: %v", err)
+		return false
+	}
+
+	for _, t := range tList {
+		if t == gType {
+			return true
+		}
+	}
+
+	return false
+}
+
 func CreateGame(g utils.Game) (string, error) {
 	if g.Name == "" {
 		return "", fmt.Errorf("provided game name is empty")
@@ -20,6 +36,10 @@ func CreateGame(g utils.Game) (string, error) {
 
 	if g.Type == "" {
 		return "", fmt.Errorf("provided game type is empty")
+	}
+
+	if !checkType(g.Type) {
+		return "", fmt.Errorf("provided game type (%v) is not supported", g.Type)
 	}
 
 	if g.MinPlrs > g.MaxPlrs {
@@ -86,7 +106,10 @@ func UpdateGame(g utils.Game) error {
 	if g.Type == "" {
 		return fmt.Errorf("cannot set game type to empty string")
 	}
-	//TODO get list of gametypes and compare
+
+	if !checkType(g.Type) {
+		return fmt.Errorf("provided game type (%v) is not supported", g.Type)
+	}
 
 	if g.Status == "" {
 		return fmt.Errorf("cannot set game status to empty string")
