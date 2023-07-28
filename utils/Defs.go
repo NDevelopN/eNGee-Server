@@ -8,6 +8,8 @@ type Message interface {
 	[]User | User | []Game | Game | Join | GameMsg | Response
 }
 
+type HandlerFunc func(msg GameMsg) (GameMsg, error)
+
 var ErrWarn = errors.New("Warning")
 
 type User struct {

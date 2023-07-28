@@ -1,12 +1,12 @@
-package gamespace
+package handlers
 
 import (
-	consequences "Engee-Server/consequences"
-	utils "Engee-Server/utils"
+	db "Engee-Server/database"
+	"Engee-Server/handlers/consequences"
+	"Engee-Server/utils"
 	"errors"
+	"log"
 )
-
-type HandlerFunc func(msg utils.GameMsg) (utils.GameMsg, error)
 
 func TestHandler(msg utils.GameMsg) (utils.GameMsg, error) {
 	switch msg.Type {
@@ -32,10 +32,21 @@ func TestHandler(msg utils.GameMsg) (utils.GameMsg, error) {
 		return utils.ReplyError(msg, errors.New("invalid message Type"))
 	}
 
-	return utils.ReplyACK(msg, "TestMessage Accepted")
+	return utils.ReplyACK(msg), nil //, "TestMessage Accepted")
 }
 
-var TypeHandlers = map[string]HandlerFunc{
+var typeHandlers = map[string]utils.HandlerFunc{
 	"test":         TestHandler,
 	"consequences": consequences.Handle,
+}
+
+func Init() {
+	err := db.CreateGameTypes(typeHandlers)
+	if err != nil {
+		log.Fatalf("[Error] Failed to create game type list: %v", err)
+	}
+}
+
+func GetHandlers() map[string]utils.HandlerFunc {
+	return typeHandlers
 }

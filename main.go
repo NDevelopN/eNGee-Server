@@ -1,11 +1,13 @@
 package main
 
 import (
-	database "Engee-Server/database"
-	server "Engee-Server/server"
+	"Engee-Server/database"
+	"Engee-Server/handlers"
+	"Engee-Server/server"
 )
 
 func main() {
 	database.InitDB()
+	handlers.Init()
 	server.Serve()
 }

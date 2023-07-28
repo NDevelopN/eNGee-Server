@@ -6,6 +6,7 @@ import (
 	"fmt"
 
 	g "Engee-Server/game"
+	h "Engee-Server/handlers"
 	u "Engee-Server/user"
 )
 
@@ -42,11 +43,11 @@ func UpdatePlayerList(gid string) error {
 	return nil
 }
 
-func initialize(msg utils.GameMsg, game utils.Game, handler HandlerFunc) (utils.GameMsg, error) {
+func initialize(msg utils.GameMsg, game utils.Game, handler utils.HandlerFunc) (utils.GameMsg, error) {
 	return handler(msg)
 }
 
-func start(msg utils.GameMsg, game utils.Game, handler HandlerFunc) (utils.GameMsg, error) {
+func start(msg utils.GameMsg, game utils.Game, handler utils.HandlerFunc) (utils.GameMsg, error) {
 	err := Start(msg.GID, msg.UID)
 	if err != nil {
 		return utils.ReplyError(msg, err)
@@ -55,7 +56,7 @@ func start(msg utils.GameMsg, game utils.Game, handler HandlerFunc) (utils.GameM
 	return handler(msg)
 }
 
-func reset(msg utils.GameMsg, game utils.Game, handler HandlerFunc) (utils.GameMsg, error) {
+func reset(msg utils.GameMsg, game utils.Game, handler utils.HandlerFunc) (utils.GameMsg, error) {
 	err := Reset(msg.GID, msg.UID)
 	if err != nil {
 		return utils.ReplyError(msg, err)
@@ -64,7 +65,7 @@ func reset(msg utils.GameMsg, game utils.Game, handler HandlerFunc) (utils.GameM
 	return handler(msg)
 }
 
-func end(msg utils.GameMsg, game utils.Game, handler HandlerFunc) (utils.GameMsg, error) {
+func end(msg utils.GameMsg, game utils.Game, handler utils.HandlerFunc) (utils.GameMsg, error) {
 	err := End(msg.GID, msg.UID)
 	if err != nil {
 		return utils.ReplyError(msg, err)
@@ -73,7 +74,7 @@ func end(msg utils.GameMsg, game utils.Game, handler HandlerFunc) (utils.GameMsg
 	return handler(msg)
 }
 
-func pause(msg utils.GameMsg, game utils.Game, handler HandlerFunc) (utils.GameMsg, error) {
+func pause(msg utils.GameMsg, game utils.Game, handler utils.HandlerFunc) (utils.GameMsg, error) {
 	err := Pause(msg.GID, msg.UID)
 	if err != nil {
 		return utils.ReplyError(msg, err)
@@ -82,7 +83,7 @@ func pause(msg utils.GameMsg, game utils.Game, handler HandlerFunc) (utils.GameM
 	return handler(msg)
 }
 
-func remove(msg utils.GameMsg, game utils.Game, handler HandlerFunc) (utils.GameMsg, error) {
+func remove(msg utils.GameMsg, game utils.Game, handler utils.HandlerFunc) (utils.GameMsg, error) {
 	err := Remove(msg.GID, msg.UID, msg.Content)
 	if err != nil {
 		return utils.ReplyError(msg, err)
@@ -91,7 +92,7 @@ func remove(msg utils.GameMsg, game utils.Game, handler HandlerFunc) (utils.Game
 	return handler(msg)
 }
 
-func rules(msg utils.GameMsg, game utils.Game, handler HandlerFunc) (utils.GameMsg, error) {
+func rules(msg utils.GameMsg, game utils.Game, handler utils.HandlerFunc) (utils.GameMsg, error) {
 	var gm utils.Game
 	err := json.Unmarshal([]byte(msg.Content), &gm)
 	if err != nil {
@@ -106,7 +107,7 @@ func rules(msg utils.GameMsg, game utils.Game, handler HandlerFunc) (utils.GameM
 	return handler(msg)
 }
 
-func status(msg utils.GameMsg, game utils.Game, handler HandlerFunc) (utils.GameMsg, error) {
+func status(msg utils.GameMsg, game utils.Game, handler utils.HandlerFunc) (utils.GameMsg, error) {
 	err := ChangeStatus(msg.UID, msg.GID, msg.Content)
 	if err != nil {
 		return utils.ReplyError(msg, err)
@@ -115,7 +116,7 @@ func status(msg utils.GameMsg, game utils.Game, handler HandlerFunc) (utils.Game
 	return handler(msg)
 }
 
-func leave(msg utils.GameMsg, game utils.Game, handler HandlerFunc) (utils.GameMsg, error) {
+func leave(msg utils.GameMsg, game utils.Game, handler utils.HandlerFunc) (utils.GameMsg, error) {
 	err := Leave(msg.UID, msg.GID)
 	if err != nil {
 		return utils.ReplyError(msg, err)
@@ -130,7 +131,7 @@ func GamespaceHandle(msg utils.GameMsg) (utils.GameMsg, error) {
 		return utils.ReplyError(msg, err)
 	}
 
-	handler := TypeHandlers[game.Type]
+	handler := h.GetHandlers()[game.Type]
 	if handler == nil {
 		return utils.ReplyError(msg, fmt.Errorf(`game type %q does not have a handler`, game.Type))
 	}

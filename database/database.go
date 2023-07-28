@@ -7,6 +7,7 @@ import (
 
 	_ "github.com/lib/pq"
 
+	"Engee-Server/utils"
 	u "Engee-Server/utils"
 )
 
@@ -30,7 +31,11 @@ func InitDB() {
 	}
 	_, err = DB.Query("DROP TABLE IF EXISTS players;")
 	if err != nil {
-		log.Fatalf("[Error] Failed to drop games table: %v", err)
+		log.Fatalf("[Error] Failed to drop players table: %v", err)
+	}
+	_, err = DB.Query("DROP TABLE IF EXISTS gametypes;")
+	if err != nil {
+		log.Fatalf("[Error] Failed to drop gametypes table: %v", err)
 	}
 
 	_, err = DB.Query("CREATE TABLE games (" +
@@ -57,6 +62,14 @@ func InitDB() {
 		");")
 	if err != nil {
 		log.Fatalf("[Error] Failed to create players table: %v", err)
+	}
+
+	//TODO include handler
+	_, err = DB.Query("CREATE TABLE gametypes ( " +
+		"type 		varchar(80) " +
+		");")
+	if err != nil {
+		log.Fatalf("[Error] Failed to create gametypes table: %v", err)
 	}
 
 	if err = DB.Ping(); err != nil {
@@ -387,4 +400,46 @@ func RemoveUser(uid string) error {
 	}
 
 	return nil
+}
+
+func CreateGameTypes(gTypes map[string]utils.HandlerFunc) error {
+	//TODO include the handler
+	for t := range gTypes {
+		_, err := DB.Exec(`INSERT INTO gametypes (type) VALUES ($1)`, t)
+		if err != nil {
+			return fmt.Errorf("db failed: INSERT INTO types: %v", err)
+		}
+	}
+	return nil
+}
+
+func GetGameTypes() ([]string, error) {
+	rows, err := DB.Query("SELECT * FROM gametypes")
+	if err != nil {
+		return nil, fmt.Errorf("db failed: SELECT FROM gametypes: %v", err)
+	}
+	defer rows.Close()
+
+	//TODO include handler
+	typeList := []string{}
+	for rows.Next() {
+		var t string
+
+		err = rows.Scan(&t)
+		if err != nil {
+			return nil, fmt.Errorf("db failed: Scanning row: %v", err)
+		}
+
+		typeList = append(typeList, t)
+	}
+
+	err = rows.Err()
+
+	if err == sql.ErrNoRows {
+		return typeList, nil
+	} else if err != nil {
+		return nil, fmt.Errorf("db failed: row error: %v", err)
+	}
+
+	return typeList, nil
 }
