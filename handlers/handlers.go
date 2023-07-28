@@ -1,8 +1,8 @@
 package handlers
 
 import (
+	"Engee-Server/consequences"
 	db "Engee-Server/database"
-	"Engee-Server/handlers/consequences"
 	"Engee-Server/utils"
 	"errors"
 	"log"
