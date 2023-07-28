@@ -263,6 +263,7 @@ func TestCreateGameValid(t *testing.T) {
 				}
 
 				game.GID = rGame.GID
+				game.CurPlrs = 1
 
 				if rGame != game {
 					t.Fatalf(`Received game: %v, expected game: %v`, rGame, game)
@@ -428,19 +429,19 @@ func TestUpdateGameValid(t *testing.T) {
 		},
 		{
 			//Change MinPlrs
-			GID: rGame.GID, Name: "New Name", Type: "New Type", Status: "New Status",
+			GID: rGame.GID, Name: "New Name", Type: "consequences", Status: "New Status",
 			OldStatus: rGame.OldStatus, Leader: rGame.Leader, MinPlrs: 2,
 			MaxPlrs: rGame.MaxPlrs, CurPlrs: rGame.CurPlrs, AdditionalRules: rGame.AdditionalRules,
 		},
 		{
 			//Change MaxPlrs
-			GID: rGame.GID, Name: "New Name", Type: "New Type", Status: "New Status",
+			GID: rGame.GID, Name: "New Name", Type: "consequences", Status: "New Status",
 			OldStatus: rGame.OldStatus, Leader: rGame.Leader, MinPlrs: 2,
 			MaxPlrs: 6, CurPlrs: rGame.CurPlrs, AdditionalRules: rGame.AdditionalRules,
 		},
 		{
 			//Change AdditionalRules
-			GID: rGame.GID, Name: "New Name", Type: "New Type", Status: "New Status",
+			GID: rGame.GID, Name: "New Name", Type: "consequences", Status: "New Status",
 			OldStatus: rGame.OldStatus, Leader: rGame.Leader, MinPlrs: 2,
 			MaxPlrs: 6, CurPlrs: rGame.CurPlrs, AdditionalRules: "{sample: 'NewRule'}",
 		},
