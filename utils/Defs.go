@@ -5,7 +5,7 @@ import "errors"
 type GHandler func(msg GameMsg, broadcast func(string, []byte))
 
 type Message interface {
-	[]User | User | []Game | Game | Join | GameMsg | ACK
+	[]User | User | []Game | Game | Join | GameMsg | Response
 }
 
 var ErrWarn = errors.New("Warning")
