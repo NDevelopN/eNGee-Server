@@ -48,8 +48,11 @@ func initialize(msg utils.GameMsg, game utils.Game, handler utils.HandlerFunc) (
 }
 
 func start(msg utils.GameMsg, game utils.Game, handler utils.HandlerFunc) (utils.GameMsg, error) {
-	err := Start(msg.GID, msg.UID)
-	if err != nil {
+	warning, err := Start(msg)
+
+	if err == utils.ErrWarn {
+		return utils.ReplyWarning(msg, "Cannot start game: "+warning)
+	} else if err != nil {
 		return utils.ReplyError(msg, err)
 	}
 
@@ -104,7 +107,7 @@ func rules(msg utils.GameMsg, game utils.Game, handler utils.HandlerFunc) (utils
 		return utils.ReplyError(msg, err)
 	}
 
-	return handler(msg)
+	return utils.ReplyACK(msg, "Rule change accepted")
 }
 
 func status(msg utils.GameMsg, game utils.Game, handler utils.HandlerFunc) (utils.GameMsg, error) {

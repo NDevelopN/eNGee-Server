@@ -133,7 +133,7 @@ func initialize(msg utils.GameMsg) (utils.GameMsg, error) {
 
 	CVars[msg.GID] = cVar
 
-	return utils.ReplyACK(msg), nil
+	return utils.ReplyACK(msg, "Game Initialized")
 }
 
 func start(msg utils.GameMsg) (utils.GameMsg, error) {
@@ -155,14 +155,19 @@ func start(msg utils.GameMsg) (utils.GameMsg, error) {
 
 	go timer(msg)
 
-	return sendPrompts(msg)
+	err = sendPrompts(msg)
+	if err != nil {
+		return utils.ReplyError(msg, err)
+	} else {
+		return utils.ReplyACK(msg, "Game Started")
+	}
 }
 
-func sendPrompts(msg utils.GameMsg) (utils.GameMsg, error) {
+func sendPrompts(msg utils.GameMsg) error {
 	cVars := CVars[msg.GID]
 	prompts, err := json.Marshal(cVars.Settings.Prompts)
 	if err != nil {
-		return utils.ReplyError(msg, fmt.Errorf("error marshalling prompts: %v", err))
+		return fmt.Errorf("error marshalling prompts: %v", err)
 	}
 
 	upd := utils.GameMsg{
@@ -173,7 +178,7 @@ func sendPrompts(msg utils.GameMsg) (utils.GameMsg, error) {
 
 	utils.Broadcast(upd)
 
-	return utils.ReplyACK(msg), nil
+	return nil
 }
 
 func reset(msg utils.GameMsg) (utils.GameMsg, error) {
@@ -199,7 +204,7 @@ func end(msg utils.GameMsg) (utils.GameMsg, error) {
 
 	delete(CVars, msg.GID)
 
-	return utils.ReplyACK(msg), nil
+	return utils.ReplyACK(msg, "Game Ended")
 }
 
 func pause(msg utils.GameMsg) (utils.GameMsg, error) {
@@ -223,11 +228,7 @@ func pause(msg utils.GameMsg) (utils.GameMsg, error) {
 
 	utils.Broadcast(upd)
 
-	return utils.ReplyACK(msg), nil
-}
-
-func rules(msg utils.GameMsg) (utils.GameMsg, error) {
-	return utils.ReplyACK(msg), nil
+	return utils.ReplyACK(msg, "Game Status Updated to: "+cVars.State)
 }
 
 func checkStatusPhaseChange(gid string, status string) bool {
@@ -265,7 +266,7 @@ func updatePlr(user utils.User, msg utils.GameMsg) (utils.GameMsg, error) {
 	if err != nil {
 		return utils.ReplyError(msg, fmt.Errorf("could not update user status: %v", err))
 	}
-	return utils.ReplyACK(msg), nil
+	return utils.ReplyACK(msg, "Player Status Updated to: "+user.Status)
 
 }
 
@@ -279,11 +280,11 @@ func status(msg utils.GameMsg) (utils.GameMsg, error) {
 	switch msg.Content {
 	case "Ready":
 		if cVar.State == "Lobby" {
-			return utils.ReplyACK(msg), nil
+			return utils.ReplyACK(msg, "User Status Updated to: "+user.Status)
 		}
 	case "Not Ready":
 		if cVar.State == "Lobby" {
-			return utils.ReplyACK(msg), nil
+			return utils.ReplyACK(msg, "User Status Updated to: "+user.Status)
 		}
 	case "Replying":
 		if cVar.State == "Prompts" {
@@ -311,7 +312,7 @@ func leave(msg utils.GameMsg) (utils.GameMsg, error) {
 	delete(cVars.Stories, msg.UID)
 	CVars[msg.GID] = cVars
 
-	return utils.ReplyACK(msg), nil
+	return utils.ReplyACK(msg, "User Left")
 }
 
 func reply(msg utils.GameMsg) (utils.GameMsg, error) {
@@ -369,10 +370,10 @@ func reply(msg utils.GameMsg) (utils.GameMsg, error) {
 			Content: "Wait",
 		}
 	} else {
-		resp = utils.ReplyACK(msg)
+		resp, err = utils.ReplyACK(msg, "Reply Accepted")
 	}
 
-	return resp, nil
+	return resp, err
 }
 
 func shuffle(stories map[string][]string) map[string][]string {
@@ -445,8 +446,6 @@ func Handle(msg utils.GameMsg) (utils.GameMsg, error) {
 		//Can be treated as leave from game mode point of view
 		msg.UID = msg.Content
 		return leave(msg)
-	case "Rules":
-		return rules(msg)
 	case "Status":
 		return status(msg)
 	case "Leave":

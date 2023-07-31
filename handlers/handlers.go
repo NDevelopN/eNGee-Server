@@ -32,7 +32,7 @@ func TestHandler(msg utils.GameMsg) (utils.GameMsg, error) {
 		return utils.ReplyError(msg, errors.New("invalid message Type"))
 	}
 
-	return utils.ReplyACK(msg), nil //, "TestMessage Accepted")
+	return utils.ReplyACK(msg, "TestMessage Accepted")
 }
 
 var typeHandlers = map[string]utils.HandlerFunc{

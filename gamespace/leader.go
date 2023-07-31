@@ -6,6 +6,7 @@ import (
 	utils "Engee-Server/utils"
 	"encoding/json"
 	"fmt"
+	"log"
 )
 
 func checkLeader(gid string, lid string) (utils.Game, error) {
@@ -84,23 +85,23 @@ func Pause(gid string, lid string) error {
 	return nil
 }
 
-func Start(gid string, lid string) error {
-	game, err := checkLeader(gid, lid)
+func Start(msg utils.GameMsg) (string, error) {
+	game, err := checkLeader(msg.GID, msg.UID)
 	if err != nil {
-		return err
+		return "", err
 	}
 
 	if game.Status != "Lobby" && game.OldStatus != "Lobby" {
-		return fmt.Errorf("cannot start game that is not in lobby state")
+		return "Cannot start a game that is not in the Lobby", utils.ErrWarn
 	}
 
 	if game.CurPlrs < game.MinPlrs {
-		return fmt.Errorf("game does not have enough players to start game")
+		return "Cannot start a game that does not have the minimum number of players", utils.ErrWarn
 	}
 
-	plrs, err := g.GetGamePlayers(gid)
+	plrs, err := g.GetGamePlayers(msg.GID)
 	if err != nil {
-		return fmt.Errorf("could not get game players: %v", err)
+		return "", fmt.Errorf("could not get game players: %v", err)
 	}
 
 	ready := 0
@@ -111,7 +112,7 @@ func Start(gid string, lid string) error {
 	}
 
 	if ready <= game.CurPlrs/2 {
-		return fmt.Errorf("less than half of the game players are ready (%d/%d)", ready, game.CurPlrs)
+		return "Cannot Start a game with less than half of all players ready", utils.ErrWarn
 	}
 
 	game.Status = "Play"
@@ -119,26 +120,26 @@ func Start(gid string, lid string) error {
 
 	err = allPlayerStatusUpdate(plrs, "Play")
 	if err != nil {
-		return fmt.Errorf("failed to update game players' status: %v", err)
+		return "", fmt.Errorf("failed to update game players' status: %v", err)
 	}
 
 	err = g.UpdateGame(game)
 	if err != nil {
-		return fmt.Errorf("failed to update game: %v", err)
+		return "", fmt.Errorf("failed to update game: %v", err)
 	}
 
 	upd := utils.GameMsg{
 		Type:    "Status",
-		GID:     gid,
+		GID:     msg.GID,
 		Content: game.Status,
 	}
 
 	err = utils.Broadcast(upd)
 	if err != nil {
-		return fmt.Errorf("could not broadcast update: %v", err)
+		return "", fmt.Errorf("could not broadcast update: %v", err)
 	}
 
-	return nil
+	return "", nil
 }
 
 func Reset(gid string, lid string) error {
@@ -244,7 +245,7 @@ func Remove(gid string, lid string, tid string) error {
 	}
 
 	if tid == lid {
-		return fmt.Errorf("leader cannot remove themselves, must leave")
+		return fmt.Errorf("leaders cannot remove themselves")
 	}
 
 	tUser, err := u.GetUser(tid)
@@ -267,7 +268,7 @@ func Remove(gid string, lid string, tid string) error {
 
 	err = utils.SingleMessage(rMsg)
 	if err != nil {
-		return fmt.Errorf("[%v] + could not inform user of their removal: %v", UpdatePlayerList(gid), err)
+		log.Printf("[Error] %v could not inform user of their removal: %v", UpdatePlayerList(gid), err)
 	}
 
 	return UpdatePlayerList(gid)
