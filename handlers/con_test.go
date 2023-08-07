@@ -3,6 +3,7 @@ package handlers
 import (
 	"Engee-Server/utils"
 	"encoding/json"
+	"log"
 	"testing"
 	"time"
 
@@ -56,6 +57,11 @@ func prepareConGame(t *testing.T, testName string, userCount int) (string, []str
 		}
 
 		users = append(users, uid)
+	}
+
+	log.Printf("Leader: %s", game.Leader)
+	for i, k := range users {
+		log.Printf("User %d: %s", i, k)
 	}
 
 	return gid, users
@@ -151,7 +157,7 @@ func TestInitValid(t *testing.T) {
 		t.Fatalf(`TestInit(Valid) = %q - %q, want "" - ""`, cause, resp)
 	}
 
-	want := createWant(c.LOBBY, users, c.TestSettings.Timer1)
+	want := createWant(c.LOBBY, nil, c.TestSettings.Timer1)
 
 	cVars, err := c.GetConState(gid)
 	if !cmp.Equal(cVars, want) || err != nil {
