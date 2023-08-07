@@ -56,13 +56,6 @@ func joinUserToGame(gid string, uid string) error {
 		return fmt.Errorf("could not update game with user: %v", err)
 	}
 
-	u.GID = gid
-
-	err = db.UpdateUser(u)
-	if err != nil {
-		return fmt.Errorf("could not update user in database: %v", err)
-	}
-
 	return nil
 }
 
@@ -105,6 +98,10 @@ func UpdateUser(n utils.User) error {
 		return fmt.Errorf("could not get user to update: %v", err)
 	}
 
+	if n.Name == "" {
+		return fmt.Errorf("provided user name is empty")
+	}
+
 	if n.GID != o.GID {
 		if n.GID == "" {
 			err = removeUserFromGame(o.GID, o.UID)
@@ -117,18 +114,8 @@ func UpdateUser(n utils.User) error {
 				return fmt.Errorf("could not join user to game: %v", err)
 			}
 		}
-	}
 
-	if n.Name == "" {
-		return fmt.Errorf("provided user name is empty")
-	}
-
-	if n.GID != "" {
-		_, err := g.GetGame(n.GID)
-
-		if err != nil {
-			return fmt.Errorf("could not find a matching game for user GID: %v", err)
-		}
+		n.Status = "Not Ready"
 	}
 
 	err = db.UpdateUser(n)
