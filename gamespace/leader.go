@@ -2,274 +2,226 @@ package gamespace
 
 import (
 	g "Engee-Server/game"
+	h "Engee-Server/handlers"
 	u "Engee-Server/user"
-	utils "Engee-Server/utils"
-	"encoding/json"
+	"Engee-Server/utils"
 	"fmt"
 	"log"
 )
 
-func checkLeader(gid string, lid string) (utils.Game, error) {
-	game, err := g.GetGame(gid)
-
-	if err != nil {
-		return game, fmt.Errorf("could not find game")
-	}
-
-	if game.Leader != lid {
-		return game, fmt.Errorf("game leader and provided ID do not match")
-	}
-
-	return game, nil
-}
-
-func allPlayerStatusUpdate(plrs []utils.User, status string) error {
-	for _, plr := range plrs {
-		plr.Status = status
-
-		err := u.UpdateUser(plr)
-		if err != nil {
-			return fmt.Errorf("failed to update user: %v", err)
-		}
-	}
-
-	pList, err := json.Marshal(plrs)
-	if err != nil {
-		return fmt.Errorf("failed to marshal player list for status update: %v", err)
-	}
-
-	upd := utils.GameMsg{
-		Type:    "Players",
-		GID:     plrs[0].GID,
-		Content: string(pList),
-	}
-
-	err = utils.Broadcast(upd)
-	if err != nil {
-		return fmt.Errorf("could not broacast update: %v", err)
-	}
-
-	return nil
-}
-
-func Pause(gid string, lid string) error {
-	game, err := checkLeader(gid, lid)
-	if err != nil {
-		return err
-	}
-
+func pause(msg utils.GameMsg, game utils.Game) (string, string) {
+	errStr := "[Error] Could not toggle pause"
 	if game.Status == "Pause" {
-		game.Status = game.OldStatus
-		game.OldStatus = ""
+		if game.OldStatus != "" {
+			game.Status = game.OldStatus
+			game.OldStatus = ""
+		} else {
+			log.Printf("%v paused game does not have old status.", errStr)
+			return "Error", "Paused game does not have an old status to return to."
+		}
 	} else {
 		game.OldStatus = game.Status
 		game.Status = "Pause"
 	}
 
+	handler, err := h.GetHandler(game.Type)
+	if err != nil {
+		log.Printf("%v could not get game handler: %v.", errStr, err)
+		return "Error", "No game handler found for game type: " + game.Type
+	}
+
+	cause, resp := handler(msg)
+	if cause != "" {
+		log.Printf("%v %v in game handler: %v.", errStr, cause, resp)
+		return cause, resp
+	}
+
 	err = g.UpdateGame(game)
 	if err != nil {
-		return fmt.Errorf("failed to update game: %v", err)
+		log.Printf("%v could not update game: %v.", errStr, err)
+		return "Error", "Could not apply update to game."
 	}
 
-	upd := utils.GameMsg{
-		Type:    "Status",
-		GID:     gid,
-		Content: game.Status,
-	}
-
-	err = utils.Broadcast(upd)
-	if err != nil {
-		return fmt.Errorf("failed to broadcast update: %v", err)
-	}
-
-	return nil
+	return "", ""
 }
 
-func Start(msg utils.GameMsg) (string, error) {
-	game, err := checkLeader(msg.GID, msg.UID)
-	if err != nil {
-		return "", err
-	}
+func start(msg utils.GameMsg, game utils.Game) (string, string) {
+	warnStr := "[Warn] Cannot start game: "
+	errStr := "[Error] Cannot start game: "
 
-	if game.Status != "Lobby" && game.OldStatus != "Lobby" {
-		return "Cannot start a game that is not in the Lobby", utils.ErrWarn
+	if game.Status != "Lobby" {
+		fmt.Printf("%v game status is not 'Lobby': %v.", warnStr, game.Status)
+		return "Warn", "Cannot start a game that isn't in the Lobby."
 	}
 
 	if game.CurPlrs < game.MinPlrs {
-		return "Cannot start a game that does not have the minimum number of players", utils.ErrWarn
+		fmt.Printf("%v current player count too low: %d/%d", warnStr, game.CurPlrs, game.MinPlrs)
+		return "Warn", "Cannot start a game without the minimum player count."
 	}
 
-	plrs, err := g.GetGamePlayers(msg.GID)
+	plrs, err := g.GetGamePlayers(game.GID)
 	if err != nil {
-		return "", fmt.Errorf("could not get game players: %v", err)
+		fmt.Printf("%v cannot find game players: %v", errStr, err)
+		return "Error", "Could not find the game players."
 	}
 
-	ready := 0
+	ready := game.CurPlrs
 	for _, plr := range plrs {
-		if plr.Status == "Ready" {
-			ready++
+		if plr.Status == "Not Ready" || plr.Status == "Joining" {
+			ready--
 		}
 	}
 
-	if ready <= game.CurPlrs/2 {
-		return "Cannot Start a game with less than half of all players ready", utils.ErrWarn
+	if ready <= game.CurPlrs/2 { //TODO: Add toggle this
+		fmt.Printf("%v not enough ready players: %v/%v", warnStr, ready, game.CurPlrs)
+		return "Warn", "Cannot start a game with less than half of players ready."
 	}
 
 	game.Status = "Play"
 	game.OldStatus = ""
 
-	err = allPlayerStatusUpdate(plrs, "Play")
+	handler, err := h.GetHandler(game.Type)
 	if err != nil {
-		return "", fmt.Errorf("failed to update game players' status: %v", err)
+		log.Printf("%v could not get game handler: %v.", errStr, err)
+		return "Error", "No game handler found for game type: " + game.Type
+	}
+
+	cause, resp := handler(msg)
+	if cause != "" {
+		log.Printf("%v %v in game handler: %v", errStr, cause, resp)
+		return cause, resp
+	}
+
+	err = activePlayersStatusUpdate(plrs, "Not Ready")
+	if err != nil {
+		fmt.Printf("%v could not update the status of the active players: %v.", errStr, err)
+		return "Error", "Could not update players to 'Play' status."
 	}
 
 	err = g.UpdateGame(game)
 	if err != nil {
-		return "", fmt.Errorf("failed to update game: %v", err)
+		fmt.Printf("%v could not update the game: %v.", errStr, err)
+		return "Error", "Could not apply game update."
 	}
 
-	upd := utils.GameMsg{
-		Type:    "Status",
-		GID:     msg.GID,
-		Content: game.Status,
-	}
-
-	err = utils.Broadcast(upd)
-	if err != nil {
-		return "", fmt.Errorf("could not broadcast update: %v", err)
-	}
-
-	return "", nil
+	return "", ""
 }
 
-func Reset(gid string, lid string) error {
-	game, err := checkLeader(gid, lid)
+func reset(msg utils.GameMsg, game utils.Game) (string, string) {
+	errStr := "[Error] Cannot reset game: "
+
+	game.Status = "Resetting"
+
+	plrs, err := g.GetGamePlayers(game.GID)
 	if err != nil {
-		return err
+		fmt.Printf("%v cannot find game players: %v.", errStr, err)
+		return "Error", "Could not find the game players."
 	}
 
-	game.Status = "Lobby"
+	handler, err := h.GetHandler(game.Type)
+	if err != nil {
+		log.Printf("%v could not get game handler: %v.", errStr, err)
+		return "Error", "No game handler found for game type: " + game.Type
+	}
+
+	cause, resp := handler(msg)
+	if cause != "" {
+		log.Printf("%v %v in game handler: %v", errStr, cause, resp)
+		return cause, resp
+	}
+
+	err = activePlayersStatusUpdate(plrs, "Not Ready")
+	if err != nil {
+		fmt.Printf("%v could not update the status of the active players: %v.", errStr, err)
+		return "Error", "Could not update players to 'Play' status."
+	}
 
 	err = g.UpdateGame(game)
 	if err != nil {
-		return fmt.Errorf("failed to update game: %v", err)
+		fmt.Printf("%v could not update the game: %v.", errStr, err)
+		return "Error", "Could not apply game update."
 	}
 
-	plrs, err := g.GetGamePlayers(gid)
-	if err != nil {
-		return fmt.Errorf("could not get game players: %v", err)
-	}
-	err = allPlayerStatusUpdate(plrs, "Not Ready")
-	if err != nil {
-		return fmt.Errorf("failed to update game players' status: %v", err)
-	}
+	msg.Type = "Init"
 
-	upd := utils.GameMsg{
-		Type:    "Status",
-		GID:     gid,
-		Content: game.Status,
-	}
-
-	err = utils.Broadcast(upd)
-	if err != nil {
-		return fmt.Errorf("could not broadcast update: %v", err)
-	}
-
-	return nil
+	return initialize(msg, game)
 }
 
-func End(gid string, lid string) error {
-	game, err := checkLeader(gid, lid)
+func end(msg utils.GameMsg, game utils.Game) (string, string) {
+	errStr := "[Error] Cannot end game: "
+
+	handler, err := h.GetHandler(game.Type)
 	if err != nil {
-		return err
+		log.Printf("%v could not get game handler: %v.", errStr, err)
+		return "Error", "No game handler found for game type: " + game.Type + "."
 	}
 
-	game.Status = "Ending"
-	err = g.UpdateGame(game)
-	if err != nil {
-		return fmt.Errorf("failed to update game: %v", err)
+	cause, resp := handler(msg)
+	if cause != "" {
+		log.Printf("%v %v in game handler: %v.", errStr, cause, resp)
+		return cause, resp
 	}
 
-	upd := utils.GameMsg{
+	eMsg := utils.GameMsg{
+		GID:  msg.GID,
 		Type: "End",
-		GID:  gid,
 	}
 
-	err = utils.Broadcast(upd)
+	err = utils.Broadcast(eMsg)
 	if err != nil {
-		return fmt.Errorf("failed to broadcast update: %v", err)
+		log.Printf("%v could not broadcast end message: %v", errStr, err)
+		return "Error", "Could not broadcast game end message."
 	}
 
-	err = g.DeleteGame(gid)
+	Shutdown[game.GID] <- 0
+
+	err = g.DeleteGame(game.GID)
 	if err != nil {
-		return fmt.Errorf("failed to delete game: %v", err)
+		fmt.Printf("%v could not delete the game: %v.", errStr, err)
+		return "Error", "Could not finalize game deletion."
 	}
 
-	return nil
+	return "", ""
 }
 
-func Rules(gid string, lid string, game utils.Game) error {
-	_, err := checkLeader(gid, lid)
+func remove(msg utils.GameMsg, game utils.Game) (string, string) {
+	errStr := "[Error] Cannot remove player from game: "
+	warnStr := "[Warn] Cannot remove player from game: "
+
+	t := msg.Content
+	if t == game.Leader {
+		fmt.Printf("%v leader cannot remove themselves.", warnStr)
+		return "Warn", "A leader cannot remove themselves, they must leave normally."
+	}
+
+	tUser, err := u.GetUser(t)
 	if err != nil {
-		return err
-	}
-
-	err = g.UpdateGame(game)
-	if err != nil {
-		return fmt.Errorf("failed to update game: %v", err)
-	}
-
-	gm, err := json.Marshal(game)
-	if err != nil {
-		return fmt.Errorf("failed to marshal game update: %v", err)
-	}
-
-	upd := utils.GameMsg{
-		Type:    "Update",
-		GID:     gid,
-		Content: string(gm),
-	}
-
-	err = utils.Broadcast(upd)
-	if err != nil {
-		return fmt.Errorf("failed to broadcast game update: %v", err)
-	}
-
-	return Reset(gid, lid)
-}
-
-func Remove(gid string, lid string, tid string) error {
-	_, err := checkLeader(gid, lid)
-	if err != nil {
-		return err
-	}
-
-	if tid == lid {
-		return fmt.Errorf("leaders cannot remove themselves")
-	}
-
-	tUser, err := u.GetUser(tid)
-	if err != nil {
-		return fmt.Errorf("failed to get target user: %v", err)
+		fmt.Printf("%v failed to find target user: %v.", errStr, err)
+		return "Error", "Could not find target user to remove."
 	}
 
 	tUser.GID = ""
 
-	err = u.UpdateUser(tUser)
-	if err != nil {
-		return fmt.Errorf("failed to update user: %v", err)
+	rMsg := utils.GameMsg{
+		UID:  t,
+		GID:  game.GID,
+		Type: "Leave",
 	}
 
-	rMsg := utils.GameMsg{
-		Type: "Removal",
-		GID:  gid,
-		UID:  tid,
+	cause, resp := leave(rMsg, tUser, game)
+	if cause != "" {
+		log.Printf("%v %v in leave(removal): %v.", errStr, cause, resp)
+		return cause, resp
 	}
+
+	rMsg.Type = "Removal"
+	//TODO provide a reason?
 
 	err = utils.SingleMessage(rMsg)
 	if err != nil {
-		log.Printf("[Error] %v could not inform user of their removal: %v", UpdatePlayerList(gid), err)
+		log.Printf("%v could not update removed user: %v.", errStr, err)
+		return "Error", "Could not send user removal notice."
 	}
 
-	return UpdatePlayerList(gid)
+	return "", ""
 }

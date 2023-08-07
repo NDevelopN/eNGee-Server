@@ -1,37 +1,32 @@
 package gamespace
 
 import (
-	utils "Engee-Server/utils"
-	"encoding/json"
-	"fmt"
-
 	g "Engee-Server/game"
 	h "Engee-Server/handlers"
 	u "Engee-Server/user"
+	"Engee-Server/utils"
+	"encoding/json"
+
+	"fmt"
+	"log"
 )
 
-var errNotLeader = fmt.Errorf("player is not the game leader")
+var Shutdown = map[string](chan int){}
 
-func UpdatePlayerList(gid string) error {
-	plrs, err := g.GetGamePlayers(gid)
-	if len(plrs) == 0 || err != nil {
-		game, err := g.GetGame(gid)
-		if err != nil {
-			return fmt.Errorf("could not get game: %v", err)
-		}
-		End(gid, game.Leader)
+func CleanUp(gid string) {
+	Shutdown[gid] <- 0
+	utils.RemoveConnectionPool(gid)
+}
 
-		return fmt.Errorf("could not get game players: %v", err)
-	}
-
+func pListUpdateBC(gid string, plrs []utils.User) error {
 	pList, err := json.Marshal(plrs)
 	if err != nil {
 		return fmt.Errorf("could not marshal player list: %v", err)
 	}
 
 	msg := utils.GameMsg{
-		Type:    "Players",
 		GID:     gid,
+		Type:    "Players",
 		Content: string(pList),
 	}
 
@@ -43,161 +38,204 @@ func UpdatePlayerList(gid string) error {
 	return nil
 }
 
-func initialize(msg utils.GameMsg, game utils.Game, handler utils.HandlerFunc) (utils.GameMsg, error) {
-	return handler(msg)
+func activePlayersStatusUpdate(plrs []utils.User, status string) error {
+	for _, plr := range plrs {
+		if plr.Status == "Leaving" || plr.Status == "Spectating" {
+			continue
+		}
+
+		plr.Status = status
+
+		err := u.UpdateUser(plr)
+		if err != nil {
+			return fmt.Errorf("failed to update user [%s]: %v", plr.UID, err)
+		}
+	}
+
+	return nil
 }
 
-func start(msg utils.GameMsg, game utils.Game, handler utils.HandlerFunc) (utils.GameMsg, error) {
-	warning, err := Start(msg)
-
-	if err == utils.ErrWarn {
-		return utils.ReplyWarning(msg, "Cannot start game: "+warning)
-	} else if err != nil {
-		return utils.ReplyError(msg, err)
+func gameUpdateBC(game utils.Game) error {
+	gm, err := json.Marshal(game)
+	if err != nil {
+		return fmt.Errorf("could not marshal game update: %v", err)
 	}
 
-	return handler(msg)
+	upd := utils.GameMsg{
+		GID:     game.GID,
+		Type:    "Update",
+		Content: string(gm),
+	}
+
+	err = utils.Broadcast(upd)
+	if err != nil {
+		return fmt.Errorf("could not broadcast game update: %v", err)
+	}
+
+	return nil
 }
 
-func reset(msg utils.GameMsg, game utils.Game, handler utils.HandlerFunc) (utils.GameMsg, error) {
-	err := Reset(msg.GID, msg.UID)
-	if err != nil {
-		return utils.ReplyError(msg, err)
+func gameStatusBC(gid string, status string) error {
+	upd := utils.GameMsg{
+		GID:     gid,
+		Type:    "Status",
+		Content: status,
 	}
 
-	return handler(msg)
+	err := utils.Broadcast(upd)
+	if err != nil {
+		return fmt.Errorf("could not broadcast game status update: %v", err)
+	}
+
+	return nil
+
 }
 
-func end(msg utils.GameMsg, game utils.Game, handler utils.HandlerFunc) (utils.GameMsg, error) {
-	err := End(msg.GID, msg.UID)
+func getValidPlrGame(msg utils.GameMsg) (utils.User, utils.Game, error) {
+	var plr utils.User
+	var game utils.Game
+
+	plr, err := u.GetUser(msg.UID)
 	if err != nil {
-		return utils.ReplyError(msg, err)
+		return plr, game, fmt.Errorf("could not get user: %v", err)
 	}
 
-	return handler(msg)
+	if plr.GID != msg.GID {
+		return plr, game, fmt.Errorf("player GID and msg GID do not match: %v", err)
+	}
+
+	game, err = g.GetGame(msg.GID)
+	if err != nil {
+		return plr, game, fmt.Errorf("could not get game: %v", err)
+	}
+
+	return plr, game, nil
 }
 
-func pause(msg utils.GameMsg, game utils.Game, handler utils.HandlerFunc) (utils.GameMsg, error) {
-	err := Pause(msg.GID, msg.UID)
+func initialize(msg utils.GameMsg, game utils.Game) (string, string) {
+	errStr := "[Error] Cannot initialize game: "
+
+	handler, err := h.GetHandler(game.Type)
 	if err != nil {
-		return utils.ReplyError(msg, err)
+		log.Printf("%v could not get game handler: %v.", errStr, err)
+		return "Error", "No game handler found for game type: " + game.Type + "."
 	}
 
-	return handler(msg)
-}
-
-func remove(msg utils.GameMsg, game utils.Game, handler utils.HandlerFunc) (utils.GameMsg, error) {
-	err := Remove(msg.GID, msg.UID, msg.Content)
-	if err != nil {
-		return utils.ReplyError(msg, err)
+	cause, resp := handler(msg)
+	if cause != "" {
+		log.Printf("%v %v in game handler: %v.", errStr, cause, resp)
+		return cause, resp
 	}
 
-	return handler(msg)
-}
-
-func rules(msg utils.GameMsg, game utils.Game, handler utils.HandlerFunc) (utils.GameMsg, error) {
-	var gm utils.Game
-	err := json.Unmarshal([]byte(msg.Content), &gm)
-	if err != nil {
-		return utils.ReplyError(msg, err)
+	_, k := Shutdown[msg.GID]
+	if k {
+		Shutdown[msg.GID] <- 0
 	}
 
-	err = Rules(msg.GID, msg.UID, gm)
+	Shutdown[msg.GID] = make(chan int)
+
+	go CheckGame(game)
+	go CheckPlayers(game)
+
+	game.Status = "Lobby"
+	err = g.UpdateGame(game)
 	if err != nil {
-		return utils.ReplyError(msg, err)
+		fmt.Printf("%v could not update game to Lobby status: %v", errStr, err)
+		return "Error", "Could not set game status."
 	}
 
-	return utils.ReplyACK(msg, "Rule change accepted")
-}
-
-func status(msg utils.GameMsg, game utils.Game, handler utils.HandlerFunc) (utils.GameMsg, error) {
-	err := ChangeStatus(msg.UID, msg.GID, msg.Content)
+	plrs, err := g.GetGamePlayers(msg.GID)
 	if err != nil {
-		return utils.ReplyError(msg, err)
+		fmt.Printf("%v could not get game players: %v", errStr, err)
+		return "Error", "No game players found."
 	}
 
-	return handler(msg)
-}
-
-func leave(msg utils.GameMsg, game utils.Game, handler utils.HandlerFunc) (utils.GameMsg, error) {
-	err := Leave(msg.UID, msg.GID)
+	err = activePlayersStatusUpdate(plrs, "Not Ready")
 	if err != nil {
-		return utils.ReplyError(msg, err)
+		fmt.Printf("%v could not update active players status: %v", errStr, err)
+		return "Error", "Could not set active players' status."
 	}
 
-	return handler(msg)
+	return "", ""
 }
 
 func GamespaceHandle(msg utils.GameMsg) (utils.GameMsg, error) {
-	game, err := g.GetGame(msg.GID)
+	plr, game, err := getValidPlrGame(msg)
 	if err != nil {
-		return utils.ReplyError(msg, err)
+		log.Printf("[Error] Could not validate game or player: %v", err)
+		return utils.CreateReply(msg, "Error", "Invalid ID(s) provided")
 	}
 
-	handler := h.GetHandlers()[game.Type]
-	if handler == nil {
-		return utils.ReplyError(msg, fmt.Errorf(`game type %q does not have a handler`, game.Type))
-	}
+	leader := game.Leader == plr.UID
 
-	user, err := u.GetUser(msg.UID)
-	if err != nil {
-		return utils.ReplyError(msg, err)
-	}
-
-	if user.GID != msg.GID {
-		return utils.ReplyError(msg, fmt.Errorf("user is not in game provided"))
-	}
-
-	leader := game.Leader == msg.UID
+	var cause, resp string
 
 	switch msg.Type {
 	case "Init":
 		if leader {
-			return initialize(msg, game, handler)
+			cause, resp = initialize(msg, game)
 		} else {
-			return utils.ReplyError(msg, errNotLeader)
+			cause = "Error"
+			resp = "Must be a leader to Init"
 		}
 	case "Start":
 		if leader {
-			return start(msg, game, handler)
+			cause, resp = start(msg, game)
 		} else {
-			return utils.ReplyError(msg, errNotLeader)
+			cause = "Error"
+			resp = "Must be a leader to Start"
 		}
 	case "Reset":
 		if leader {
-			return reset(msg, game, handler)
+			cause, resp = reset(msg, game)
 		} else {
-			return utils.ReplyError(msg, errNotLeader)
+			cause = "Error"
+			resp = "Must be a leader to Reset"
 		}
 	case "End":
 		if leader {
-			return end(msg, game, handler)
+			cause, resp = end(msg, game)
 		} else {
-			return utils.ReplyError(msg, errNotLeader)
+			cause = "Error"
+			resp = "Must be a leader to End"
 		}
 	case "Pause":
 		if leader {
-			return pause(msg, game, handler)
+			cause, resp = pause(msg, game)
 		} else {
-			return utils.ReplyError(msg, errNotLeader)
+			cause = "Error"
+			resp = "Must be a leader to Pause"
 		}
 	case "Remove":
 		if leader {
-			return remove(msg, game, handler)
+			cause, resp = remove(msg, game)
 		} else {
-			return utils.ReplyError(msg, errNotLeader)
-		}
-	case "Rules":
-		if leader {
-			return rules(msg, game, handler)
-		} else {
-			return utils.ReplyError(msg, errNotLeader)
+			cause = "Error"
+			resp = "Must be a leader to Remove"
 		}
 	case "Status":
-		return status(msg, game, handler)
+		cause, resp = status(msg, plr, game)
 	case "Leave":
-		return leave(msg, game, handler)
+		cause, resp = leave(msg, plr, game)
 	default:
-		return handler(msg)
+		errStr := "[Error] Cannot process " + msg.Type + " Request: "
+
+		handler, err := h.GetHandler(game.Type)
+		if err != nil {
+			log.Printf("%v could not get game handler: %v.", errStr, err)
+			cause = "Error"
+			resp = "No game handler found for game type: " + game.Type
+		} else {
+			cause, resp = handler(msg)
+			if cause != "" {
+				log.Printf("%v %v in game handler: %v.", errStr, cause, resp)
+			}
+		}
 	}
+
+	if cause != "" {
+		return utils.CreateReply(msg, cause, resp)
+	}
+
+	return utils.GameMsg{}, nil
 }
