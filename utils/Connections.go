@@ -3,62 +3,96 @@ package utils
 import (
 	"encoding/json"
 	"fmt"
+	"sync"
 
 	"github.com/gorilla/websocket"
 )
 
-var connPools = map[string]map[string]*websocket.Conn{}
+type connPool struct {
+	mu sync.Mutex
+	v  map[string]*Conn
+}
+
+type Conn struct {
+	Mu sync.Mutex
+	V  *websocket.Conn
+}
+
+var poolMap = map[string]*connPool{}
 
 func CheckConnection(gid string, uid string) bool {
-	_, found := connPools[gid][uid]
+	pool := poolMap[gid]
+	pool.mu.Lock()
+	defer pool.mu.Unlock()
+
+	_, found := pool.v[uid]
 	return found
 }
 
 func AddConnectionPool(gid string) error {
-	_, k := connPools[gid]
+	_, k := poolMap[gid]
 	if k {
 		return fmt.Errorf("connection pool already exists: %v", gid)
 	}
-	connPools[gid] = map[string]*websocket.Conn{}
+
+	pool := new(connPool)
+	pool.mu = sync.Mutex{}
+	pool.v = map[string]*Conn{}
+
+	poolMap[gid] = pool
+
 	return nil
 }
 
-func RemoveConnectionPool(gid string) error {
-	_, k := connPools[gid]
+func AddConnection(gid string, uid string, c *websocket.Conn) error {
+	pool, k := poolMap[gid]
 	if !k {
-		return fmt.Errorf("connection pool not found: %v", gid)
+		return fmt.Errorf("no connection pool found for given gid: %v", gid)
 	}
 
-	for i := range connPools[gid] {
-		err := RemoveConnection(gid, i)
-		if err != nil {
-			return fmt.Errorf("could not remove all connections from pool :%v", err)
-		}
+	pool.mu.Lock()
+	defer pool.mu.Unlock()
+
+	_, k = pool.v[uid]
+	if k {
+		return fmt.Errorf("connection already exists in pool: %v", uid)
 	}
+
+	nuConn := new(Conn)
+	nuConn.Mu = sync.Mutex{}
+	nuConn.V = c
+
+	pool.v[uid] = nuConn
 
 	return nil
 }
 
-func GetConnections(gid string) (map[string]*websocket.Conn, error) {
-	pool, k := connPools[gid]
+func GetConnections(gid string) (map[string]*Conn, error) {
+	pool, k := poolMap[gid]
 	if !k {
 		return nil, fmt.Errorf("no connection pool found for given gid: %v", gid)
 	}
 
-	if len(pool) == 0 {
+	pool.mu.Lock()
+	defer pool.mu.Unlock()
+
+	if len(pool.v) == 0 {
 		return nil, fmt.Errorf("no connections found in the pool")
 	}
 
-	return pool, nil
+	return pool.v, nil
 }
 
 func Broadcast(msg GameMsg) error {
-	pool, k := connPools[msg.GID]
+	pool, k := poolMap[msg.GID]
 	if !k {
 		return fmt.Errorf("no connection pool found for given gid: %v", msg.GID)
 	}
 
-	if len(pool) == 0 {
+	pool.mu.Lock()
+	defer pool.mu.Unlock()
+
+	if len(pool.v) == 0 {
 		return fmt.Errorf("no connections found in the pool")
 	}
 
@@ -67,51 +101,42 @@ func Broadcast(msg GameMsg) error {
 		return fmt.Errorf("failed to marshal message: %v", err)
 	}
 
-	for _, c := range pool {
-		c.WriteMessage(websocket.TextMessage, message)
+	for _, conn := range pool.v {
+		conn.Mu.Lock()
+		conn.V.WriteMessage(websocket.TextMessage, message)
+		conn.Mu.Unlock()
 	}
 
 	return nil
 }
 
 func SingleMessage(msg GameMsg) error {
-	pool, k := connPools[msg.GID]
+	pool, k := poolMap[msg.GID]
 	if !k {
 		return fmt.Errorf("no connection pool found for given gid: %v", msg.GID)
 	}
 
-	if len(pool) == 0 {
+	pool.mu.Lock()
+	defer pool.mu.Unlock()
+
+	if len(pool.v) == 0 {
 		return fmt.Errorf("no connections found in the pool")
 	}
 
-	conn, k := pool[msg.UID]
+	conn, k := pool.v[msg.UID]
 	if !k {
 		return fmt.Errorf("no connection found for given uid in pool: %v", msg.UID)
 	}
+
+	conn.Mu.Lock()
+	defer conn.Mu.Unlock()
 
 	message, err := json.Marshal(msg)
 	if err != nil {
 		return fmt.Errorf("failed to marshal message: %v", err)
 	}
 
-	conn.WriteMessage(websocket.TextMessage, message)
-
-	return nil
-}
-
-func AddConnection(gid string, uid string, conn *websocket.Conn) error {
-	pool, k := connPools[gid]
-	if !k {
-		return fmt.Errorf("no connection pool found for given gid: %v", gid)
-	}
-
-	_, k = pool[uid]
-	if k {
-		return fmt.Errorf("connection already exists in pool: %v", uid)
-	}
-
-	pool[uid] = conn
-	connPools[gid] = pool
+	conn.V.WriteMessage(websocket.TextMessage, message)
 
 	return nil
 }
@@ -127,11 +152,31 @@ func RemoveConnection(gid string, uid string) error {
 		return fmt.Errorf("no connection found for given uid: %v", uid)
 	}
 
-	conn.Close()
+	conn.V.Close()
 
 	delete(pool, uid)
-	connPools[gid] = pool
 
 	return nil
+}
 
+func RemoveConnectionPool(gid string) error {
+	pool, k := poolMap[gid]
+	if !k {
+		return fmt.Errorf("connection pool not found: %v", gid)
+	}
+
+	pool.mu.Lock()
+
+	for i := range pool.v {
+		err := RemoveConnection(gid, i)
+		if err != nil {
+			pool.mu.Unlock()
+			return fmt.Errorf("could not remove all connections from pool :%v", err)
+		}
+	}
+
+	pool.mu.Unlock()
+	delete(poolMap, gid)
+
+	return nil
 }
