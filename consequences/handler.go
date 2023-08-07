@@ -254,6 +254,7 @@ func initialize(msg utils.GameMsg) (string, string) {
 func start(msg utils.GameMsg) (string, string) {
 	cVars := CVars[msg.GID]
 	cVars.Stories = make(map[string][]string)
+
 	plrs, err := g.GetGamePlayers(msg.GID)
 	if err != nil {
 		log.Printf("[Error] Could not get game players: %v", err)
@@ -435,41 +436,41 @@ func Handle(msg utils.GameMsg) (string, string) {
 
 	switch msg.Type {
 	case "Init":
-		if leader {
+		if !leader {
 			return leaderError("Init")
 		} else {
 			return initialize(msg)
 		}
 	case "Start":
-		if leader {
+		if !leader {
 			return leaderError("Start")
 
 		} else {
 			return start(msg)
 		}
 	case "Reset":
-		if leader {
+		if !leader {
 			return leaderError("Reset")
 
 		} else {
 			return reset(msg)
 		}
 	case "End":
-		if leader {
+		if !leader {
 			return leaderError("End")
 
 		} else {
 			return end(msg)
 		}
 	case "Pause":
-		if leader {
+		if !leader {
 			return leaderError("Pause")
 
 		} else {
 			return pause(msg)
 		}
 	case "Remove":
-		if leader {
+		if !leader {
 			return leaderError("Remove")
 
 		} else {
