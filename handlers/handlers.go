@@ -1,43 +1,38 @@
 package handlers
 
 import (
-	"Engee-Server/consequences"
 	db "Engee-Server/database"
 	"Engee-Server/utils"
-	"errors"
+	"fmt"
 	"log"
 )
 
-func TestHandler(msg utils.GameMsg) (utils.GameMsg, error) {
+func TestHandler(msg utils.GameMsg) (string, string) {
 	switch msg.Type {
 	case "Init":
-		break
+		return "", ""
 	case "Start":
-		break
+		return "", ""
 	case "Reset":
-		break
+		return "", ""
 	case "End":
-		break
+		return "", ""
 	case "Pause":
-		break
+		return "", ""
 	case "Remove":
-		break
-	case "Rules":
-		break
+		return "", ""
 	case "Status":
-		break
+		return "", ""
 	case "Leave":
-		break
+		return "", ""
 	default:
-		return utils.ReplyError(msg, errors.New("invalid message Type"))
+		return "Error", "Unsupported message type: " + msg.Type
 	}
-
-	return utils.ReplyACK(msg, "TestMessage Accepted")
 }
 
-var typeHandlers = map[string]utils.HandlerFunc{
-	"test":         TestHandler,
-	"consequences": consequences.Handle,
+var typeHandlers = map[string]utils.GHandler{
+	"test": TestHandler,
+	// "consequences": consequences.Handle,
 }
 
 func Init() {
@@ -47,6 +42,15 @@ func Init() {
 	}
 }
 
-func GetHandlers() map[string]utils.HandlerFunc {
+func GetHandlers() map[string]utils.GHandler {
 	return typeHandlers
+}
+
+func GetHandler(gType string) (utils.GHandler, error) {
+	h, k := typeHandlers[gType]
+	if !k {
+		return nil, fmt.Errorf("no handler registered for: %v", gType)
+	}
+
+	return h, nil
 }
