@@ -5,6 +5,15 @@ import (
 	"encoding/json"
 )
 
+const (
+	LOBBY int = iota
+	PROMPTS
+	POSTPROMPTS
+	STORIES
+	POSTSTORIES
+	ERROR
+)
+
 type ConSettings struct {
 	Rounds  int      `json:"rounds"`
 	Shuffle int      `json:"shuffle"`
@@ -14,8 +23,8 @@ type ConSettings struct {
 }
 
 type ConVars struct {
-	State    string
-	SusState string
+	State    int
+	Paused   bool
 	Round    int
 	Timer    int
 	Settings ConSettings
@@ -24,7 +33,7 @@ type ConVars struct {
 
 var CVars map[string]ConVars
 
-var defPrompts = []string{
+var DefPrompts = []string{
 	"Name of First Character",
 	"Name of Second Character",
 	"Location of the Scene",
@@ -33,7 +42,7 @@ var defPrompts = []string{
 	"Consequences of the Scene",
 }
 
-var defStory = []string{
+var DefStory = []string{
 	"Character 1",
 	"Character 2",
 	"Location",
@@ -42,40 +51,39 @@ var defStory = []string{
 	"Consequence",
 }
 
-var testSettings = ConSettings{
+var TestSettings = ConSettings{
 	Rounds:  1,
 	Shuffle: 1,
 	Timer1:  10,
 	Timer2:  10,
-	Prompts: defPrompts,
+	Prompts: DefPrompts,
 }
 
-var defSettings = ConSettings{
+var DefSettings = ConSettings{
 	Rounds:  1,
 	Shuffle: 1,
 	Timer1:  0,
 	Timer2:  0,
-	Prompts: defPrompts,
+	Prompts: DefPrompts,
 }
 
-var ts, _ = json.Marshal(testSettings)
+var Ts, _ = json.Marshal(TestSettings)
 
-var defGame = utils.Game{
+var DefGame = utils.Game{
 	GID:             "",
 	Name:            "Con Test",
-	Type:            "Consequences",
+	Type:            "consequences",
 	Status:          "Lobby",
 	OldStatus:       "",
 	Leader:          "",
 	MinPlrs:         3,
 	MaxPlrs:         10,
 	CurPlrs:         0,
-	AdditionalRules: string(ts),
+	AdditionalRules: string(Ts),
 }
 
-var defPlr = utils.User{
-	UID:    "",
-	GID:    "",
-	Name:   "Con Tester",
-	Status: "Ready",
+var DefPlr = utils.User{
+	UID:  "",
+	GID:  "",
+	Name: "Con Tester",
 }

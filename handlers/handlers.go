@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"Engee-Server/consequences"
 	db "Engee-Server/database"
 	"Engee-Server/utils"
 	"fmt"
@@ -31,14 +32,16 @@ func TestHandler(msg utils.GameMsg) (string, string) {
 }
 
 var typeHandlers = map[string]utils.GHandler{
-	"test": TestHandler,
-	// "consequences": consequences.Handle,
+	"test":         TestHandler,
+	"consequences": consequences.Handle,
 }
 
 func Init() {
 	err := db.CreateGameTypes(typeHandlers)
 	if err != nil {
 		log.Fatalf("[Error] Failed to create game type list: %v", err)
+	} else {
+		log.Printf("[OK] Handlers added")
 	}
 }
 
