@@ -2,7 +2,6 @@ package consequences
 
 import (
 	g "Engee-Server/game"
-	u "Engee-Server/user"
 	"Engee-Server/utils"
 	"encoding/json"
 	"fmt"
@@ -11,155 +10,51 @@ import (
 	"time"
 )
 
-func timer(msg utils.GameMsg) {
+var tickerStop chan byte
 
-	gid := msg.GID
-
-	if CVars[gid].Timer == 0 {
+func timer(msg utils.GameMsg, cVars ConVars) {
+	if cVars.Timer == 0 {
 		return
 	}
 
+	gid := msg.GID
+
 	upd := utils.GameMsg{
-		Type: "Timer",
-		GID:  gid,
+		Type:    "ConTimer",
+		GID:     gid,
+		Content: fmt.Sprintf("%d", cVars.Timer),
 	}
 
-	for CVars[gid].Timer > 0 {
-		cVars := CVars[gid]
-		t := time.Now()
-		if cVars.State == "Lobby" {
-			return
-		}
-
-		if cVars.State == "Pause" {
-			time.Sleep(time.Millisecond * 10)
-			continue
-		}
-
-		time.Sleep(time.Second * 1)
-
-		elapsed := time.Since(t)
-		cVars.Timer -= int(elapsed)
-
-		CVars[gid] = cVars
-
-		upd.Content = fmt.Sprintf("%d", cVars.Timer)
-
-		utils.Broadcast(upd)
+	err := utils.Broadcast(upd)
+	if err != nil {
+		log.Printf("[Error] Could not broadcast new timer: %v", err)
+		return
 	}
 
-	nextState(msg)
-}
+	t := cVars.Timer
 
-func nextState(msg utils.GameMsg) {
-	cVars := CVars[msg.GID]
-	switch cVars.State {
-	case "Prompts":
-		cVars.State = "Stories"
-		sendShuffle(msg.GID)
-	case "Stories":
-		if cVars.Round < cVars.Settings.Rounds {
-			cVars.State = "Prompts"
-			cVars.Round++
-			for i := range cVars.Stories {
-				cVars.Stories[i] = []string{}
+	ticker := time.NewTicker(time.Second)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-ticker.C:
+			if CVars[gid].Paused {
+				continue
 			}
-			sendPrompts(msg)
-		} else {
-			reset(msg)
+
+			t -= 1
+
+			if t <= 0 {
+				nextState(msg, CVars[gid])
+				ticker.Stop()
+				return
+			}
+
+		case <-tickerStop:
+			ticker.Stop()
 			return
 		}
-	}
-
-	CVars[msg.GID] = cVars
-}
-
-func initialize(msg utils.GameMsg) (utils.GameMsg, error) {
-	if len(CVars) == 0 {
-		CVars = make(map[string]ConVars)
-	}
-
-	game, err := g.GetGame(msg.GID)
-	if err != nil {
-		return utils.ReplyError(msg, fmt.Errorf("could not get game from GID: %v", err))
-	}
-
-	var settings ConSettings
-	decoder := json.NewDecoder(strings.NewReader(game.AdditionalRules))
-	decoder.DisallowUnknownFields()
-
-	if game.AdditionalRules != "" {
-		err = decoder.Decode(&settings)
-		if err != nil {
-			return utils.ReplyError(msg, fmt.Errorf("could not parse additional rules: %v", err))
-		}
-	} else {
-		settings = defSettings
-	}
-
-	if settings.Rounds < 0 {
-		return utils.ReplyError(msg, fmt.Errorf("rounds must not be less than 0: %v", settings.Rounds))
-	}
-
-	highestShuffle := 3
-
-	if settings.Shuffle < 0 {
-		return utils.ReplyError(msg, fmt.Errorf("shuffle must not be less than 0: %v", settings.Shuffle))
-	} else if settings.Shuffle > highestShuffle {
-		return utils.ReplyError(msg, fmt.Errorf("shuffle option not recognised: %v", settings.Shuffle))
-	} else if settings.Shuffle == 0 {
-		settings.Shuffle = 1
-	}
-
-	if settings.Timer1 < 0 || settings.Timer2 < 0 {
-		return utils.ReplyError(msg,
-			fmt.Errorf("timers must not be less than 0: (1: %v, 2: %v)", settings.Timer1, settings.Timer2))
-	}
-
-	pLen := len(settings.Prompts)
-	if pLen == 0 {
-		settings.Prompts = defPrompts
-	} else if pLen == 1 {
-		return utils.ReplyError(msg,
-			fmt.Errorf("prompts must be empty or have 2 or more values: %v", pLen))
-	}
-
-	cVar := ConVars{
-		State:    "Lobby",
-		Settings: settings,
-		Timer:    settings.Timer1,
-		Stories:  map[string][]string{},
-	}
-
-	CVars[msg.GID] = cVar
-
-	return utils.ReplyACK(msg, "Game Initialized")
-}
-
-func start(msg utils.GameMsg) (utils.GameMsg, error) {
-	cVars := CVars[msg.GID]
-	cVars.Stories = make(map[string][]string)
-	plrs, err := g.GetGamePlayers(msg.GID)
-	if err != nil {
-		return utils.ReplyError(msg, fmt.Errorf("error getting game players: %v", err))
-	}
-
-	for _, p := range plrs {
-		cVars.Stories[p.UID] = []string{}
-	}
-
-	cVars.State = "Prompts"
-	cVars.Timer = cVars.Settings.Timer1
-
-	CVars[msg.GID] = cVars
-
-	go timer(msg)
-
-	err = sendPrompts(msg)
-	if err != nil {
-		return utils.ReplyError(msg, err)
-	} else {
-		return utils.ReplyACK(msg, "Game Started")
 	}
 }
 
@@ -179,201 +74,6 @@ func sendPrompts(msg utils.GameMsg) error {
 	utils.Broadcast(upd)
 
 	return nil
-}
-
-func reset(msg utils.GameMsg) (utils.GameMsg, error) {
-	cVars := CVars[msg.GID]
-	cVars.State = "Lobby"
-	cVars.Stories = make(map[string][]string)
-
-	CVars[msg.GID] = cVars
-
-	resp, err := initialize(msg)
-	if err != nil {
-		return utils.ReplyError(msg, fmt.Errorf("error resetting to current settings: %v", err))
-	}
-
-	return resp, nil
-}
-
-func end(msg utils.GameMsg) (utils.GameMsg, error) {
-	_, err := reset(msg)
-	if err != nil {
-		return utils.ReplyError(msg, fmt.Errorf("error ending settings: %v", err))
-	}
-
-	delete(CVars, msg.GID)
-
-	return utils.ReplyACK(msg, "Game Ended")
-}
-
-func pause(msg utils.GameMsg) (utils.GameMsg, error) {
-	cVars := CVars[msg.GID]
-
-	if cVars.State == "Pause" {
-		cVars.State = cVars.SusState
-		cVars.SusState = ""
-	} else {
-		cVars.SusState = cVars.State
-		cVars.State = "Pause"
-	}
-
-	CVars[msg.GID] = cVars
-
-	upd := utils.GameMsg{
-		Type:    "ConState",
-		GID:     msg.GID,
-		Content: cVars.State,
-	}
-
-	utils.Broadcast(upd)
-
-	return utils.ReplyACK(msg, "Game Status Updated to: "+cVars.State)
-}
-
-func checkStatusPhaseChange(gid string, status string) bool {
-	plrs, err := g.GetGamePlayers(gid)
-	if err != nil {
-		log.Printf("[Error] getting game players when checking phase change: %v", err)
-		return false
-	}
-
-	count := len(plrs)
-
-	for _, p := range plrs {
-		if p.Status == status {
-			count--
-		}
-	}
-
-	return count == 0
-}
-
-func updatePlrPhase(user utils.User, msg utils.GameMsg) (utils.GameMsg, error) {
-	reply, err := updatePlr(user, msg)
-	if err == nil {
-		if checkStatusPhaseChange(msg.GID, msg.Content) {
-			nextState(msg)
-		}
-	}
-
-	return reply, err
-}
-
-func updatePlr(user utils.User, msg utils.GameMsg) (utils.GameMsg, error) {
-	user.Status = msg.Content
-	err := u.UpdateUser(user)
-	if err != nil {
-		return utils.ReplyError(msg, fmt.Errorf("could not update user status: %v", err))
-	}
-	return utils.ReplyACK(msg, "Player Status Updated to: "+user.Status)
-
-}
-
-func status(msg utils.GameMsg) (utils.GameMsg, error) {
-	user, err := u.GetUser(msg.UID)
-	if err != nil {
-		return utils.ReplyError(msg, fmt.Errorf("could not get user: %v", err))
-	}
-	cVar := CVars[msg.GID]
-
-	switch msg.Content {
-	case "Ready":
-		if cVar.State == "Lobby" {
-			return utils.ReplyACK(msg, "User Status Updated to: "+user.Status)
-		}
-	case "Not Ready":
-		if cVar.State == "Lobby" {
-			return utils.ReplyACK(msg, "User Status Updated to: "+user.Status)
-		}
-	case "Replying":
-		if cVar.State == "Prompts" {
-			return updatePlr(user, msg)
-		}
-	case "Replied":
-		if cVar.State == "Prompts" {
-			return updatePlrPhase(user, msg)
-		}
-	case "Reading":
-		if cVar.State == "Stories" {
-			return updatePlr(user, msg)
-		}
-	case "Read":
-		if cVar.State == "Stories" {
-			return updatePlrPhase(user, msg)
-		}
-	}
-
-	return utils.ReplyError(msg, fmt.Errorf("invalid status %v for %v", msg.Content, cVar.State))
-}
-
-func leave(msg utils.GameMsg) (utils.GameMsg, error) {
-	cVars := CVars[msg.GID]
-	delete(cVars.Stories, msg.UID)
-	CVars[msg.GID] = cVars
-
-	return utils.ReplyACK(msg, "User Left")
-}
-
-func reply(msg utils.GameMsg) (utils.GameMsg, error) {
-	cVars := CVars[msg.GID]
-	if cVars.State != "Prompts" {
-		return utils.ReplyError(msg, fmt.Errorf("game state %v does not accept replies", cVars.State))
-	}
-
-	var replies []string
-
-	err := json.Unmarshal([]byte(msg.Content), &replies)
-	if err != nil {
-		return utils.ReplyError(msg, fmt.Errorf("could not parse replies: %v", err))
-	}
-
-	rLen := len(replies)
-	pLen := len(cVars.Settings.Prompts)
-
-	if rLen != pLen {
-		return utils.ReplyError(msg, fmt.Errorf("invalid number of replies: %d, wanted: %d", rLen, pLen))
-	}
-
-	for i, r := range replies {
-		if r == "" {
-			return utils.ReplyError(msg, fmt.Errorf("empty reply string: [%d] %q", i, r))
-		}
-	}
-
-	s, f := cVars.Stories[msg.UID]
-	if f && len(s) > 0 {
-		return utils.ReplyError(msg, fmt.Errorf("already received replies from user: %v", msg.UID))
-	}
-
-	cVars.Stories[msg.UID] = replies
-	CVars[msg.GID] = cVars
-
-	statMsg := utils.GameMsg{
-		Type:    "Status",
-		GID:     msg.GID,
-		UID:     msg.UID,
-		Content: "Replied",
-	}
-
-	_, err = status(statMsg)
-	if err != nil {
-		return utils.ReplyError(msg, fmt.Errorf("could not update status after accepting replies: %v", err))
-	}
-
-	var resp = utils.GameMsg{}
-
-	if cVars.State != "Prompts" {
-		resp = utils.GameMsg{
-			Type:    "ConState",
-			GID:     msg.GID,
-			Content: "Wait",
-		}
-	} else {
-		resp, err = utils.ReplyACK(msg, "Reply Accepted")
-	}
-
-	return resp, err
 }
 
 func shuffle(stories map[string][]string) map[string][]string {
@@ -401,51 +101,380 @@ func shuffle(stories map[string][]string) map[string][]string {
 	return shuffled
 }
 
-func sendShuffle(gid string) {
-
-	cVars := CVars[gid]
+func sendStories(gid string, cVars ConVars) error {
 	shuffled := shuffle(cVars.Stories)
 
 	for k, s := range shuffled {
 		story, err := json.Marshal(s)
 		if err != nil {
 			upd := utils.GameMsg{
-				Type:    "Error",
+				Type:    "ConErr",
 				GID:     gid,
-				Content: "Could not marshal stories",
+				Content: "Could not send shuffled story.",
 			}
 
-			utils.Broadcast(upd)
 			reset(upd)
+			return fmt.Errorf("could not marshal stories: %v", err)
 		}
 
-		upd := utils.GameMsg{
+		sMsg := utils.GameMsg{
 			Type:    "Story",
 			UID:     k,
 			GID:     gid,
 			Content: string(story),
 		}
 
-		utils.SingleMessage(upd)
+		err = utils.SingleMessage(sMsg)
+		if err != nil {
+			return fmt.Errorf("could not send story: %v", err)
+		}
 	}
+
+	return nil
 }
 
-func Handle(msg utils.GameMsg) (utils.GameMsg, error) {
+func nextState(msg utils.GameMsg, cVars ConVars) ConVars {
+	cVars.State++
+	if cVars.State > POSTSTORIES {
+		cVars.State = LOBBY
+	}
+
+	switch cVars.State {
+	case LOBBY:
+		reset(msg)
+	case PROMPTS:
+		err := sendPrompts(msg)
+		if err != nil {
+			log.Printf("[Error] Failed to send prompts after state transition: %v", err)
+			cVars.State = ERROR
+		}
+		go timer(msg, cVars)
+	case POSTPROMPTS:
+
+	case STORIES:
+		err := sendStories(msg.GID, cVars)
+		if err != nil {
+			log.Printf("[Error] Failed to send stories after state transition: %v", err)
+			cVars.State = ERROR
+		}
+
+		go timer(msg, cVars)
+	case POSTSTORIES:
+
+	}
+
+	tickerStop <- byte(0)
+
+	uMsg := utils.GameMsg{
+		GID:     msg.GID,
+		Type:    "ConState",
+		Content: fmt.Sprintf("%d", cVars.State),
+	}
+
+	err := utils.Broadcast(uMsg)
+	if err != nil {
+		log.Printf("[Error] Failed to send state update: %v", err)
+		cVars.State = ERROR
+	}
+
+	return cVars
+}
+
+func initialize(msg utils.GameMsg) (string, string) {
+	if len(CVars) == 0 {
+		CVars = make(map[string]ConVars)
+	}
+
+	game, _ := g.GetGame(msg.GID)
+
+	var settings ConSettings
+
+	if game.AdditionalRules != "" {
+		decoder := json.NewDecoder(strings.NewReader(game.AdditionalRules))
+		decoder.DisallowUnknownFields()
+
+		err := decoder.Decode(&settings)
+		if err != nil {
+			log.Printf("[Error] Could not read additional rules")
+			return "Error", "Could not read additional rules."
+		}
+	} else {
+		settings = DefSettings
+	}
+
+	if settings.Rounds < 0 {
+		log.Printf("[Error] Rounds %d is less than 0", settings.Rounds)
+		return "Error", "Rounds value must not be less than 0."
+	}
+
+	//TODO
+	highestShuffle := 3
+
+	if settings.Shuffle < 0 {
+		log.Printf("[Error] Shuffle %d is less than 0", settings.Shuffle)
+		return "Error", "Shuffle value must not be less than 0."
+	} else if settings.Shuffle > highestShuffle {
+		log.Printf("[Error] Shuffle %d is greater than maxVal (%d)", settings.Shuffle, highestShuffle)
+		return "Error", fmt.Sprintf("Shuffle value must not be greater than %d.", highestShuffle)
+	} else if settings.Shuffle == 0 {
+		settings.Shuffle = 1
+	}
+
+	if settings.Timer1 < 0 {
+		log.Printf("[Error] Timer1 %d is less than 0", settings.Timer1)
+		return "Error", "Timer1 value must not be less than 0."
+	}
+	if settings.Timer2 < 0 {
+		log.Printf("[Error] Timer2 %d is less than 0", settings.Timer2)
+		return "Error", "Timer2 value must not be less than 0."
+	}
+
+	pLen := len(settings.Prompts)
+	if pLen == 0 {
+		settings.Prompts = DefPrompts
+	} else if pLen == 1 {
+		log.Printf("[Error] Only one prompt provided: %v", settings.Prompts)
+		return "Error", "2 or more prompts must be provided. Empty prompts will result in the default set being used."
+	}
+
+	cVar := ConVars{
+		State:    0,
+		Settings: settings,
+		Timer:    settings.Timer1,
+		Stories:  map[string][]string{},
+	}
+
+	tickerStop = make(chan byte)
+
+	CVars[msg.GID] = cVar
+
+	return "", ""
+}
+
+func start(msg utils.GameMsg) (string, string) {
+	cVars := CVars[msg.GID]
+	cVars.Stories = make(map[string][]string)
+	plrs, err := g.GetGamePlayers(msg.GID)
+	if err != nil {
+		log.Printf("[Error] Could not get game players: %v", err)
+		return "Error", "Could not get the game players."
+	}
+
+	for _, p := range plrs {
+		cVars.Stories[p.UID] = []string{}
+	}
+
+	if cVars.State != 0 {
+		log.Printf("[Error] Can only accept Start request when in Lobby State")
+		return "Error", "Cannot accept Start when not in Lobby State"
+	}
+
+	cVars = nextState(msg, cVars)
+	CVars[msg.GID] = cVars
+
+	if cVars.State == ERROR {
+		return "Error", "Game state not valid."
+	}
+
+	return "", ""
+}
+
+func reset(msg utils.GameMsg) (string, string) {
+	cVars := CVars[msg.GID]
+	cVars.State = 0
+	cVars.Stories = make(map[string][]string)
+
+	CVars[msg.GID] = cVars
+
+	cause, resp := initialize(msg)
+	if cause != "" {
+		log.Printf("[Error] Could not reset game state to current settings: %v", resp)
+	}
+
+	return cause, resp
+}
+
+func end(msg utils.GameMsg) (string, string) {
+	cause, resp := reset(msg)
+	if cause != "" {
+		log.Printf("[Error] Could not reset game state before ending: %v", resp)
+	}
+
+	delete(CVars, msg.GID)
+
+	return "", ""
+}
+
+func pause(msg utils.GameMsg) (string, string) {
+	cVars := CVars[msg.GID]
+
+	cVars.Paused = !cVars.Paused
+
+	CVars[msg.GID] = cVars
+
+	return "", ""
+}
+
+func status(msg utils.GameMsg) (string, string) {
+	cVar := CVars[msg.GID]
+
+	log.Printf("[DEBUG] State: %d", cVar.State)
+	if cVar.State == LOBBY {
+		return "", ""
+	}
+
+	plrs, err := g.GetGamePlayers(msg.GID)
+	if err != nil {
+		log.Printf("[Error] Could not get game players when checking for state change: %v", err)
+		return "Error", "Could not check for state change."
+	}
+
+	count := len(plrs)
+	ready := 0
+
+	for _, p := range plrs {
+		if p.Status == "Ready" {
+			ready++
+		}
+	}
+
+	if ready >= count/2 {
+		nextState(msg, cVar)
+	}
+
+	return "", ""
+}
+
+func leave(msg utils.GameMsg) (string, string) {
+	cVars := CVars[msg.GID]
+	delete(cVars.Stories, msg.UID)
+	CVars[msg.GID] = cVars
+
+	return "", ""
+}
+
+func reply(msg utils.GameMsg) (string, string) {
+	cVars := CVars[msg.GID]
+	if cVars.State != 1 {
+		log.Printf("[Error] Game state does not accept replies")
+		return "Error", "Game is not currently accepting replies."
+	}
+
+	var replies []string
+
+	err := json.Unmarshal([]byte(msg.Content), &replies)
+	if err != nil {
+		log.Printf("[Error] Could not parse reply: %v", err)
+		return "Error", "Could not parse reply."
+	}
+
+	rLen := len(replies)
+	pLen := len(cVars.Settings.Prompts)
+
+	log.Printf("Len R: %d -- Len P: %d", rLen, pLen)
+
+	if rLen != pLen {
+		log.Printf("[Error] Number of replies %d is not equal to number of prompts %d", rLen, pLen)
+		return "Error", "Incorrect number of replies."
+	}
+
+	for i, r := range replies {
+		if r == "" {
+			log.Printf("[Error] Empty reply [%d] %s", i, r)
+			return "Error", "One or more empty replies received."
+		}
+	}
+
+	s, f := cVars.Stories[msg.UID]
+	if f && len(s) > 0 {
+		log.Printf("[Error] There have already been replies received from this user.")
+		return "Error", "There have already been replies received from this user."
+	}
+
+	cVars.Stories[msg.UID] = replies
+	CVars[msg.GID] = cVars
+
+	statMsg := utils.GameMsg{
+		Type:    "Status",
+		GID:     msg.GID,
+		UID:     msg.UID,
+		Content: "Replied",
+	}
+
+	cause, resp := status(statMsg)
+	if cause != "" {
+		log.Printf("[Error] Could not handle status change after reply: %v", resp)
+		return "Error", "Could not update player status after reply."
+	}
+
+	return "", ""
+}
+
+func remove(msg utils.GameMsg) (string, string) {
+	msg.UID = msg.Content
+	cause, resp := leave(msg)
+	if cause != "" {
+		log.Printf("[Error] Could not remove player: %v", resp)
+		return "Error", "Could not remove player: " + resp
+	}
+
+	return "", ""
+}
+
+func leaderError(mType string) (string, string) {
+	cause := "Error"
+	msg := "Must be a leader for " + mType + " requests."
+
+	return cause, msg
+}
+
+func Handle(msg utils.GameMsg) (string, string) {
+	game, _ := g.GetGame(msg.GID)
+
+	leader := msg.UID == game.Leader
+
 	switch msg.Type {
 	case "Init":
-		return initialize(msg)
+		if leader {
+			return leaderError("Init")
+		} else {
+			return initialize(msg)
+		}
 	case "Start":
-		return start(msg)
+		if leader {
+			return leaderError("Start")
+
+		} else {
+			return start(msg)
+		}
 	case "Reset":
-		return reset(msg)
+		if leader {
+			return leaderError("Reset")
+
+		} else {
+			return reset(msg)
+		}
 	case "End":
-		return end(msg)
+		if leader {
+			return leaderError("End")
+
+		} else {
+			return end(msg)
+		}
 	case "Pause":
-		return pause(msg)
+		if leader {
+			return leaderError("Pause")
+
+		} else {
+			return pause(msg)
+		}
 	case "Remove":
-		//Can be treated as leave from game mode point of view
-		msg.UID = msg.Content
-		return leave(msg)
+		if leader {
+			return leaderError("Remove")
+
+		} else {
+			return remove(msg)
+		}
 	case "Status":
 		return status(msg)
 	case "Leave":
@@ -453,8 +482,11 @@ func Handle(msg utils.GameMsg) (utils.GameMsg, error) {
 	case "Reply":
 		return reply(msg)
 	default:
-		return utils.ReplyError(msg, fmt.Errorf("unknown consequences message type: %v", msg.Type))
+
+		//TODO
 	}
+
+	return "", ""
 }
 
 func GetConState(gid string) (ConVars, error) {
