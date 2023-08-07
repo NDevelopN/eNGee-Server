@@ -66,6 +66,7 @@ func connect(game utils.Game, user utils.User, incoming chan []byte, outgoing ch
 		case o := <-outgoing:
 			if string(o) == endMsg {
 				conn.Close()
+				return
 			}
 			time.Sleep(time.Millisecond * 5)
 			if err := conn.WriteMessage(websocket.TextMessage, o); err != nil {
@@ -85,11 +86,6 @@ func connect(game utils.Game, user utils.User, incoming chan []byte, outgoing ch
 			return
 		}
 	}
-}
-
-func listPlrs(plrs []utils.User) string {
-	asString, _ := json.Marshal(plrs)
-	return string(asString)
 }
 
 func readyPlayers(t *testing.T, gid string, plrs []utils.User, count int, outgoing chan []byte, incoming chan []byte) {
@@ -184,30 +180,16 @@ func Setup(t *testing.T, pCount int) (utils.Game, []utils.User, chan []byte, cha
 
 	go connect(game, leader, incoming, outgoing)
 
-	timer := time.NewTimer(timeout)
-	defer timer.Stop()
-
-IgnoreFirst:
-	for {
-		select {
-		case <-incoming:
-			break IgnoreFirst
-		case <-timer.C:
-			t.Fatalf("Timeout on connection first message")
-		}
-	}
-
 	return game, plrs, incoming, outgoing
 }
 
 func Teardown(t *testing.T, game utils.Game, plrs []utils.User, incoming chan []byte, outgoing chan []byte) {
 
+	outgoing <- []byte(endMsg)
+
 	for _, p := range plrs {
 		c.DeleteUser(t, p.UID)
 	}
-
-	c.DeleteGame(t, game.GID)
-	outgoing <- []byte(endMsg)
 
 	close(incoming)
 	close(outgoing)
@@ -234,6 +216,11 @@ type inOut struct {
 	in  utils.GameMsg
 }
 
+type pListOut struct {
+	out   utils.GameMsg
+	pList []utils.User
+}
+
 func TestInvalids(t *testing.T) {
 	game, plrs, incoming, outgoing := Setup(t, 4)
 	defer Teardown(t, game, plrs, incoming, outgoing)
@@ -250,7 +237,7 @@ func TestInvalids(t *testing.T) {
 				UID: uid, GID: gid, Type: "Invalid",
 			},
 			in: wantResponse(
-				uid, gid, "Error", "invalid message Type",
+				uid, gid, "Error", "Unsupported message type: Invalid",
 			),
 		},
 
@@ -260,7 +247,7 @@ func TestInvalids(t *testing.T) {
 				UID: uid, GID: randID, Type: "Status", Content: "Ready",
 			},
 			in: wantResponse(
-				uid, randID, "Error", "invalid GID",
+				uid, randID, "Error", "Invalid ID(s) provided",
 			),
 		},
 
@@ -270,7 +257,7 @@ func TestInvalids(t *testing.T) {
 				UID: randID, GID: gid, Type: "Status", Content: "Ready",
 			},
 			in: wantResponse(
-				randID, gid, "Error", "invalid UID",
+				randID, gid, "Error", "Invalid ID(s) provided",
 			),
 		},
 
@@ -280,7 +267,7 @@ func TestInvalids(t *testing.T) {
 				UID: plrs[1].UID, GID: gid, Type: "Reset",
 			},
 			in: wantResponse(
-				plrs[1].UID, gid, "Error", "not leader",
+				plrs[1].UID, gid, "Error", "Must be a leader to Reset",
 			),
 		},
 	}
@@ -305,14 +292,14 @@ func TestInvalids(t *testing.T) {
 					select {
 					case in := <-incoming:
 						err := json.Unmarshal(in, &msg)
-						log.Printf("Received: %v", msg)
-						if msg.Type != want.Type || err != nil {
-							t.Fatalf(`TestInvalid = %v, %v, want %v, nil`,
-								msg, err, want)
+						if err != nil {
+							t.Fatalf("TestInvalid = %v", err)
 						}
-						break Reply
+						if msg == want {
+							break Reply
+						}
 					case <-timer.C:
-						t.Fatalf("TestInvalidType = time out")
+						t.Fatalf("TestInvalid = time out")
 					}
 				}
 			},
@@ -321,7 +308,7 @@ func TestInvalids(t *testing.T) {
 }
 
 func TestHandlePause(t *testing.T) {
-	game, plrs, incoming, outgoing := Setup(t, 4)
+	game, plrs, incoming, outgoing := Setup(t, 1)
 	defer Teardown(t, game, plrs, incoming, outgoing)
 
 	uid := plrs[0].UID
@@ -332,11 +319,13 @@ func TestHandlePause(t *testing.T) {
 			out: utils.GameMsg{
 				UID: uid, GID: gid, Type: "Pause",
 			},
-			in: wantResponse(
-				uid, gid, "Accept", "Game Status Updated to: Pause",
-			),
+			in: utils.GameMsg{
+				GID: gid, Type: "Status", Content: "Pause",
+			},
 		},
 	}
+
+	time.Sleep(1 * time.Second)
 
 	for _, tc := range testCases {
 		t.Run(fmt.Sprintf("UID: %s, GID: %s, Type: %s",
@@ -358,11 +347,10 @@ func TestHandlePause(t *testing.T) {
 					select {
 					case in := <-incoming:
 						err := json.Unmarshal(in, &msg)
-						if msg.Type != "Status" {
-							if msg != want || err != nil {
-								t.Fatalf(`TestPause = %v, %v, want %v, nil`,
-									msg, err, want)
-							}
+						if err != nil {
+							t.Fatalf("TestPause = %v", err)
+						}
+						if msg == want {
 							break Reply
 						}
 					case <-timer.C:
@@ -386,11 +374,13 @@ func TestHandleUnpause(t *testing.T) {
 			out: utils.GameMsg{
 				UID: uid, GID: gid, Type: "Pause",
 			},
-			in: wantResponse(
-				uid, gid, "Accept", "Game Status Updated to: Lobby",
-			),
+			in: utils.GameMsg{
+				GID: gid, Type: "Status", Content: "Lobby",
+			},
 		},
 	}
+
+	time.Sleep(time.Second)
 
 	for _, tc := range testCases {
 		t.Run(fmt.Sprintf("UID: %s, GID: %s, Type: %s",
@@ -411,7 +401,7 @@ func TestHandleUnpause(t *testing.T) {
 					select {
 					case in := <-incoming:
 						_ = json.Unmarshal(in, &msg)
-						if msg.Type == "Response" {
+						if msg.Type == "Status" {
 							break Pause
 						}
 					case <-timer.C:
@@ -433,11 +423,10 @@ func TestHandleUnpause(t *testing.T) {
 					select {
 					case in := <-incoming:
 						err := json.Unmarshal(in, &msg)
-						if msg.Type != "Status" {
-							if msg != want || err != nil {
-								t.Fatalf(`TestUnpause = %v, %v, want %v, nil`,
-									msg, err, want)
-							}
+						if err != nil {
+							t.Fatalf("TestUnpause = %v", err)
+						}
+						if msg == want {
 							break Unpause
 						}
 					case <-timer.C:
@@ -447,6 +436,20 @@ func TestHandleUnpause(t *testing.T) {
 			},
 		)
 	}
+}
+
+func createPList(plrs []utils.User, low int, high int) []utils.User {
+	pList := []utils.User{}
+	for i, p := range plrs {
+		if i >= low && i <= high {
+			continue
+		}
+		p.Status = "Not Ready"
+
+		pList = append(pList, p)
+	}
+
+	return pList
 }
 
 func comparePlrsList(rec []utils.User, want []utils.User) bool {
@@ -509,17 +512,20 @@ func TestHandleStatus(t *testing.T) {
 						if err != nil {
 							t.Fatalf(`TestStatus = %v`, err)
 						}
-						var recList []utils.User
-						err = json.Unmarshal([]byte(msg.Content), &recList)
-						if err != nil {
-							t.Fatalf(`TestStatus = %v`, err)
+
+						if msg.Type == "Players" {
+							var recList []utils.User
+							err = json.Unmarshal([]byte(msg.Content), &recList)
+							if err != nil {
+								t.Fatalf(`TestStatus = %v`, err)
+							}
+
+							if !comparePlrsList(recList, plrs) {
+								t.Fatalf(`TestStatus = %v, want %v`, recList, plrs)
+							}
+							break Reply
 						}
 
-						if !comparePlrsList(recList, plrs) {
-							t.Fatalf(`TestStatus = %v, want %v`, recList, plrs)
-						}
-
-						break Reply
 					case <-timer.C:
 						t.Fatalf("TestStatus = time out")
 					}
@@ -535,14 +541,14 @@ func TestHandleLeave(t *testing.T) {
 
 	gid := game.GID
 
-	var testCases = []inOut{
+	uid := plrs[len(plrs)-1].UID
+
+	var testCases = []pListOut{
 		{
 			out: utils.GameMsg{
-				UID: plrs[len(plrs)-1].UID, GID: gid, Type: "Leave",
+				UID: uid, GID: gid, Type: "Leave",
 			},
-			in: utils.GameMsg{
-				GID: gid, Type: "Players", Content: listPlrs(plrs[:len(plrs)-1]),
-			},
+			pList: plrs[:len(plrs)-1],
 		},
 	}
 
@@ -555,8 +561,6 @@ func TestHandleLeave(t *testing.T) {
 
 				outgoing <- out
 
-				want := tc.in
-
 				var msg utils.GameMsg
 
 				timer := time.NewTimer(timeout)
@@ -567,11 +571,22 @@ func TestHandleLeave(t *testing.T) {
 					select {
 					case in := <-incoming:
 						err := json.Unmarshal(in, &msg)
-						if msg != want || err != nil {
-							t.Fatalf(`TestLeave = %v Received: %q, %v %v Want %q, nil`,
-								"\n", msg, err, "\n", want)
+						if err != nil {
+							t.Fatalf(`TestLeave = %v`, err)
 						}
-						break Reply
+
+						if msg.Type == "Players" {
+							var recList []utils.User
+							err = json.Unmarshal([]byte(msg.Content), &recList)
+							if err != nil {
+								t.Fatalf(`TestLeave = %v`, err)
+							}
+
+							if !comparePlrsList(recList, tc.pList) {
+								t.Fatalf(`TestStatus = %v, want %v`, recList, plrs)
+							}
+							break Reply
+						}
 					case <-timer.C:
 						t.Fatalf("TestLeave = time out")
 					}
@@ -604,7 +619,6 @@ func TestStart(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(fmt.Sprintf("UID: %s, GID: %s, Type: %s",
 			tc.out.UID, tc.out.GID, tc.out.Type),
-
 			func(t *testing.T) {
 				want := tc.in
 				out, _ := json.Marshal(tc.out)
@@ -729,12 +743,11 @@ func TestHandleReset(t *testing.T) {
 					select {
 					case in := <-incoming:
 						err := json.Unmarshal(in, &msg)
-						//Skip update to player status to see game reset
-						if msg.Type != "Players" {
-							if msg != want || err != nil {
-								t.Fatalf(`TestReset = %v, %v, want %v, nil`,
-									msg, err, want)
-							}
+						if err != nil {
+							t.Fatalf("TestReset = %v", err)
+						}
+
+						if msg == want {
 							break Reply
 						}
 					case <-timer.C:
@@ -753,14 +766,13 @@ func TestHandleRemove(t *testing.T) {
 	uid := plrs[0].UID
 	gid := game.GID
 
-	var testCases = []inOut{
+	var testCases = []pListOut{
 		{
+
 			out: utils.GameMsg{
 				UID: uid, GID: gid, Type: "Remove", Content: plrs[1].UID,
 			},
-			in: wantResponse(
-				uid, gid, "Accept", "Player Removed",
-			),
+			pList: createPList(plrs, 1, 1),
 		},
 	}
 
@@ -769,11 +781,10 @@ func TestHandleRemove(t *testing.T) {
 			tc.out.UID, tc.out.GID, tc.out.Type, tc.out.Content),
 
 			func(t *testing.T) {
+
 				out, _ := json.Marshal(tc.out)
 
 				var msg utils.GameMsg
-
-				want := tc.in
 
 				outgoing <- out
 
@@ -788,7 +799,17 @@ func TestHandleRemove(t *testing.T) {
 						if err != nil {
 							t.Fatalf(`TestRemove = %v`, err)
 						}
-						if msg == want {
+						if msg.Type == "Players" {
+							var recList []utils.User
+							err = json.Unmarshal([]byte(msg.Content), &recList)
+							if err != nil {
+								t.Fatalf(`TestLeave = %v`, err)
+							}
+
+							if !comparePlrsList(recList, tc.pList) {
+								t.Fatalf(`TestStatus = %v, want %v`, recList, plrs)
+							}
+
 							break Reply
 						}
 					case <-timer.C:
