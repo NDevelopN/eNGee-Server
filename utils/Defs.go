@@ -9,8 +9,6 @@ type Message interface {
 	[]User | User | []Game | Game | Join | GameMsg | Response
 }
 
-type HandlerFunc func(msg GameMsg) (GameMsg, error)
-
 var ErrNoGame = errors.New("no matching rows in game table")
 
 type User struct {
