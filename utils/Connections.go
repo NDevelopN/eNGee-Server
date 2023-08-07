@@ -20,7 +20,16 @@ type Conn struct {
 
 var poolMap = map[string]*connPool{}
 
+var LOCALTEST = false
+
+func SETLOCALTEST(on bool) {
+	LOCALTEST = on
+}
+
 func CheckConnection(gid string, uid string) bool {
+	if LOCALTEST {
+		return true
+	}
 	pool := poolMap[gid]
 	pool.mu.Lock()
 	defer pool.mu.Unlock()
@@ -30,6 +39,9 @@ func CheckConnection(gid string, uid string) bool {
 }
 
 func AddConnectionPool(gid string) error {
+	if LOCALTEST {
+		return nil
+	}
 	_, k := poolMap[gid]
 	if k {
 		return fmt.Errorf("connection pool already exists: %v", gid)
@@ -45,6 +57,9 @@ func AddConnectionPool(gid string) error {
 }
 
 func AddConnection(gid string, uid string, c *websocket.Conn) error {
+	if LOCALTEST {
+		return nil
+	}
 	pool, k := poolMap[gid]
 	if !k {
 		return fmt.Errorf("no connection pool found for given gid: %v", gid)
@@ -84,6 +99,10 @@ func GetConnections(gid string) (map[string]*Conn, error) {
 }
 
 func Broadcast(msg GameMsg) error {
+	if LOCALTEST {
+		return nil
+	}
+
 	pool, k := poolMap[msg.GID]
 	if !k {
 		return fmt.Errorf("no connection pool found for given gid: %v", msg.GID)
@@ -111,6 +130,9 @@ func Broadcast(msg GameMsg) error {
 }
 
 func SingleMessage(msg GameMsg) error {
+	if LOCALTEST {
+		return nil
+	}
 	pool, k := poolMap[msg.GID]
 	if !k {
 		return fmt.Errorf("no connection pool found for given gid: %v", msg.GID)
@@ -142,6 +164,9 @@ func SingleMessage(msg GameMsg) error {
 }
 
 func RemoveConnection(gid string, uid string) error {
+	if LOCALTEST {
+		return nil
+	}
 	pool, err := GetConnections(gid)
 	if err != nil {
 		return err
@@ -160,6 +185,9 @@ func RemoveConnection(gid string, uid string) error {
 }
 
 func RemoveConnectionPool(gid string) error {
+	if LOCALTEST {
+		return nil
+	}
 	pool, k := poolMap[gid]
 	if !k {
 		return fmt.Errorf("connection pool not found: %v", gid)
