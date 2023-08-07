@@ -139,8 +139,10 @@ func GetGame(gid string) (u.Game, error) {
 		&gm.AdditionalRules,
 	)
 
-	if err != nil {
-		return *gm, fmt.Errorf("db failed: row error: %v", err)
+	if err == sql.ErrNoRows {
+		return *gm, err
+	} else if err != nil {
+		return *gm, fmt.Errorf("db failed: %v", err)
 	}
 
 	return *gm, nil
@@ -236,7 +238,9 @@ func UpdateGame(gm u.Game) error {
  */
 func GetGamePlayers(gid string) ([]u.User, error) {
 	rows, err := DB.Query("SELECT * FROM players WHERE gid = $1", gid)
-	if err != nil {
+	if err == sql.ErrNoRows {
+		return nil, err
+	} else if err != nil {
 		return nil, fmt.Errorf("db failed: SELECT FROM players: %v", err)
 	}
 	defer rows.Close()
@@ -310,8 +314,10 @@ func GetUser(uid string) (u.User, error) {
 
 	plr := new(u.User)
 	err := row.Scan(&plr.UID, &plr.GID, &plr.Name, &plr.Status)
-	if err != nil {
-		return *plr, fmt.Errorf("db failed: row error:  %v", err)
+	if err == sql.ErrNoRows {
+		return *plr, err
+	} else if err != nil {
+		return *plr, fmt.Errorf("db failed: %v", err)
 	}
 
 	return *plr, nil
@@ -402,7 +408,7 @@ func RemoveUser(uid string) error {
 	return nil
 }
 
-func CreateGameTypes(gTypes map[string]utils.HandlerFunc) error {
+func CreateGameTypes(gTypes map[string]utils.GHandler) error {
 	//TODO include the handler
 	for t := range gTypes {
 		_, err := DB.Exec(`INSERT INTO gametypes (type) VALUES ($1)`, t)

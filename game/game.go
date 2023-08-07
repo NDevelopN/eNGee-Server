@@ -3,6 +3,7 @@ package game
 import (
 	db "Engee-Server/database"
 	"Engee-Server/utils"
+	"database/sql"
 	"fmt"
 	"log"
 
@@ -81,12 +82,16 @@ func GetGame(gid string) (utils.Game, error) {
 
 func GetGamePlayers(gid string) ([]utils.User, error) {
 	_, err := db.GetGame(gid)
-	if err != nil {
+	if err == sql.ErrNoRows {
+		return nil, utils.ErrNoGame
+	} else if err != nil {
 		return nil, fmt.Errorf("failed to find game in database: %v", err)
 	}
 
 	plrs, err := db.GetGamePlayers(gid)
-	if err != nil {
+	if err == sql.ErrNoRows {
+		return nil, err
+	} else if err != nil {
 		return nil, fmt.Errorf("failed to get players from database: %v", err)
 	}
 
@@ -189,8 +194,6 @@ func DeleteGame(gid string) error {
 			return fmt.Errorf("could not update player (clearing GID) in database: %v", err)
 		}
 	}
-
-	utils.RemoveConnectionPool(gid)
 
 	err = db.RemoveGame(gid)
 	if err != nil {

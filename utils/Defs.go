@@ -2,7 +2,8 @@ package utils
 
 import "errors"
 
-type GHandler func(msg GameMsg, broadcast func(string, []byte))
+// type GHandler func(msg GameMsg, broadcast func(string, []byte))
+type GHandler func(msg GameMsg) (string, string)
 
 type Message interface {
 	[]User | User | []Game | Game | Join | GameMsg | Response
@@ -10,7 +11,7 @@ type Message interface {
 
 type HandlerFunc func(msg GameMsg) (GameMsg, error)
 
-var ErrWarn = errors.New("Warning")
+var ErrNoGame = errors.New("no matching rows in game table")
 
 type User struct {
 	UID    string `json:"uid"`
