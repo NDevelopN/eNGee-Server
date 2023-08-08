@@ -38,13 +38,19 @@ func prepareConGame(t *testing.T, testName string, userCount int) (string, []str
 		t.Fatalf(`%v = failed to prepare conGame (creating game): %v`, testName, err)
 	}
 
-	var users = []string{}
-	users = append(users, lid)
+	var users = []string{lid}
 
 	plr := c.DefPlr
+	plr.UID = lid
 	plr.GID = gid
+	plr.Status = "New"
 
-	for i := 0; i < userCount; i++ {
+	err = u.UpdateUser(plr)
+	if err != nil {
+		t.Fatalf(`%v = failed to prepare conGame (updating leader): %v`, testName, err)
+	}
+
+	for i := 1; i < userCount; i++ {
 		uid, err := u.CreateUser(c.DefPlr)
 		if err != nil {
 			t.Fatalf(`%v = failed to prepare conGame (creating user): %v`, testName, err)
@@ -440,7 +446,7 @@ func TestStart(t *testing.T) {
 
 	cVars, err := c.GetConState(gid)
 	if !cmp.Equal(cVars, want) || err != nil {
-		t.Fatalf(`TestPause() = %v, "%v", want %v, "nil"`, cVars, nil, want)
+		t.Fatalf(`TestPause() = %v, "%v",want %v, "nil"`, cVars, err, want)
 	}
 
 }
@@ -532,7 +538,7 @@ func TestReset(t *testing.T) {
 		t.Fatalf(`TestReset() = %q - %q, want "" - ""`, cause, resp)
 	}
 
-	want := createWant(c.LOBBY, users, c.TestSettings.Timer1)
+	want := createWant(c.LOBBY, nil, c.TestSettings.Timer1)
 
 	cVars, err := c.GetConState(gid)
 	if !cmp.Equal(cVars, want) || err != nil {
