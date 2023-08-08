@@ -28,6 +28,8 @@ type ConVars struct {
 	Round    int
 	Timer    int
 	Settings ConSettings
+	Active   int
+	Ready    int
 	Stories  map[string][]string
 }
 

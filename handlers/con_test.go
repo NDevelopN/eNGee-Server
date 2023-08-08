@@ -108,7 +108,7 @@ func startConGame(t *testing.T, testName string, userCount int) (string, []strin
 	return gid, users
 }
 
-func createWant(state int, users []string, timer int) c.ConVars {
+func createWant(state int, paused bool, round int, timer int, users []string, active int, ready int) c.ConVars {
 
 	stories := map[string][]string{}
 	if len(users) > 0 {
@@ -119,8 +119,12 @@ func createWant(state int, users []string, timer int) c.ConVars {
 
 	return c.ConVars{
 		State:    state,
-		Settings: c.TestSettings,
+		Paused:   paused,
+		Round:    round,
 		Timer:    timer,
+		Settings: c.TestSettings,
+		Active:   active,
+		Ready:    ready,
 		Stories:  stories,
 	}
 }
@@ -157,7 +161,7 @@ func TestInitValid(t *testing.T) {
 		t.Fatalf(`TestInit(Valid) = %q - %q, want "" - ""`, cause, resp)
 	}
 
-	want := createWant(c.LOBBY, nil, c.TestSettings.Timer1)
+	want := createWant(c.LOBBY, false, 0, c.TestSettings.Timer1, nil, 3, 0)
 
 	cVars, err := c.GetConState(gid)
 	if !cmp.Equal(cVars, want) || err != nil {
@@ -436,7 +440,7 @@ func TestStart(t *testing.T) {
 	}
 
 	timer := c.TestSettings.Timer1
-	want := createWant(c.PROMPTS, users, timer)
+	want := createWant(c.PROMPTS, false, 0, timer, users, 3, 0)
 
 	cVars, err := c.GetConState(gid)
 	if !cmp.Equal(cVars, want) || err != nil {
@@ -459,7 +463,7 @@ func TestPauseTimer(t *testing.T) {
 		t.Fatalf(`TestPause() = %q - %q, want "" - ""`, cause, resp)
 	}
 
-	want := createWant(c.PROMPTS, users, c.TestSettings.Timer1)
+	want := createWant(c.PROMPTS, true, 0, c.TestSettings.Timer1, users, 3, 0)
 	want.Paused = true
 
 	cVars, err := c.GetConState(gid)
@@ -486,7 +490,7 @@ func TestUnpauseTimer(t *testing.T) {
 		t.Fatalf(`TestUnpause() = %q - %q, want "" - ""`, cause, resp)
 	}
 
-	want := createWant(c.PROMPTS, users, c.TestSettings.Timer1)
+	want := createWant(c.PROMPTS, false, 0, c.TestSettings.Timer1, users, 3, 0)
 
 	cVars, err := c.GetConState(gid)
 	if !cmp.Equal(cVars, want) || err != nil {
@@ -532,7 +536,7 @@ func TestReset(t *testing.T) {
 		t.Fatalf(`TestReset() = %q - %q, want "" - ""`, cause, resp)
 	}
 
-	want := createWant(c.LOBBY, nil, c.TestSettings.Timer1)
+	want := createWant(c.LOBBY, false, 0, c.TestSettings.Timer1, nil, 3, 0)
 
 	cVars, err := c.GetConState(gid)
 	if !cmp.Equal(cVars, want) || err != nil {
@@ -548,7 +552,7 @@ func TestRemove(t *testing.T) {
 		Type:    "Remove",
 		UID:     users[0],
 		GID:     gid,
-		Content: users[0],
+		Content: users[len(users)-1],
 	}
 
 	cause, resp := c.Handle(gMsg)
@@ -558,7 +562,7 @@ func TestRemove(t *testing.T) {
 
 	users[0] = users[len(users)-1]
 
-	want := createWant(c.PROMPTS, users, c.TestSettings.Timer1)
+	want := createWant(c.PROMPTS, false, 0, c.TestSettings.Timer1, users[:len(users)-1], 2, 0)
 
 	cVars, err := c.GetConState(gid)
 	if !cmp.Equal(cVars, want) || err != nil {
@@ -596,8 +600,9 @@ func TestStatusPhaseChange(t *testing.T) {
 		Content: "Ready",
 	}
 
+	//TODO
 	cVar := c.CVars[gid]
-	cVar.State = c.STORIES
+	cVar.State = c.POSTPROMPTS
 	c.CVars[gid] = cVar
 
 	for i, user := range users {
@@ -608,8 +613,9 @@ func TestStatusPhaseChange(t *testing.T) {
 		}
 	}
 
-	wantVars := createWant(c.PROMPTS, users, c.TestSettings.Timer2)
-	wantVars.Round++
+	time.Sleep(1500 * time.Millisecond)
+
+	wantVars := createWant(c.STORIES, false, 0, c.TestSettings.Timer1, users, 3, 0)
 	gMsg.UID = users[0]
 
 	cause, resp := c.Handle(gMsg)
@@ -619,7 +625,7 @@ func TestStatusPhaseChange(t *testing.T) {
 
 	cVars, err := c.GetConState(gid)
 	if !cmp.Equal(cVars, wantVars) || err != nil {
-		t.Fatalf(`TestStatus(PhaseChange) = %v - %q, want %v, "nil"`, cVars, err, wantVars)
+		t.Fatalf(`TestStatus(PhaseChange) = %v - %v, want %v, "nil"`, cVars, err, wantVars)
 	}
 }
 
@@ -632,8 +638,7 @@ func TestLeaveValid(t *testing.T) {
 		GID:  gid,
 	}
 
-	want := createWant(c.PROMPTS, users, c.TestSettings.Timer1)
-	delete(want.Stories, users[0])
+	want := createWant(c.PROMPTS, false, 0, c.TestSettings.Timer1, users[1:], 3, 0)
 
 	cause, resp := c.Handle(gMsg)
 	if cause != "" {
@@ -647,7 +652,7 @@ func TestLeaveValid(t *testing.T) {
 }
 
 func TestReplyValid(t *testing.T) {
-	gid, users := startConGame(t, "TestReply(Valid)", 2)
+	gid, users := startConGame(t, "TestReply(Valid)", 3)
 
 	story, _ := json.Marshal(c.DefStory)
 
@@ -663,7 +668,7 @@ func TestReplyValid(t *testing.T) {
 		t.Fatalf(`TestReply(Valid) = %q - %q, want "" - ""`, cause, resp)
 	}
 
-	want := createWant(c.PROMPTS, users, c.TestSettings.Timer1)
+	want := createWant(c.PROMPTS, false, 0, c.TestSettings.Timer1, users, 3, 1)
 	want.Stories[users[0]] = c.DefStory
 
 	cVars, err := c.GetConState(gid)
@@ -685,7 +690,7 @@ func TestReplyPhaseChange(t *testing.T) {
 
 	var cause, resp string
 
-	want := createWant(c.POSTPROMPTS, users, c.TestSettings.Timer1)
+	want := createWant(c.POSTPROMPTS, false, 0, c.TestSettings.Timer1, users, 2, 0)
 	for i, user := range users {
 		gMsg.UID = user
 		cause, resp := c.Handle(gMsg)
@@ -726,7 +731,7 @@ func TestReplyShort(t *testing.T) {
 		t.Fatalf(`TestReply(Short) = %q - %q, want "Error" - %q`, cause, resp, want)
 	}
 
-	wantVars := createWant(c.PROMPTS, users, c.TestSettings.Timer1)
+	wantVars := createWant(c.PROMPTS, false, 0, c.TestSettings.Timer1, users, 2, 0)
 
 	cVars, err := c.GetConState(gid)
 	if !cmp.Equal(cVars, wantVars) || err != nil {
@@ -754,7 +759,7 @@ func TestReplyLong(t *testing.T) {
 		t.Fatalf(`TestReply(Long) = %q - %q, want "Error" - %q`, cause, resp, want)
 	}
 
-	wantVars := createWant(c.PROMPTS, users, c.TestSettings.Timer1)
+	wantVars := createWant(c.PROMPTS, false, 0, c.TestSettings.Timer1, users, 2, 0)
 
 	cVars, err := c.GetConState(gid)
 	if !cmp.Equal(cVars, wantVars) || err != nil {
@@ -783,7 +788,7 @@ func TestReplyEmptyLine(t *testing.T) {
 		t.Fatalf(`TestReply(EmptyLine) = %q - %q, want "Error" - %q`, cause, resp, want)
 	}
 
-	wantVars := createWant(c.PROMPTS, users, c.TestSettings.Timer1)
+	wantVars := createWant(c.PROMPTS, false, 0, c.TestSettings.Timer1, users, 2, 0)
 
 	cVars, err := c.GetConState(gid)
 	if !cmp.Equal(cVars, wantVars) || err != nil {
@@ -792,7 +797,7 @@ func TestReplyEmptyLine(t *testing.T) {
 }
 
 func TestReplyDuplicate(t *testing.T) {
-	gid, users := startConGame(t, "TestReply(Duplicate)", 2)
+	gid, users := startConGame(t, "TestReply(Duplicate)", 3)
 
 	story, _ := json.Marshal(c.DefStory)
 
@@ -812,7 +817,7 @@ func TestReplyDuplicate(t *testing.T) {
 		t.Fatalf(`TestReply(Valid) = %q - %q, want "Error" - %q`, cause, resp, want)
 	}
 
-	wantVars := createWant(c.PROMPTS, users, c.TestSettings.Timer1)
+	wantVars := createWant(c.PROMPTS, false, 0, c.TestSettings.Timer1, users, 3, 1)
 	wantVars.Stories[users[0]] = c.DefStory
 
 	cVars, err := c.GetConState(gid)
