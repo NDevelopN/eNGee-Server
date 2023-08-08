@@ -2,6 +2,8 @@ package utils
 
 import "errors"
 
+var NO_HANDLER = false
+
 // type GHandler func(msg GameMsg, broadcast func(string, []byte))
 type GHandler func(msg GameMsg) (string, string)
 

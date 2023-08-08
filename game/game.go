@@ -11,6 +11,9 @@ import (
 )
 
 func checkType(gType string) bool {
+	if utils.NO_HANDLER {
+		return true
+	}
 	tList, err := db.GetGameTypes()
 	if err != nil {
 		log.Printf("[Error] could not get game types from database: %v", err)

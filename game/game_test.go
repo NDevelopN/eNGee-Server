@@ -4,15 +4,20 @@ import (
 	"testing"
 
 	db "Engee-Server/database"
-	u "Engee-Server/utils"
+	"Engee-Server/utils"
 
 	"github.com/google/uuid"
 )
 
+func prepTest() {
+	db.InitDB()
+	utils.NO_HANDLER = true
+}
+
 // Test Game Creation
 func TestCreateGameValid(t *testing.T) {
-	db.InitDB()
-	msg, err := CreateGame(u.DefGame)
+	prepTest()
+	msg, err := CreateGame(utils.DefGame)
 	_, pe := uuid.Parse(msg)
 	if pe != nil || err != nil {
 		t.Fatalf(`CreateGame(valid) = %q, "%v", want "uuid", "nil"`, msg, err)
@@ -20,17 +25,17 @@ func TestCreateGameValid(t *testing.T) {
 }
 
 func TestCreateGameMulti(t *testing.T) {
-	db.InitDB()
-	_, _ = CreateGame(u.DefGame)
-	msg, err := CreateGame(u.DefGame)
+	prepTest()
+	_, _ = CreateGame(utils.DefGame)
+	msg, err := CreateGame(utils.DefGame)
 	_, pe := uuid.Parse(msg)
 	if pe != nil || err != nil {
 		t.Fatalf(`CreateGame(multi-valid) = %q, "%v", want "uuid", "nil"`, msg, err)
 	}
 }
 func TestCreateGameEmptyValues(t *testing.T) {
-	db.InitDB()
-	game := u.DefGame
+	prepTest()
+	game := utils.DefGame
 	game.Name = ""
 	game.Type = ""
 
@@ -41,9 +46,9 @@ func TestCreateGameEmptyValues(t *testing.T) {
 }
 
 func TestCreateGameInvalidPlrNums(t *testing.T) {
-	db.InitDB()
+	prepTest()
 
-	game := u.DefGame
+	game := utils.DefGame
 	game.MinPlrs = 10
 
 	msg, err := CreateGame(game)
@@ -53,16 +58,16 @@ func TestCreateGameInvalidPlrNums(t *testing.T) {
 }
 
 func TestCreateGameInjection(t *testing.T) {
-	db.InitDB()
+	prepTest()
 	//TODO
 }
 
 // Test Game Retrieval
 func TestGetGamesValidSingle(t *testing.T) {
-	db.InitDB()
-	gid, _ := CreateGame(u.DefGame)
+	prepTest()
+	gid, _ := CreateGame(utils.DefGame)
 
-	want := u.DefGame
+	want := utils.DefGame
 	want.GID = gid
 
 	games, err := GetGames()
@@ -72,14 +77,14 @@ func TestGetGamesValidSingle(t *testing.T) {
 }
 
 func TestGetGamesValidMulti(t *testing.T) {
-	db.InitDB()
-	gid1, _ := CreateGame(u.DefGame)
-	gid2, _ := CreateGame(u.DefGame)
+	prepTest()
+	gid1, _ := CreateGame(utils.DefGame)
+	gid2, _ := CreateGame(utils.DefGame)
 
-	var want [2]u.Game
-	want[0] = u.DefGame
+	var want [2]utils.Game
+	want[0] = utils.DefGame
 	want[0].GID = gid1
-	want[1] = u.DefGame
+	want[1] = utils.DefGame
 	want[1].GID = gid2
 
 	games, err := GetGames()
@@ -90,7 +95,7 @@ func TestGetGamesValidMulti(t *testing.T) {
 }
 
 func TestGetGamesEmpty(t *testing.T) {
-	db.InitDB()
+	prepTest()
 	games, err := GetGames()
 
 	if len(games) > 0 || err != nil {
@@ -100,9 +105,9 @@ func TestGetGamesEmpty(t *testing.T) {
 
 // Test Get Game
 func TestGetGameValid(t *testing.T) {
-	db.InitDB()
+	prepTest()
 
-	gid, _ := CreateGame(u.DefGame)
+	gid, _ := CreateGame(utils.DefGame)
 
 	game, err := GetGame(gid)
 	if err != nil {
@@ -111,16 +116,16 @@ func TestGetGameValid(t *testing.T) {
 
 	game.GID = ""
 
-	if game != u.DefGame {
-		t.Fatalf(`GetGame(valid) = %q, want %q`, game, u.DefGame)
+	if game != utils.DefGame {
+		t.Fatalf(`GetGame(valid) = %q, want %q`, game, utils.DefGame)
 	}
 }
 
 func TestGetGameMulti(t *testing.T) {
-	db.InitDB()
+	prepTest()
 
-	_, _ = CreateGame(u.DefGame)
-	gid, _ := CreateGame(u.DefGame)
+	_, _ = CreateGame(utils.DefGame)
+	gid, _ := CreateGame(utils.DefGame)
 
 	game, err := GetGame(gid)
 	if err != nil {
@@ -129,15 +134,15 @@ func TestGetGameMulti(t *testing.T) {
 
 	game.GID = ""
 
-	if game != u.DefGame {
-		t.Fatalf(`GetGame(valid) = %q, want %q`, game, u.DefGame)
+	if game != utils.DefGame {
+		t.Fatalf(`GetGame(valid) = %q, want %q`, game, utils.DefGame)
 	}
 }
 
 func TestGetGameInvalidGID(t *testing.T) {
-	db.InitDB()
+	prepTest()
 
-	_, _ = CreateGame(u.DefGame)
+	_, _ = CreateGame(utils.DefGame)
 
 	_, err := GetGame(uuid.NewString())
 	if err == nil {
@@ -146,9 +151,9 @@ func TestGetGameInvalidGID(t *testing.T) {
 }
 
 func TestGetGameEmptyGID(t *testing.T) {
-	db.InitDB()
+	prepTest()
 
-	_, _ = CreateGame(u.DefGame)
+	_, _ = CreateGame(utils.DefGame)
 
 	_, err := GetGame("")
 	if err == nil {
@@ -157,7 +162,7 @@ func TestGetGameEmptyGID(t *testing.T) {
 }
 
 func TestGetGameEmptyDB(t *testing.T) {
-	db.InitDB()
+	prepTest()
 
 	_, err := GetGame(uuid.NewString())
 	if err == nil {
@@ -166,17 +171,17 @@ func TestGetGameEmptyDB(t *testing.T) {
 }
 
 func TestGetGameInjection(t *testing.T) {
-	db.InitDB()
+	prepTest()
 	//TODO
 }
 
 // Test Game Update
 func TestUpdateGameChangeName(t *testing.T) {
-	db.InitDB()
+	prepTest()
 
-	gid, _ := CreateGame(u.DefGame)
+	gid, _ := CreateGame(utils.DefGame)
 
-	game := u.DefGame
+	game := utils.DefGame
 	game.GID = gid
 	game.Name = "Game Test"
 
@@ -192,11 +197,11 @@ func TestUpdateGameChangeName(t *testing.T) {
 }
 
 func TestUpdateGameChangeType(t *testing.T) {
-	db.InitDB()
+	prepTest()
 
-	gid, _ := CreateGame(u.DefGame)
+	gid, _ := CreateGame(utils.DefGame)
 
-	game := u.DefGame
+	game := utils.DefGame
 	game.GID = gid
 	game.Type = "TypeTest"
 
@@ -212,11 +217,11 @@ func TestUpdateGameChangeType(t *testing.T) {
 }
 
 func TestUpdateGameChangeStatus(t *testing.T) {
-	db.InitDB()
+	prepTest()
 
-	gid, _ := CreateGame(u.DefGame)
+	gid, _ := CreateGame(utils.DefGame)
 
-	game := u.DefGame
+	game := utils.DefGame
 	game.GID = gid
 	game.Status = "Test Status"
 
@@ -232,11 +237,11 @@ func TestUpdateGameChangeStatus(t *testing.T) {
 }
 
 func TestUpdateGameChangeOldStatus(t *testing.T) {
-	db.InitDB()
+	prepTest()
 
-	gid, _ := CreateGame(u.DefGame)
+	gid, _ := CreateGame(utils.DefGame)
 
-	game := u.DefGame
+	game := utils.DefGame
 	game.GID = gid
 	game.OldStatus = "Old Test Status"
 
@@ -252,11 +257,11 @@ func TestUpdateGameChangeOldStatus(t *testing.T) {
 }
 
 func TestUpdateGameChangeLeader(t *testing.T) {
-	db.InitDB()
+	prepTest()
 
-	gid, _ := CreateGame(u.DefGame)
+	gid, _ := CreateGame(utils.DefGame)
 
-	game := u.DefGame
+	game := utils.DefGame
 	game.GID = gid
 	game.Leader = uuid.NewString()
 
@@ -272,11 +277,11 @@ func TestUpdateGameChangeLeader(t *testing.T) {
 }
 
 func TestUpdateGameChangeMinPlrs(t *testing.T) {
-	db.InitDB()
+	prepTest()
 
-	gid, _ := CreateGame(u.DefGame)
+	gid, _ := CreateGame(utils.DefGame)
 
-	game := u.DefGame
+	game := utils.DefGame
 	game.GID = gid
 	game.MinPlrs = 2
 
@@ -292,11 +297,11 @@ func TestUpdateGameChangeMinPlrs(t *testing.T) {
 }
 
 func TestUpdateGameChangeMaxPlrs(t *testing.T) {
-	db.InitDB()
+	prepTest()
 
-	gid, _ := CreateGame(u.DefGame)
+	gid, _ := CreateGame(utils.DefGame)
 
-	game := u.DefGame
+	game := utils.DefGame
 	game.GID = gid
 	game.MaxPlrs = 10
 
@@ -312,11 +317,11 @@ func TestUpdateGameChangeMaxPlrs(t *testing.T) {
 }
 
 func TestUpdateGameChangeMinPlrsHigh(t *testing.T) {
-	db.InitDB()
+	prepTest()
 
-	gid, _ := CreateGame(u.DefGame)
+	gid, _ := CreateGame(utils.DefGame)
 
-	game := u.DefGame
+	game := utils.DefGame
 	game.GID = gid
 	game.MinPlrs = 10
 
@@ -325,7 +330,7 @@ func TestUpdateGameChangeMinPlrsHigh(t *testing.T) {
 		t.Fatalf(`UpdateGame(MinHigh) = "%v", want ERROR`, err)
 	}
 
-	game = u.DefGame
+	game = utils.DefGame
 	game.GID = gid
 
 	games, err := GetGames()
@@ -335,10 +340,10 @@ func TestUpdateGameChangeMinPlrsHigh(t *testing.T) {
 }
 
 func TestUpdateGameChangeMaxPlrsLow(t *testing.T) {
-	db.InitDB()
-	gid, _ := CreateGame(u.DefGame)
+	prepTest()
+	gid, _ := CreateGame(utils.DefGame)
 
-	game := u.DefGame
+	game := utils.DefGame
 	game.GID = gid
 	game.MaxPlrs = 0
 
@@ -347,7 +352,7 @@ func TestUpdateGameChangeMaxPlrsLow(t *testing.T) {
 		t.Fatalf(`UpdateGame(MaxLow) = "%v", want ERROR`, err)
 	}
 
-	game = u.DefGame
+	game = utils.DefGame
 	game.GID = gid
 
 	games, err := GetGames()
@@ -357,11 +362,11 @@ func TestUpdateGameChangeMaxPlrsLow(t *testing.T) {
 }
 
 func TestUpdateGameChangeCurPlrs(t *testing.T) {
-	db.InitDB()
+	prepTest()
 
-	gid, _ := CreateGame(u.DefGame)
+	gid, _ := CreateGame(utils.DefGame)
 
-	game := u.DefGame
+	game := utils.DefGame
 	game.GID = gid
 	game.CurPlrs = 1
 
@@ -377,11 +382,11 @@ func TestUpdateGameChangeCurPlrs(t *testing.T) {
 }
 
 func TestUpdateGameChangeCurHigh(t *testing.T) {
-	db.InitDB()
+	prepTest()
 
-	gid, _ := CreateGame(u.DefGame)
+	gid, _ := CreateGame(utils.DefGame)
 
-	game := u.DefGame
+	game := utils.DefGame
 	game.GID = gid
 	game.CurPlrs = 99
 
@@ -390,7 +395,7 @@ func TestUpdateGameChangeCurHigh(t *testing.T) {
 		t.Fatalf(`UpdateGame(CurPHigh) = "%v", want ERROR`, err)
 	}
 
-	game = u.DefGame
+	game = utils.DefGame
 	game.GID = gid
 
 	games, err := GetGames()
@@ -400,11 +405,11 @@ func TestUpdateGameChangeCurHigh(t *testing.T) {
 }
 
 func TestUpdateGameChangeAdditional(t *testing.T) {
-	db.InitDB()
+	prepTest()
 
-	gid, _ := CreateGame(u.DefGame)
+	gid, _ := CreateGame(utils.DefGame)
 
-	game := u.DefGame
+	game := utils.DefGame
 	game.GID = gid
 	game.AdditionalRules = `{"rule1": "default"}`
 
@@ -420,11 +425,11 @@ func TestUpdateGameChangeAdditional(t *testing.T) {
 }
 
 func TestUpdateGameChangeAll(t *testing.T) {
-	db.InitDB()
+	prepTest()
 
-	gid, _ := CreateGame(u.DefGame)
+	gid, _ := CreateGame(utils.DefGame)
 
-	var game = u.Game{
+	var game = utils.Game{
 		GID:             gid,
 		Name:            "Game Test",
 		Type:            "TypeTest",
@@ -449,11 +454,11 @@ func TestUpdateGameChangeAll(t *testing.T) {
 }
 
 func TestUpdateGameInvalidGID(t *testing.T) {
-	db.InitDB()
+	prepTest()
 
-	gid, _ := CreateGame(u.DefGame)
+	gid, _ := CreateGame(utils.DefGame)
 
-	game := u.DefGame
+	game := utils.DefGame
 	game.GID = uuid.NewString()
 	game.Name = "Game Test"
 
@@ -462,7 +467,7 @@ func TestUpdateGameInvalidGID(t *testing.T) {
 		t.Fatalf(`UpdateGame(InvalidGID) = "%v", want ERROR`, err)
 	}
 
-	game = u.DefGame
+	game = utils.DefGame
 	game.GID = gid
 
 	games, err := GetGames()
@@ -472,11 +477,11 @@ func TestUpdateGameInvalidGID(t *testing.T) {
 }
 
 func TestUpdateGameEmptyGID(t *testing.T) {
-	db.InitDB()
+	prepTest()
 
-	gid, _ := CreateGame(u.DefGame)
+	gid, _ := CreateGame(utils.DefGame)
 
-	game := u.DefGame
+	game := utils.DefGame
 	game.GID = ""
 	game.Name = "Game Test"
 
@@ -485,7 +490,7 @@ func TestUpdateGameEmptyGID(t *testing.T) {
 		t.Fatalf(`UpdateGame(EmptyGID) = "%v", want ERROR`, err)
 	}
 
-	game = u.DefGame
+	game = utils.DefGame
 	game.GID = gid
 
 	games, err := GetGames()
@@ -495,9 +500,9 @@ func TestUpdateGameEmptyGID(t *testing.T) {
 }
 
 func TestUpdateGameEmptyDB(t *testing.T) {
-	db.InitDB()
+	prepTest()
 
-	game := u.DefGame
+	game := utils.DefGame
 	game.GID = uuid.NewString()
 	game.Name = "Game Test"
 
@@ -513,11 +518,11 @@ func TestUpdateGameEmptyDB(t *testing.T) {
 }
 
 func TestUpdateGameNoChange(t *testing.T) {
-	db.InitDB()
+	prepTest()
 
-	gid, _ := CreateGame(u.DefGame)
+	gid, _ := CreateGame(utils.DefGame)
 
-	game := u.DefGame
+	game := utils.DefGame
 	game.GID = gid
 
 	err := UpdateGame(game)
@@ -532,14 +537,14 @@ func TestUpdateGameNoChange(t *testing.T) {
 }
 
 func TestUpdateGameInjection(t *testing.T) {
-	db.InitDB()
+	prepTest()
 	// TODO
 }
 
 func TestChangePlayerCountValidIncrease(t *testing.T) {
-	db.InitDB()
+	prepTest()
 
-	game := u.DefGame
+	game := utils.DefGame
 	game.CurPlrs = 2
 
 	gid, _ := CreateGame(game)
@@ -559,12 +564,12 @@ func TestChangePlayerCountValidIncrease(t *testing.T) {
 }
 
 func TestChangePlayerCountValidDecrease(t *testing.T) {
-	db.InitDB()
+	prepTest()
 
-	game := u.DefGame
+	game := utils.DefGame
 	game.CurPlrs = 2
 
-	gid, _ := CreateGame(u.DefGame)
+	gid, _ := CreateGame(utils.DefGame)
 
 	game.GID = gid
 
@@ -582,12 +587,12 @@ func TestChangePlayerCountValidDecrease(t *testing.T) {
 }
 
 func TestChangePlayerCountDoubleIncrease(t *testing.T) {
-	db.InitDB()
+	prepTest()
 
-	game := u.DefGame
+	game := utils.DefGame
 	game.CurPlrs = 1
 
-	gid, _ := CreateGame(u.DefGame)
+	gid, _ := CreateGame(utils.DefGame)
 	game.GID = gid
 
 	want := game.CurPlrs + 2
@@ -608,12 +613,12 @@ func TestChangePlayerCountDoubleIncrease(t *testing.T) {
 }
 
 func TestChangePlayerCountDoubleDecrease(t *testing.T) {
-	db.InitDB()
+	prepTest()
 
-	game := u.DefGame
+	game := utils.DefGame
 	game.CurPlrs = 3
 
-	gid, _ := CreateGame(u.DefGame)
+	gid, _ := CreateGame(utils.DefGame)
 	game.GID = gid
 
 	want := game.CurPlrs - 2
@@ -633,9 +638,9 @@ func TestChangePlayerCountDoubleDecrease(t *testing.T) {
 	}
 }
 func TestChangePlayerCountIncreaseFullGame(t *testing.T) {
-	db.InitDB()
+	prepTest()
 
-	game := u.DefGame
+	game := utils.DefGame
 	game.CurPlrs = game.MaxPlrs
 
 	gid, _ := CreateGame(game)
@@ -657,9 +662,9 @@ func TestChangePlayerCountIncreaseFullGame(t *testing.T) {
 }
 
 func TestChangePlayerCountDecreaseToZero(t *testing.T) {
-	db.InitDB()
+	prepTest()
 
-	game := u.DefGame
+	game := utils.DefGame
 	game.CurPlrs = 1
 
 	gid, _ := CreateGame(game)
@@ -678,9 +683,9 @@ func TestChangePlayerCountDecreaseToZero(t *testing.T) {
 }
 
 func TestChangePlayerCountNoChange(t *testing.T) {
-	db.InitDB()
+	prepTest()
 
-	game := u.DefGame
+	game := utils.DefGame
 	game.CurPlrs = 1
 
 	gid, _ := CreateGame(game)
@@ -702,8 +707,8 @@ func TestChangePlayerCountNoChange(t *testing.T) {
 
 // Test Game Deletion
 func TestDeleteGameValid(t *testing.T) {
-	db.InitDB()
-	gid, _ := CreateGame(u.DefGame)
+	prepTest()
+	gid, _ := CreateGame(utils.DefGame)
 	err := DeleteGame(gid)
 	if err != nil {
 		t.Fatalf(`DeleteGame(Valid) = "%v", want "nil"`, err)
@@ -716,9 +721,9 @@ func TestDeleteGameValid(t *testing.T) {
 }
 
 func TestDeleteGameMulti(t *testing.T) {
-	db.InitDB()
-	_, _ = CreateGame(u.DefGame)
-	gid, _ := CreateGame(u.DefGame)
+	prepTest()
+	_, _ = CreateGame(utils.DefGame)
+	gid, _ := CreateGame(utils.DefGame)
 	err := DeleteGame(gid)
 	if err != nil {
 		t.Fatalf(`DeleteGame(Multi) = "%v", want  "nil"`, err)
@@ -731,8 +736,8 @@ func TestDeleteGameMulti(t *testing.T) {
 }
 
 func TestDeleteGameInvalidGID(t *testing.T) {
-	db.InitDB()
-	_, _ = CreateGame(u.DefGame)
+	prepTest()
+	_, _ = CreateGame(utils.DefGame)
 
 	err := DeleteGame(uuid.NewString())
 	if err == nil {
@@ -746,8 +751,8 @@ func TestDeleteGameInvalidGID(t *testing.T) {
 }
 
 func TestDeletGameEmptyGID(t *testing.T) {
-	db.InitDB()
-	_, _ = CreateGame(u.DefGame)
+	prepTest()
+	_, _ = CreateGame(utils.DefGame)
 
 	err := DeleteGame("")
 	if err == nil {
@@ -761,7 +766,7 @@ func TestDeletGameEmptyGID(t *testing.T) {
 }
 
 func TestDeleteGameEmptyDB(t *testing.T) {
-	db.InitDB()
+	prepTest()
 
 	err := DeleteGame(uuid.NewString())
 	if err == nil {
@@ -770,8 +775,8 @@ func TestDeleteGameEmptyDB(t *testing.T) {
 }
 
 func TestDeleteGameRepeat(t *testing.T) {
-	db.InitDB()
-	gid, _ := CreateGame(u.DefGame)
+	prepTest()
+	gid, _ := CreateGame(utils.DefGame)
 	_ = DeleteGame(gid)
 
 	err := DeleteGame(gid)
@@ -781,7 +786,7 @@ func TestDeleteGameRepeat(t *testing.T) {
 }
 
 func TestDeleteGameInjection(t *testing.T) {
-	db.InitDB()
+	prepTest()
 	//TODO
 
 }
