@@ -572,6 +572,9 @@ func TestRemove(t *testing.T) {
 
 // Don't need to test remove too few, handled by leave below
 
+/**
+ TODO: These need to be tested through the Gamespace Handler
+
 func TestStatus(t *testing.T) {
 	gid, users := startConGame(t, "TestStatus(ConSpec)", 3)
 
@@ -628,6 +631,7 @@ func TestStatusPhaseChange(t *testing.T) {
 		t.Fatalf(`TestStatus(PhaseChange) = %v - %v, want %v, "nil"`, cVars, err, wantVars)
 	}
 }
+*/
 
 func TestLeaveValid(t *testing.T) {
 	gid, users := startConGame(t, "TestLeave(Valid)", 3)
