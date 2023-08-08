@@ -9,9 +9,14 @@ import (
 	"github.com/google/uuid"
 )
 
+var user utils.User
+
 func prepTest() {
 	db.InitDB()
 	utils.NO_HANDLER = true
+	user = utils.DefUser
+	user.UID = uuid.NewString()
+	db.CreateUser(user)
 }
 
 // Test Game Creation
@@ -65,10 +70,14 @@ func TestCreateGameInjection(t *testing.T) {
 // Test Game Retrieval
 func TestGetGamesValidSingle(t *testing.T) {
 	prepTest()
-	gid, _ := CreateGame(utils.DefGame)
+	game := utils.DefGame
+	game.Leader = user.UID
+
+	gid, _ := CreateGame(game)
 
 	want := utils.DefGame
 	want.GID = gid
+	want.Leader = user.UID
 
 	games, err := GetGames()
 	if want != games[0] || err != nil {
@@ -78,13 +87,16 @@ func TestGetGamesValidSingle(t *testing.T) {
 
 func TestGetGamesValidMulti(t *testing.T) {
 	prepTest()
-	gid1, _ := CreateGame(utils.DefGame)
-	gid2, _ := CreateGame(utils.DefGame)
+	game := utils.DefGame
+	game.Leader = user.UID
+
+	gid1, _ := CreateGame(game)
+	gid2, _ := CreateGame(game)
 
 	var want [2]utils.Game
-	want[0] = utils.DefGame
+	want[0] = game
 	want[0].GID = gid1
-	want[1] = utils.DefGame
+	want[1] = game
 	want[1].GID = gid2
 
 	games, err := GetGames()
@@ -107,17 +119,22 @@ func TestGetGamesEmpty(t *testing.T) {
 func TestGetGameValid(t *testing.T) {
 	prepTest()
 
-	gid, _ := CreateGame(utils.DefGame)
+	game := utils.DefGame
+	game.Leader = user.UID
 
-	game, err := GetGame(gid)
+	gid, _ := CreateGame(game)
+
+	game.GID = gid
+
+	rec, err := GetGame(gid)
 	if err != nil {
 		t.Fatalf(`GetGame(valid) = Failed to get game: "%v"`, err)
 	}
 
-	game.GID = ""
+	rec.Leader = user.UID
 
-	if game != utils.DefGame {
-		t.Fatalf(`GetGame(valid) = %q, want %q`, game, utils.DefGame)
+	if rec != game {
+		t.Fatalf(`GetGame(valid) = %q, want %q`, rec, game)
 	}
 }
 
@@ -125,17 +142,20 @@ func TestGetGameMulti(t *testing.T) {
 	prepTest()
 
 	_, _ = CreateGame(utils.DefGame)
-	gid, _ := CreateGame(utils.DefGame)
+	game := utils.DefGame
+	game.Leader = user.UID
 
-	game, err := GetGame(gid)
+	gid, _ := CreateGame(game)
+
+	game.GID = gid
+
+	rec, err := GetGame(gid)
 	if err != nil {
 		t.Fatalf(`GetGame(valid) = Failed to get game: "%v"`, err)
 	}
 
-	game.GID = ""
-
-	if game != utils.DefGame {
-		t.Fatalf(`GetGame(valid) = %q, want %q`, game, utils.DefGame)
+	if rec != game {
+		t.Fatalf(`GetGame(valid) = %q, want %q`, rec, game)
 	}
 }
 
@@ -179,9 +199,11 @@ func TestGetGameInjection(t *testing.T) {
 func TestUpdateGameChangeName(t *testing.T) {
 	prepTest()
 
-	gid, _ := CreateGame(utils.DefGame)
-
 	game := utils.DefGame
+	game.Leader = user.UID
+
+	gid, _ := CreateGame(game)
+
 	game.GID = gid
 	game.Name = "Game Test"
 
@@ -199,9 +221,11 @@ func TestUpdateGameChangeName(t *testing.T) {
 func TestUpdateGameChangeType(t *testing.T) {
 	prepTest()
 
-	gid, _ := CreateGame(utils.DefGame)
-
 	game := utils.DefGame
+	game.Leader = user.UID
+
+	gid, _ := CreateGame(game)
+
 	game.GID = gid
 	game.Type = "TypeTest"
 
@@ -219,9 +243,11 @@ func TestUpdateGameChangeType(t *testing.T) {
 func TestUpdateGameChangeStatus(t *testing.T) {
 	prepTest()
 
-	gid, _ := CreateGame(utils.DefGame)
-
 	game := utils.DefGame
+	game.Leader = user.UID
+
+	gid, _ := CreateGame(game)
+
 	game.GID = gid
 	game.Status = "Test Status"
 
@@ -239,9 +265,11 @@ func TestUpdateGameChangeStatus(t *testing.T) {
 func TestUpdateGameChangeOldStatus(t *testing.T) {
 	prepTest()
 
-	gid, _ := CreateGame(utils.DefGame)
-
 	game := utils.DefGame
+	game.Leader = user.UID
+
+	gid, _ := CreateGame(game)
+
 	game.GID = gid
 	game.OldStatus = "Old Test Status"
 
@@ -259,11 +287,18 @@ func TestUpdateGameChangeOldStatus(t *testing.T) {
 func TestUpdateGameChangeLeader(t *testing.T) {
 	prepTest()
 
-	gid, _ := CreateGame(utils.DefGame)
-
 	game := utils.DefGame
+	game.Leader = user.UID
+
+	gid, _ := CreateGame(game)
+
 	game.GID = gid
-	game.Leader = uuid.NewString()
+
+	nUser := user
+	nUser.UID = uuid.NewString()
+	db.CreateUser(nUser)
+
+	game.Leader = nUser.UID
 
 	err := UpdateGame(game)
 	if err != nil {
@@ -279,9 +314,11 @@ func TestUpdateGameChangeLeader(t *testing.T) {
 func TestUpdateGameChangeMinPlrs(t *testing.T) {
 	prepTest()
 
-	gid, _ := CreateGame(utils.DefGame)
-
 	game := utils.DefGame
+	game.Leader = user.UID
+
+	gid, _ := CreateGame(game)
+
 	game.GID = gid
 	game.MinPlrs = 2
 
@@ -299,9 +336,11 @@ func TestUpdateGameChangeMinPlrs(t *testing.T) {
 func TestUpdateGameChangeMaxPlrs(t *testing.T) {
 	prepTest()
 
-	gid, _ := CreateGame(utils.DefGame)
-
 	game := utils.DefGame
+	game.Leader = user.UID
+
+	gid, _ := CreateGame(game)
+
 	game.GID = gid
 	game.MaxPlrs = 10
 
@@ -319,9 +358,11 @@ func TestUpdateGameChangeMaxPlrs(t *testing.T) {
 func TestUpdateGameChangeMinPlrsHigh(t *testing.T) {
 	prepTest()
 
-	gid, _ := CreateGame(utils.DefGame)
-
 	game := utils.DefGame
+	game.Leader = user.UID
+
+	gid, _ := CreateGame(game)
+
 	game.GID = gid
 	game.MinPlrs = 10
 
@@ -330,8 +371,7 @@ func TestUpdateGameChangeMinPlrsHigh(t *testing.T) {
 		t.Fatalf(`UpdateGame(MinHigh) = "%v", want ERROR`, err)
 	}
 
-	game = utils.DefGame
-	game.GID = gid
+	game.MinPlrs = utils.DefGame.MinPlrs
 
 	games, err := GetGames()
 	if game != games[0] || err != nil {
@@ -341,9 +381,11 @@ func TestUpdateGameChangeMinPlrsHigh(t *testing.T) {
 
 func TestUpdateGameChangeMaxPlrsLow(t *testing.T) {
 	prepTest()
-	gid, _ := CreateGame(utils.DefGame)
-
 	game := utils.DefGame
+	game.Leader = user.UID
+
+	gid, _ := CreateGame(game)
+
 	game.GID = gid
 	game.MaxPlrs = 0
 
@@ -352,8 +394,7 @@ func TestUpdateGameChangeMaxPlrsLow(t *testing.T) {
 		t.Fatalf(`UpdateGame(MaxLow) = "%v", want ERROR`, err)
 	}
 
-	game = utils.DefGame
-	game.GID = gid
+	game.MaxPlrs = utils.DefGame.MaxPlrs
 
 	games, err := GetGames()
 	if game != games[0] || err != nil {
@@ -361,55 +402,14 @@ func TestUpdateGameChangeMaxPlrsLow(t *testing.T) {
 	}
 }
 
-func TestUpdateGameChangeCurPlrs(t *testing.T) {
-	prepTest()
-
-	gid, _ := CreateGame(utils.DefGame)
-
-	game := utils.DefGame
-	game.GID = gid
-	game.CurPlrs = 1
-
-	err := UpdateGame(game)
-	if err != nil {
-		t.Fatalf(`UpdateGame(CurP) = "%v", want "nil"`, err)
-	}
-
-	games, err := GetGames()
-	if game != games[0] || err != nil {
-		t.Fatalf(`UpdateGame(CurP) = %q, "%v", want %q, "nil"`, games, err, game)
-	}
-}
-
-func TestUpdateGameChangeCurHigh(t *testing.T) {
-	prepTest()
-
-	gid, _ := CreateGame(utils.DefGame)
-
-	game := utils.DefGame
-	game.GID = gid
-	game.CurPlrs = 99
-
-	err := UpdateGame(game)
-	if err == nil {
-		t.Fatalf(`UpdateGame(CurPHigh) = "%v", want ERROR`, err)
-	}
-
-	game = utils.DefGame
-	game.GID = gid
-
-	games, err := GetGames()
-	if game != games[0] || err != nil {
-		t.Fatalf(`UpdateGame(CurPHigh) = %q, "%v", want %q, "nil"`, games, err, game)
-	}
-}
-
 func TestUpdateGameChangeAdditional(t *testing.T) {
 	prepTest()
 
-	gid, _ := CreateGame(utils.DefGame)
-
 	game := utils.DefGame
+	game.Leader = user.UID
+
+	gid, _ := CreateGame(game)
+
 	game.GID = gid
 	game.AdditionalRules = `{"rule1": "default"}`
 
@@ -427,18 +427,20 @@ func TestUpdateGameChangeAdditional(t *testing.T) {
 func TestUpdateGameChangeAll(t *testing.T) {
 	prepTest()
 
-	gid, _ := CreateGame(utils.DefGame)
+	game := utils.DefGame
+	game.Leader = user.UID
 
-	var game = utils.Game{
+	gid, _ := CreateGame(game)
+
+	game = utils.Game{
 		GID:             gid,
 		Name:            "Game Test",
 		Type:            "TypeTest",
 		Status:          "Test Status",
 		OldStatus:       "Old Test Status",
-		Leader:          uuid.NewString(),
+		Leader:          user.UID,
 		MinPlrs:         2,
 		MaxPlrs:         10,
-		CurPlrs:         1,
 		AdditionalRules: `{"rule1": "default"}`,
 	}
 
@@ -456,19 +458,21 @@ func TestUpdateGameChangeAll(t *testing.T) {
 func TestUpdateGameInvalidGID(t *testing.T) {
 	prepTest()
 
-	gid, _ := CreateGame(utils.DefGame)
-
 	game := utils.DefGame
-	game.GID = uuid.NewString()
-	game.Name = "Game Test"
+	game.Leader = user.UID
 
-	err := UpdateGame(game)
+	gid, _ := CreateGame(game)
+
+	game.GID = gid
+
+	nGame := game
+	nGame.GID = uuid.NewString()
+	nGame.Name = "Game Test"
+
+	err := UpdateGame(nGame)
 	if err == nil {
 		t.Fatalf(`UpdateGame(InvalidGID) = "%v", want ERROR`, err)
 	}
-
-	game = utils.DefGame
-	game.GID = gid
 
 	games, err := GetGames()
 	if game != games[0] || err != nil {
@@ -479,19 +483,21 @@ func TestUpdateGameInvalidGID(t *testing.T) {
 func TestUpdateGameEmptyGID(t *testing.T) {
 	prepTest()
 
-	gid, _ := CreateGame(utils.DefGame)
-
 	game := utils.DefGame
-	game.GID = ""
-	game.Name = "Game Test"
+	game.Leader = user.UID
 
-	err := UpdateGame(game)
+	gid, _ := CreateGame(game)
+
+	game.GID = gid
+
+	nGame := game
+	nGame.GID = ""
+	nGame.Name = "Game Test"
+
+	err := UpdateGame(nGame)
 	if err == nil {
 		t.Fatalf(`UpdateGame(EmptyGID) = "%v", want ERROR`, err)
 	}
-
-	game = utils.DefGame
-	game.GID = gid
 
 	games, err := GetGames()
 	if game != games[0] || err != nil {
@@ -520,9 +526,11 @@ func TestUpdateGameEmptyDB(t *testing.T) {
 func TestUpdateGameNoChange(t *testing.T) {
 	prepTest()
 
-	gid, _ := CreateGame(utils.DefGame)
-
 	game := utils.DefGame
+	game.Leader = user.UID
+
+	gid, _ := CreateGame(game)
+
 	game.GID = gid
 
 	err := UpdateGame(game)
@@ -541,174 +549,13 @@ func TestUpdateGameInjection(t *testing.T) {
 	// TODO
 }
 
-func TestChangePlayerCountValidIncrease(t *testing.T) {
-	prepTest()
-
-	game := utils.DefGame
-	game.CurPlrs = 2
-
-	gid, _ := CreateGame(game)
-	game.GID = gid
-
-	err := ChangePlayerCount(game, 1)
-	if err != nil {
-		t.Fatalf(`ChangePlayerCount(ValidIncrease) = "%v", want "nil"`, err)
-	}
-
-	want := game.CurPlrs + 1
-
-	game, err = GetGame(gid)
-	if game.CurPlrs != want || err != nil {
-		t.Fatalf(`ChangePlayerCount(ValidIncrease) = %d, "%v", want %d, "nil"`, game.CurPlrs, err, want)
-	}
-}
-
-func TestChangePlayerCountValidDecrease(t *testing.T) {
-	prepTest()
-
-	game := utils.DefGame
-	game.CurPlrs = 2
-
-	gid, _ := CreateGame(utils.DefGame)
-
-	game.GID = gid
-
-	err := ChangePlayerCount(game, -1)
-	if err != nil {
-		t.Fatalf(`ChangePlayerCount(ValidDecrease) = "%v", want "nil"`, err)
-	}
-
-	want := game.CurPlrs - 1
-
-	game, err = GetGame(gid)
-	if game.CurPlrs != want || err != nil {
-		t.Fatalf(`ChangePlayerCount(ValidDecrease) = %d, "%v", want %d, "nil"`, game.CurPlrs, err, want)
-	}
-}
-
-func TestChangePlayerCountDoubleIncrease(t *testing.T) {
-	prepTest()
-
-	game := utils.DefGame
-	game.CurPlrs = 1
-
-	gid, _ := CreateGame(utils.DefGame)
-	game.GID = gid
-
-	want := game.CurPlrs + 2
-
-	_ = ChangePlayerCount(game, 1)
-
-	game, _ = GetGame(gid)
-
-	err := ChangePlayerCount(game, 1)
-	if err != nil {
-		t.Fatalf(`ChangePlayerCount(DoubleIncrease) = "%v", want "nil"`, err)
-	}
-
-	game, err = GetGame(gid)
-	if game.CurPlrs != want || err != nil {
-		t.Fatalf(`ChangePlayerCount(DoubleIncrease) = %d, "%v", want %d, "nil"`, game.CurPlrs, err, want)
-	}
-}
-
-func TestChangePlayerCountDoubleDecrease(t *testing.T) {
-	prepTest()
-
-	game := utils.DefGame
-	game.CurPlrs = 3
-
-	gid, _ := CreateGame(utils.DefGame)
-	game.GID = gid
-
-	want := game.CurPlrs - 2
-
-	_ = ChangePlayerCount(game, -1)
-
-	game, _ = GetGame(gid)
-
-	err := ChangePlayerCount(game, -1)
-	if err != nil {
-		t.Fatalf(`ChangePlayerCount(DoubleDecrease) = "%v", want "nil"`, err)
-	}
-
-	game, err = GetGame(gid)
-	if game.CurPlrs != want || err != nil {
-		t.Fatalf(`ChangePlayerCount(DoubleDecrease) = %d, "%v", want %d, "nil"`, game.CurPlrs, err, want)
-	}
-}
-func TestChangePlayerCountIncreaseFullGame(t *testing.T) {
-	prepTest()
-
-	game := utils.DefGame
-	game.CurPlrs = game.MaxPlrs
-
-	gid, _ := CreateGame(game)
-
-	game.GID = gid
-
-	err := ChangePlayerCount(game, 1)
-
-	if err == nil {
-		t.Fatalf(`ChangePlayerCount(FullGameIncrease) = "%v", want ERROR`, err)
-	}
-
-	want := game.CurPlrs
-
-	game, err = GetGame(gid)
-	if game.CurPlrs != want || err != nil {
-		t.Fatalf(`ChangePlayerCount(FullGameIncrease) = %d, "%v", want %d, "nil"`, game.CurPlrs, err, want)
-	}
-}
-
-func TestChangePlayerCountDecreaseToZero(t *testing.T) {
-	prepTest()
-
-	game := utils.DefGame
-	game.CurPlrs = 1
-
-	gid, _ := CreateGame(game)
-
-	game.GID = gid
-
-	err := ChangePlayerCount(game, -1)
-	if err != nil {
-		t.Fatalf(`ChangePlayerCount(DecreaseToZero) = "%v", want "nil"`, err)
-	}
-
-	game, err = GetGame(gid)
-	if err == nil {
-		t.Fatalf(`ChangePlayerCount(DecreaseToZero) = %q, "%v", want "nil", ERROR`, game, err)
-	}
-}
-
-func TestChangePlayerCountNoChange(t *testing.T) {
-	prepTest()
-
-	game := utils.DefGame
-	game.CurPlrs = 1
-
-	gid, _ := CreateGame(game)
-
-	game.GID = gid
-
-	err := ChangePlayerCount(game, 0)
-	if err != nil {
-		t.Fatalf(`ChangePlayerCount(NoChange) = "%v", want "nil"`, err)
-	}
-
-	want := game.CurPlrs
-
-	game, err = GetGame(gid)
-	if game.CurPlrs != want || err != nil {
-		t.Fatalf(`ChangePlayerCount(NoChange) %q, "%v", want %q, "nil"`, game.CurPlrs, err, want)
-	}
-}
-
 // Test Game Deletion
 func TestDeleteGameValid(t *testing.T) {
 	prepTest()
-	gid, _ := CreateGame(utils.DefGame)
+	game := utils.DefGame
+	game.Leader = user.UID
+
+	gid, _ := CreateGame(game)
 	err := DeleteGame(gid)
 	if err != nil {
 		t.Fatalf(`DeleteGame(Valid) = "%v", want "nil"`, err)
@@ -723,7 +570,10 @@ func TestDeleteGameValid(t *testing.T) {
 func TestDeleteGameMulti(t *testing.T) {
 	prepTest()
 	_, _ = CreateGame(utils.DefGame)
-	gid, _ := CreateGame(utils.DefGame)
+	game := utils.DefGame
+	game.Leader = user.UID
+
+	gid, _ := CreateGame(game)
 	err := DeleteGame(gid)
 	if err != nil {
 		t.Fatalf(`DeleteGame(Multi) = "%v", want  "nil"`, err)
@@ -776,7 +626,10 @@ func TestDeleteGameEmptyDB(t *testing.T) {
 
 func TestDeleteGameRepeat(t *testing.T) {
 	prepTest()
-	gid, _ := CreateGame(utils.DefGame)
+	game := utils.DefGame
+	game.Leader = user.UID
+
+	gid, _ := CreateGame(game)
 	_ = DeleteGame(gid)
 
 	err := DeleteGame(gid)
