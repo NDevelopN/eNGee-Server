@@ -172,6 +172,14 @@ func initialize(msg utils.GameMsg, game utils.Game) (string, string) {
 		return "Error", "Could not set active players' status."
 	}
 
+	plrs, err = g.GetGamePlayers(msg.GID)
+	if err != nil {
+		log.Printf("%v could not get game players after setting status: %v", errStr, err)
+		return "Error", "Could not get active players' status."
+	}
+
+	pListUpdateBC(msg.GID, plrs)
+
 	return "", ""
 }
 
@@ -232,6 +240,7 @@ func GamespaceHandle(msg utils.GameMsg) (utils.GameMsg, error) {
 	case "Status":
 		cause, resp = status(msg, plr, game)
 	case "Leave":
+		log.Printf("Received leave")
 		cause, resp = leave(msg, plr, game)
 	default:
 		errStr := "[Error] Cannot process " + msg.Type + " Request: "
