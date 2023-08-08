@@ -493,7 +493,7 @@ func TestUnpauseTimer(t *testing.T) {
 		t.Fatalf(`TestUnpause() = %v, "%v", want %v, "nil"`, cVars, nil, want)
 	}
 
-	checkTimeout(t, "TestPause()", c.TestSettings.Timer1, gid, 0)
+	checkTimeout(t, "TestPause()", c.TestSettings.Timer1-1, gid, 1)
 }
 
 func TestEnd(t *testing.T) {
