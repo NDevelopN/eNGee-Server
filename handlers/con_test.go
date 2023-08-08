@@ -560,9 +560,9 @@ func TestRemove(t *testing.T) {
 		t.Fatalf(`TestRemove() = %q - %q, want "" - ""`, cause, resp)
 	}
 
-	users[0] = users[len(users)-1]
+	want := createWant(c.PROMPTS, false, 0, c.TestSettings.Timer1-1, users[:len(users)-1], 2, 0)
 
-	want := createWant(c.PROMPTS, false, 0, c.TestSettings.Timer1, users[:len(users)-1], 2, 0)
+	time.Sleep(time.Second)
 
 	cVars, err := c.GetConState(gid)
 	if !cmp.Equal(cVars, want) || err != nil {
