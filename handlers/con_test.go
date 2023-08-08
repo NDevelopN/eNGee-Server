@@ -3,7 +3,6 @@ package handlers
 import (
 	"Engee-Server/utils"
 	"encoding/json"
-	"log"
 	"testing"
 	"time"
 
@@ -63,11 +62,6 @@ func prepareConGame(t *testing.T, testName string, userCount int) (string, []str
 		}
 
 		users = append(users, uid)
-	}
-
-	log.Printf("Leader: %s", game.Leader)
-	for i, k := range users {
-		log.Printf("User %d: %s", i, k)
 	}
 
 	return gid, users
