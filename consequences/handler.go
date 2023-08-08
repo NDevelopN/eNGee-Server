@@ -40,7 +40,13 @@ TickLoop:
 	for {
 		select {
 		case <-ticker.C:
-			cVars = CVars[gid]
+			cVars, k := CVars[gid]
+
+			if !k || cVars.State == LOBBY {
+				delete(tickerStop, gid)
+				break TickLoop
+			}
+
 			if cVars.Paused {
 				continue TickLoop
 			}
@@ -288,12 +294,10 @@ func start(msg utils.GameMsg) (string, string) {
 
 func reset(msg utils.GameMsg) (string, string) {
 	cVars := CVars[msg.GID]
-	cVars.State = 0
+	cVars.State = LOBBY
 	cVars.Stories = make(map[string][]string)
 
 	CVars[msg.GID] = cVars
-
-	tickerStop[msg.GID] <- 1
 
 	cause, resp := initialize(msg)
 	if cause != "" {
@@ -308,8 +312,6 @@ func end(msg utils.GameMsg) (string, string) {
 	if cause != "" {
 		log.Printf("[Error] Could not reset game state before ending: %v", resp)
 	}
-
-	tickerStop[msg.GID] <- 1
 
 	delete(CVars, msg.GID)
 
