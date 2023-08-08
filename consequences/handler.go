@@ -10,14 +10,14 @@ import (
 	"time"
 )
 
-var tickerStop chan byte
+var tickerStop = map[string]chan byte{}
 
 func timer(msg utils.GameMsg, cVars ConVars) {
+	gid := msg.GID
+
 	if cVars.Timer == 0 {
 		return
 	}
-
-	gid := msg.GID
 
 	upd := utils.GameMsg{
 		Type:    "ConTimer",
@@ -36,25 +36,33 @@ func timer(msg utils.GameMsg, cVars ConVars) {
 	ticker := time.NewTicker(time.Second)
 	defer ticker.Stop()
 
+TickLoop:
 	for {
 		select {
 		case <-ticker.C:
-			if CVars[gid].Paused {
-				continue
+			cVars = CVars[gid]
+			if cVars.Paused {
+				continue TickLoop
 			}
 
 			t -= 1
+			cVars.Timer = t
+
+			CVars[gid] = cVars
 
 			if t <= 0 {
 				nextState(msg, CVars[gid])
-				ticker.Stop()
-				return
+				break TickLoop
 			}
 
-		case <-tickerStop:
+		case <-tickerStop[gid]:
+			delete(tickerStop, gid)
+			tickerStop[gid] = make(chan byte)
+
 			ticker.Stop()
-			return
+			break TickLoop
 		}
+
 	}
 }
 
@@ -163,8 +171,6 @@ func nextState(msg utils.GameMsg, cVars ConVars) ConVars {
 
 	}
 
-	tickerStop <- byte(0)
-
 	uMsg := utils.GameMsg{
 		GID:     msg.GID,
 		Type:    "ConState",
@@ -244,7 +250,7 @@ func initialize(msg utils.GameMsg) (string, string) {
 		Stories:  map[string][]string{},
 	}
 
-	tickerStop = make(chan byte)
+	tickerStop[msg.GID] = make(chan byte)
 
 	CVars[msg.GID] = cVar
 
@@ -287,6 +293,8 @@ func reset(msg utils.GameMsg) (string, string) {
 
 	CVars[msg.GID] = cVars
 
+	tickerStop[msg.GID] <- 1
+
 	cause, resp := initialize(msg)
 	if cause != "" {
 		log.Printf("[Error] Could not reset game state to current settings: %v", resp)
@@ -300,6 +308,8 @@ func end(msg utils.GameMsg) (string, string) {
 	if cause != "" {
 		log.Printf("[Error] Could not reset game state before ending: %v", resp)
 	}
+
+	tickerStop[msg.GID] <- 1
 
 	delete(CVars, msg.GID)
 
@@ -319,7 +329,6 @@ func pause(msg utils.GameMsg) (string, string) {
 func status(msg utils.GameMsg) (string, string) {
 	cVar := CVars[msg.GID]
 
-	log.Printf("[DEBUG] State: %d", cVar.State)
 	if cVar.State == LOBBY {
 		return "", ""
 	}
@@ -340,6 +349,7 @@ func status(msg utils.GameMsg) (string, string) {
 	}
 
 	if ready >= count/2 {
+		tickerStop[msg.GID] <- 1
 		nextState(msg, cVar)
 	}
 
@@ -371,8 +381,6 @@ func reply(msg utils.GameMsg) (string, string) {
 
 	rLen := len(replies)
 	pLen := len(cVars.Settings.Prompts)
-
-	log.Printf("Len R: %d -- Len P: %d", rLen, pLen)
 
 	if rLen != pLen {
 		log.Printf("[Error] Number of replies %d is not equal to number of prompts %d", rLen, pLen)
