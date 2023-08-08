@@ -52,6 +52,7 @@ func TestGetUserValid(t *testing.T) {
 
 	want := u.DefUser
 	want.UID = uid
+	want.Status = "New"
 
 	user, err := GetUser(uid)
 	if user != want || err != nil {
@@ -67,6 +68,7 @@ func TestGetUserMulti(t *testing.T) {
 
 	want := u.DefUser
 	want.UID = uid
+	want.Status = "New"
 
 	user, err := GetUser(uid)
 	if user != want || err != nil {
@@ -194,6 +196,7 @@ func TestUpdateUserChangeInvalidGID(t *testing.T) {
 
 	want := u.DefUser
 	want.UID = uid
+	want.Status = "New"
 
 	user, err = GetUser(uid)
 	if want != user || err != nil {
@@ -242,6 +245,7 @@ func TestUpdateUserInvalidUID(t *testing.T) {
 
 	want := u.DefUser
 	want.UID = uid
+	want.Status = "New"
 
 	user, err = GetUser(uid)
 	if want != user || err != nil {
@@ -265,6 +269,7 @@ func TestUpdateUserEmptyUID(t *testing.T) {
 
 	want := u.DefUser
 	want.UID = uid
+	want.Status = "New"
 
 	user, err = GetUser(uid)
 	if want != user || err != nil {
@@ -352,6 +357,7 @@ func TestDeleteUserInvalidUID(t *testing.T) {
 
 	want := u.DefUser
 	want.UID = uid
+	want.Status = "New"
 
 	user, err := GetUser(uid)
 	if want != user || err != nil {
@@ -370,6 +376,7 @@ func TestDeletUserEmptyGID(t *testing.T) {
 
 	want := u.DefUser
 	want.UID = uid
+	want.Status = "New"
 
 	user, err := GetUser(uid)
 	if want != user || err != nil {
