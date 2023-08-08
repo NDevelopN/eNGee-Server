@@ -188,16 +188,16 @@ func postGames(c *gin.Context) {
 		return
 	}
 
-	_, err = gamespace.GamespaceHandle(msg)
-	if err != nil {
-		log.Printf("[Error] Failed to initialize game: %v", err)
-		err = g.DeleteGame(gid)
+	go func() {
+		_, err = gamespace.GamespaceHandle(msg)
 		if err != nil {
-			log.Printf("[Error] Failed to delete game with failed Init: %v", err)
+			log.Printf("[Error] Failed to initialize game: %v", err)
+			err = g.DeleteGame(gid)
+			if err != nil {
+				log.Printf("[Error] Failed to delete game with failed Init: %v", err)
+			}
 		}
-		http.Error(w, "Failed to initialize gamespace", http.StatusInternalServerError)
-		return
-	}
+	}()
 
 	err = reply(w, game, http.StatusCreated)
 	if err != nil {

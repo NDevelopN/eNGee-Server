@@ -120,21 +120,21 @@ func initialize(msg utils.GameMsg, game utils.Game) (string, string) {
 
 	plrs, err := g.GetGamePlayers(msg.GID)
 	if err != nil {
-		time.Sleep(time.Second * 2)
-		plrs, err = g.GetGamePlayers(msg.GID)
-		if err != nil {
-			end(msg, game)
+		end(msg, game)
 
-			fmt.Printf("%v could not get game players: %v", errStr, err)
-			return "Error", "No game players found."
-		}
+		fmt.Printf("%v could not get game players: %v", errStr, err)
+		return "Error", "No game players found."
 	}
 
 	pool, err := utils.GetConnections(msg.GID)
 	if len(pool) == 0 || err != nil {
-		end(msg, game)
-		fmt.Printf("%v no connections to game: %v", errStr, err)
-		return "Error", "No available connections."
+		time.Sleep(time.Second * 2)
+		pool, err = utils.GetConnections(msg.GID)
+		if len(pool) == 0 || err != nil {
+			end(msg, game)
+			fmt.Printf("%v no connections to game: %v", errStr, err)
+			return "Error", "No available connections."
+		}
 	}
 
 	handler, err := h.GetHandler(game.Type)
