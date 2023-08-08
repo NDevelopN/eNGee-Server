@@ -138,8 +138,6 @@ func sendStories(gid string, cVars ConVars) error {
 }
 
 func nextState(gid string, cVars ConVars) {
-
-	log.Printf("State B: %d", cVars.State)
 	cVars.State++
 
 	cVars.Ready = 0
@@ -147,7 +145,6 @@ func nextState(gid string, cVars ConVars) {
 	if cVars.State > POSTSTORIES {
 		cVars.State = LOBBY
 	}
-	log.Printf("State M: %d", cVars.State)
 
 	switch cVars.State {
 	case LOBBY:
@@ -192,7 +189,6 @@ func nextState(gid string, cVars ConVars) {
 		log.Printf("[Error] Failed to send state update: %v", err)
 		cVars.State = ERROR
 	}
-	log.Printf("State A: %d", cVars.State)
 
 	CVars[gid] = cVars
 }
@@ -378,9 +374,6 @@ func setActivePlayers(gid string, status string, cVars ConVars) error {
 func checkPhaseChange(gid string) {
 	ticker := time.NewTicker(time.Second)
 	defer ticker.Stop()
-
-	log.Printf("Phase change check is on!")
-	log.Printf("[STate] %d", CVars[gid].State)
 
 	for {
 		select {
