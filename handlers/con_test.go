@@ -672,8 +672,10 @@ func TestReplyValid(t *testing.T) {
 		t.Fatalf(`TestReply(Valid) = %q - %q, want "" - ""`, cause, resp)
 	}
 
-	want := createWant(c.PROMPTS, false, 0, c.TestSettings.Timer1, users, 3, 1)
+	want := createWant(c.PROMPTS, false, 0, c.TestSettings.Timer1-1, users, 3, 1)
 	want.Stories[users[0]] = c.DefStory
+
+	time.Sleep(time.Millisecond * 1200)
 
 	cVars, err := c.GetConState(gid)
 	if !cmp.Equal(cVars, want) || err != nil {
@@ -707,6 +709,8 @@ func TestReplyPhaseChange(t *testing.T) {
 	if cause != "" {
 		t.Fatalf(`TestReply(PhaseChange) = %q - %q, want "" - ""`, cause, resp)
 	}
+
+	time.Sleep(time.Millisecond * 1200)
 
 	cVars, err := c.GetConState(gid)
 	if !cmp.Equal(cVars, want) || err != nil {
