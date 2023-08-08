@@ -49,21 +49,7 @@ func status(msg utils.GameMsg, plr utils.User, game utils.Game) (string, string)
 	return "", ""
 }
 
-func tryEnd(msg utils.GameMsg, game utils.Game, errStr string) (string, string) {
-	msg.Type = "End"
-	cause, _ := end(msg, game)
-	if cause != "" {
-		Shutdown[game.GID] <- 0
-		log.Printf("%v could not end game", errStr)
-		return cause, "Game not ended"
-	}
-
-	return "", ""
-}
-
 func leave(msg utils.GameMsg, plr utils.User, game utils.Game) (string, string) {
-	errStr := "[Error] Could not remove player from game: "
-
 	plr.GID = ""
 
 	msg.Type = "Status"
@@ -71,30 +57,14 @@ func leave(msg utils.GameMsg, plr utils.User, game utils.Game) (string, string) 
 
 	cause, resp := status(msg, plr, game)
 	if cause != "" {
-		log.Printf("%v could not update status", errStr)
 		return cause, "Could not remove player from game: " + resp
-
-	}
-
-	if game.CurPlrs == 1 {
-		cause, resp = tryEnd(msg, game, errStr)
-		if cause != "" {
-			return cause, resp + " after removing last player."
-		}
 	}
 
 	if game.CurPlrs == game.MinPlrs { //TODO add toggle for this
 		msg.Type = "Reset"
-		cause, _ = reset(msg, game)
+		cause, resp = reset(msg, game)
 		if cause != "" {
-			log.Printf("%v could not reset game after CurPlrs fell below MinPlrs ", errStr)
-
-			tryCause, tryResp := tryEnd(msg, game, errStr)
-			if tryCause != "" {
-				return tryCause, tryResp + " after failing minimum player reset"
-			}
-
-			return cause, "Game not reset after falling below minimum player count"
+			log.Printf("[Error] Could not reset after falling below min players: %v", resp)
 		}
 	}
 

@@ -236,12 +236,17 @@ func LeaveGame(gid string, uid string) error {
 		return fmt.Errorf("could not find game in database: %v", err)
 	}
 
-	if game.Leader == uid {
-		plrs, err := db.GetGamePlayers(gid)
+	plrs, err := GetGamePlayers(gid)
+	if err != nil || len(plrs) <= 1 {
+		err = DeleteGame(gid)
 		if err != nil {
-			return fmt.Errorf("could not find players in database: %v", err)
+			log.Printf("[Error] Could not delete game when all players left: %v", err)
 		}
-		var leader string
+		return nil
+	}
+
+	if game.Leader == uid {
+		leader := ""
 
 		for _, p := range plrs {
 			if p.UID != uid {
@@ -255,12 +260,11 @@ func LeaveGame(gid string, uid string) error {
 			if err != nil {
 				log.Printf("[Error] Could not delete game after leader left: %v", err)
 			}
+			return nil
 		} else {
 			game.Leader = leader
 		}
 	}
-
-	game.CurPlrs--
 
 	err = db.UpdateGame(game)
 	if err != nil {
