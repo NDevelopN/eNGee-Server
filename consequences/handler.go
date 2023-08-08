@@ -2,6 +2,7 @@ package consequences
 
 import (
 	g "Engee-Server/game"
+	u "Engee-Server/user"
 	"Engee-Server/utils"
 	"encoding/json"
 	"fmt"
@@ -10,11 +11,7 @@ import (
 	"time"
 )
 
-var tickerStop = map[string]chan byte{}
-
-func timer(msg utils.GameMsg, cVars ConVars) {
-	gid := msg.GID
-
+func timer(gid string, cVars ConVars) {
 	if cVars.Timer == 0 {
 		return
 	}
@@ -36,14 +33,15 @@ func timer(msg utils.GameMsg, cVars ConVars) {
 	ticker := time.NewTicker(time.Second)
 	defer ticker.Stop()
 
+	startState := cVars.State
+
 TickLoop:
 	for {
 		select {
 		case <-ticker.C:
 			cVars, k := CVars[gid]
 
-			if !k || cVars.State == LOBBY {
-				delete(tickerStop, gid)
+			if !k || cVars.State == LOBBY || cVars.State != startState {
 				break TickLoop
 			}
 
@@ -57,23 +55,15 @@ TickLoop:
 			CVars[gid] = cVars
 
 			if t <= 0 {
-				nextState(msg, CVars[gid])
+				nextState(gid, CVars[gid])
 				break TickLoop
 			}
-
-		case <-tickerStop[gid]:
-			delete(tickerStop, gid)
-			tickerStop[gid] = make(chan byte)
-
-			ticker.Stop()
-			break TickLoop
 		}
-
 	}
 }
 
-func sendPrompts(msg utils.GameMsg) error {
-	cVars := CVars[msg.GID]
+func sendPrompts(gid string) error {
+	cVars := CVars[gid]
 	prompts, err := json.Marshal(cVars.Settings.Prompts)
 	if err != nil {
 		return fmt.Errorf("error marshalling prompts: %v", err)
@@ -81,7 +71,7 @@ func sendPrompts(msg utils.GameMsg) error {
 
 	upd := utils.GameMsg{
 		Type:    "Prompts",
-		GID:     msg.GID,
+		GID:     gid,
 		Content: string(prompts),
 	}
 
@@ -147,38 +137,52 @@ func sendStories(gid string, cVars ConVars) error {
 	return nil
 }
 
-func nextState(msg utils.GameMsg, cVars ConVars) ConVars {
+func nextState(gid string, cVars ConVars) {
+
+	log.Printf("State B: %d", cVars.State)
 	cVars.State++
+
+	cVars.Ready = 0
+
 	if cVars.State > POSTSTORIES {
 		cVars.State = LOBBY
 	}
+	log.Printf("State M: %d", cVars.State)
 
 	switch cVars.State {
 	case LOBBY:
+		msg := utils.GameMsg{
+			Type: "Reset",
+			GID:  gid,
+		}
 		reset(msg)
 	case PROMPTS:
-		err := sendPrompts(msg)
+		err := sendPrompts(gid)
 		if err != nil {
 			log.Printf("[Error] Failed to send prompts after state transition: %v", err)
 			cVars.State = ERROR
 		}
-		go timer(msg, cVars)
+		cVars.Timer = cVars.Settings.Timer1
+		go timer(gid, cVars)
 	case POSTPROMPTS:
-
+		cVars.Timer = cVars.Settings.Timer1
+		go timer(gid, cVars)
 	case STORIES:
-		err := sendStories(msg.GID, cVars)
+		err := sendStories(gid, cVars)
 		if err != nil {
 			log.Printf("[Error] Failed to send stories after state transition: %v", err)
 			cVars.State = ERROR
 		}
+		cVars.Timer = cVars.Settings.Timer2
 
-		go timer(msg, cVars)
+		go timer(gid, cVars)
 	case POSTSTORIES:
-
+		cVars.Timer = cVars.Settings.Timer1
+		go timer(gid, cVars)
 	}
 
 	uMsg := utils.GameMsg{
-		GID:     msg.GID,
+		GID:     gid,
 		Type:    "ConState",
 		Content: fmt.Sprintf("%d", cVars.State),
 	}
@@ -188,8 +192,9 @@ func nextState(msg utils.GameMsg, cVars ConVars) ConVars {
 		log.Printf("[Error] Failed to send state update: %v", err)
 		cVars.State = ERROR
 	}
+	log.Printf("State A: %d", cVars.State)
 
-	return cVars
+	CVars[gid] = cVars
 }
 
 func initialize(msg utils.GameMsg) (string, string) {
@@ -249,14 +254,33 @@ func initialize(msg utils.GameMsg) (string, string) {
 		return "Error", "2 or more prompts must be provided. Empty prompts will result in the default set being used."
 	}
 
+	plrs, err := g.GetGamePlayers(msg.GID)
+	if err != nil {
+		fmt.Printf("[Error] Could not get players for init: %v", err)
+		return "Error", "Could not get players for init."
+	}
+
+	act := 0
+	for _, p := range plrs {
+		if p.Status != "Observing" && p.Status != "Leaving" {
+			act++
+			p.Status = "Not Ready"
+			err := u.UpdateUser(p)
+			if err != nil {
+				log.Printf("[Error] Could not update user in init: %v", err)
+				return "Error", "Could not update user for init."
+			}
+		}
+	}
+
 	cVar := ConVars{
 		State:    0,
 		Settings: settings,
 		Timer:    settings.Timer1,
+		Active:   act,
+		Ready:    0,
 		Stories:  map[string][]string{},
 	}
-
-	tickerStop[msg.GID] = make(chan byte)
 
 	CVars[msg.GID] = cVar
 
@@ -277,17 +301,18 @@ func start(msg utils.GameMsg) (string, string) {
 		cVars.Stories[p.UID] = []string{}
 	}
 
-	if cVars.State != 0 {
+	if cVars.State != LOBBY {
 		log.Printf("[Error] Can only accept Start request when in Lobby State")
 		return "Error", "Cannot accept Start when not in Lobby State"
 	}
 
-	cVars = nextState(msg, cVars)
-	CVars[msg.GID] = cVars
+	nextState(msg.GID, cVars)
 
-	if cVars.State == ERROR {
+	if CVars[msg.GID].State == ERROR {
 		return "Error", "Game state not valid."
 	}
+
+	go checkPhaseChange(msg.GID)
 
 	return "", ""
 }
@@ -328,38 +353,80 @@ func pause(msg utils.GameMsg) (string, string) {
 	return "", ""
 }
 
-func status(msg utils.GameMsg) (string, string) {
-	cVar := CVars[msg.GID]
-
-	if cVar.State == LOBBY {
-		return "", ""
-	}
-
-	plrs, err := g.GetGamePlayers(msg.GID)
+func setActivePlayers(gid string, status string, cVars ConVars) error {
+	plrs, err := g.GetGamePlayers(gid)
 	if err != nil {
-		log.Printf("[Error] Could not get game players when checking for state change: %v", err)
-		return "Error", "Could not check for state change."
+		return fmt.Errorf("couold not get game players: %v", err)
 	}
-
-	count := len(plrs)
-	ready := 0
 
 	for _, p := range plrs {
-		if p.Status == "Ready" {
-			ready++
+		if p.Status == "Ready" || p.Status == "Not Ready" {
+			p.Status = status
+			err = u.UpdateUser(p)
+			if err != nil {
+				return fmt.Errorf("could not update user status: %v", err)
+			}
+			cVars.Ready--
 		}
 	}
 
-	if ready >= count/2 {
-		tickerStop[msg.GID] <- 1
-		nextState(msg, cVar)
-	}
+	CVars[gid] = cVars
 
+	return nil
+}
+
+func checkPhaseChange(gid string) {
+	ticker := time.NewTicker(time.Second)
+	defer ticker.Stop()
+
+	log.Printf("Phase change check is on!")
+	log.Printf("[STate] %d", CVars[gid].State)
+
+	for {
+		select {
+		case <-ticker.C:
+			cVars := CVars[gid]
+			if cVars.State == ERROR || cVars.State == LOBBY {
+				return
+			}
+
+			plrs, err := g.GetGamePlayers(gid)
+			if err != nil {
+				log.Printf("[Error] Could not get game players in phase loop: %v", err)
+				return
+			}
+			ready := 0
+			for _, p := range plrs {
+				if p.Status == "Ready" {
+					ready++
+				}
+			}
+
+			cVars.Ready = ready
+
+			if ready > cVars.Active/2 {
+				err := setActivePlayers(gid, "Not Ready", cVars)
+				if err != nil {
+					log.Printf("[Error] Could not reset active players to 'Not Ready': %v", err)
+					return
+				}
+
+				nextState(gid, cVars)
+			} else {
+				CVars[gid] = cVars
+			}
+		}
+	}
+}
+
+func status(msg utils.GameMsg) (string, string) {
 	return "", ""
 }
 
 func leave(msg utils.GameMsg) (string, string) {
 	cVars := CVars[msg.GID]
+	cVars.Active--
+
 	delete(cVars.Stories, msg.UID)
 	CVars[msg.GID] = cVars
 
@@ -368,7 +435,7 @@ func leave(msg utils.GameMsg) (string, string) {
 
 func reply(msg utils.GameMsg) (string, string) {
 	cVars := CVars[msg.GID]
-	if cVars.State != 1 {
+	if cVars.State != PROMPTS {
 		log.Printf("[Error] Game state does not accept replies")
 		return "Error", "Game is not currently accepting replies."
 	}
@@ -402,21 +469,21 @@ func reply(msg utils.GameMsg) (string, string) {
 		return "Error", "There have already been replies received from this user."
 	}
 
+	user, err := u.GetUser(msg.UID)
+	if err != nil {
+		log.Printf("[Error] Could not get user to update status: %v", err)
+		return "Error", "Could not get user to update status after reply."
+	}
+
+	user.Status = "Ready"
+	err = u.UpdateUser(user)
+	if err != nil {
+		log.Printf("[Error] COuld not update user status: %v", err)
+		return "Error", "Could not update user status after reply."
+	}
+
 	cVars.Stories[msg.UID] = replies
 	CVars[msg.GID] = cVars
-
-	statMsg := utils.GameMsg{
-		Type:    "Status",
-		GID:     msg.GID,
-		UID:     msg.UID,
-		Content: "Replied",
-	}
-
-	cause, resp := status(statMsg)
-	if cause != "" {
-		log.Printf("[Error] Could not handle status change after reply: %v", resp)
-		return "Error", "Could not update player status after reply."
-	}
 
 	return "", ""
 }
