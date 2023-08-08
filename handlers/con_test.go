@@ -125,7 +125,7 @@ func createWant(state int, users []string, timer int) c.ConVars {
 	}
 }
 
-func checkTimeout(t *testing.T, testName string, timer int, gid string, want bool) {
+func checkTimeout(t *testing.T, testName string, timer int, gid string, expected int) {
 	if !waitForTimeout {
 		return
 	}
@@ -138,14 +138,8 @@ func checkTimeout(t *testing.T, testName string, timer int, gid string, want boo
 	}
 
 	time := cVars.Timer
-	if want {
-		if time > 0 {
-			t.Fatalf(`%v = "%d", want "0"`, testName, time)
-		}
-	} else {
-		if time <= 0 {
-			t.Fatalf(`%v = "%d", want ">0"`, testName, time)
-		}
+	if time != expected {
+		t.Fatalf(`%v = %d, want %d`, testName, time, expected)
 	}
 }
 
@@ -473,7 +467,7 @@ func TestPauseTimer(t *testing.T) {
 		t.Fatalf(`TestPause() = %v, "%v", want %v, "nil"`, cVars, nil, want)
 	}
 
-	checkTimeout(t, "TestPause()", c.TestSettings.Timer1, gid, false)
+	checkTimeout(t, "TestPause()", c.TestSettings.Timer1, gid, c.TestSettings.Timer1)
 }
 
 func TestUnpauseTimer(t *testing.T) {
@@ -499,7 +493,7 @@ func TestUnpauseTimer(t *testing.T) {
 		t.Fatalf(`TestUnpause() = %v, "%v", want %v, "nil"`, cVars, nil, want)
 	}
 
-	checkTimeout(t, "TestPause()", c.TestSettings.Timer1, gid, true)
+	checkTimeout(t, "TestPause()", c.TestSettings.Timer1, gid, 0)
 }
 
 func TestEnd(t *testing.T) {
