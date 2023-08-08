@@ -155,6 +155,7 @@ func Setup(t *testing.T, pCount int) (utils.Game, []utils.User, chan []byte, cha
 	}
 
 	leader.GID = game.GID
+	leader.Status = "Not Ready"
 
 	var plrs []utils.User
 	plrs = append(plrs, leader)
@@ -171,6 +172,7 @@ func Setup(t *testing.T, pCount int) (utils.Game, []utils.User, chan []byte, cha
 			t.Fatalf("Could not update user(%d): %v", i, err)
 		}
 
+		user.Status = "Not Ready"
 		plrs = append(plrs, user)
 		go connect(game, user, nil, nil)
 	}
