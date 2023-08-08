@@ -825,8 +825,10 @@ func TestReplyDuplicate(t *testing.T) {
 		t.Fatalf(`TestReply(Valid) = %q - %q, want "Error" - %q`, cause, resp, want)
 	}
 
-	wantVars := createWant(c.PROMPTS, false, 0, c.TestSettings.Timer1, users, 3, 1)
+	wantVars := createWant(c.PROMPTS, false, 0, c.TestSettings.Timer1-1, users, 3, 1)
 	wantVars.Stories[users[0]] = c.DefStory
+
+	time.Sleep(time.Millisecond * 1200)
 
 	cVars, err := c.GetConState(gid)
 	if !cmp.Equal(cVars, wantVars) || err != nil {
