@@ -170,10 +170,11 @@ func end(msg utils.GameMsg, game utils.Game) (string, string) {
 	err = utils.Broadcast(eMsg)
 	if err != nil {
 		log.Printf("%v could not broadcast end message: %v", errStr, err)
-		return "Error", "Could not broadcast game end message."
 	}
 
-	Shutdown[game.GID] <- 0
+	go func() {
+		Shutdown[game.GID] <- 0
+	}()
 
 	err = g.DeleteGame(game.GID)
 	if err != nil {

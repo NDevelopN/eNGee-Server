@@ -6,6 +6,7 @@ import (
 	u "Engee-Server/user"
 	"Engee-Server/utils"
 	"encoding/json"
+	"time"
 
 	"fmt"
 	"log"
@@ -115,6 +116,27 @@ func getValidPlrGame(msg utils.GameMsg) (utils.User, utils.Game, error) {
 func initialize(msg utils.GameMsg, game utils.Game) (string, string) {
 	errStr := "[Error] Cannot initialize game: "
 
+	log.Printf("Initializing game: %v", msg.GID)
+
+	plrs, err := g.GetGamePlayers(msg.GID)
+	if err != nil {
+		time.Sleep(time.Second * 2)
+		plrs, err = g.GetGamePlayers(msg.GID)
+		if err != nil {
+			end(msg, game)
+
+			fmt.Printf("%v could not get game players: %v", errStr, err)
+			return "Error", "No game players found."
+		}
+	}
+
+	pool, err := utils.GetConnections(msg.GID)
+	if len(pool) == 0 || err != nil {
+		end(msg, game)
+		fmt.Printf("%v no connections to game: %v", errStr, err)
+		return "Error", "No available connections."
+	}
+
 	handler, err := h.GetHandler(game.Type)
 	if err != nil {
 		log.Printf("%v could not get game handler: %v.", errStr, err)
@@ -142,12 +164,6 @@ func initialize(msg utils.GameMsg, game utils.Game) (string, string) {
 	if err != nil {
 		fmt.Printf("%v could not update game to Lobby status: %v", errStr, err)
 		return "Error", "Could not set game status."
-	}
-
-	plrs, err := g.GetGamePlayers(msg.GID)
-	if err != nil {
-		fmt.Printf("%v could not get game players: %v", errStr, err)
-		return "Error", "No game players found."
 	}
 
 	err = activePlayersStatusUpdate(plrs, "Not Ready")
