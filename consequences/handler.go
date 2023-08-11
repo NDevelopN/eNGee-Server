@@ -11,6 +11,8 @@ import (
 	"time"
 )
 
+var ready = map[string]bool{}
+
 func timer(gid string, cVars ConVars) {
 	if cVars.Timer == 0 {
 		return
@@ -117,7 +119,7 @@ func sendStories(gid string, cVars ConVars) error {
 				Content: "Could not send shuffled story.",
 			}
 
-			reset(upd)
+			reset(upd, true)
 			return fmt.Errorf("could not marshal stories: %v", err)
 		}
 
@@ -152,7 +154,7 @@ func nextState(gid string, cVars ConVars) {
 			Type: "Reset",
 			GID:  gid,
 		}
-		reset(msg)
+		reset(msg, true)
 	case PROMPTS:
 		err := sendPrompts(gid)
 		if err != nil {
@@ -279,6 +281,7 @@ func initialize(msg utils.GameMsg) (string, string) {
 	}
 
 	CVars[msg.GID] = cVar
+	ready[msg.GID] = true
 
 	return "", ""
 }
@@ -313,23 +316,30 @@ func start(msg utils.GameMsg) (string, string) {
 	return "", ""
 }
 
-func reset(msg utils.GameMsg) (string, string) {
+func reset(msg utils.GameMsg, init bool) (string, string) {
+
 	cVars := CVars[msg.GID]
 	cVars.State = LOBBY
 	cVars.Stories = make(map[string][]string)
 
 	CVars[msg.GID] = cVars
 
-	cause, resp := initialize(msg)
-	if cause != "" {
-		log.Printf("[Error] Could not reset game state to current settings: %v", resp)
+	ready[msg.GID] = false
+
+	cause, resp := "", ""
+
+	if init {
+		cause, resp = initialize(msg)
+		if cause != "" {
+			log.Printf("[Error] Could not reset game state to current settings: %v", resp)
+		}
 	}
 
 	return cause, resp
 }
 
 func end(msg utils.GameMsg) (string, string) {
-	cause, resp := reset(msg)
+	cause, resp := reset(msg, false)
 	if cause != "" {
 		log.Printf("[Error] Could not reset game state before ending: %v", resp)
 	}
@@ -504,13 +514,16 @@ func Handle(msg utils.GameMsg) (string, string) {
 
 	leader := msg.UID == game.Leader
 
-	switch msg.Type {
-	case "Init":
-		if !leader {
-			return leaderError("Init")
-		} else {
-			return initialize(msg)
+	if msg.Type == "Init" {
+		return initialize(msg)
+	} else if !ready[msg.GID] {
+		time.Sleep(time.Second * 2)
+		if !ready[msg.GID] {
+			return "Error", "Game has not been initialized."
 		}
+	}
+
+	switch msg.Type {
 	case "Start":
 		if !leader {
 			return leaderError("Start")
@@ -523,7 +536,7 @@ func Handle(msg utils.GameMsg) (string, string) {
 			return leaderError("Reset")
 
 		} else {
-			return reset(msg)
+			return reset(msg, true)
 		}
 	case "End":
 		if !leader {
