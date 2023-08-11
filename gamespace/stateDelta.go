@@ -19,7 +19,7 @@ import (
  *  TODO: The cycle delay could be a user-specified variable (or gametype specific)
  */
 
-const cycleDelay = 500 * time.Millisecond
+const cycleDelay = 30 * time.Millisecond
 
 func getGame(gid string) (utils.Game, error) {
 	game, err := g.GetGame(gid)
