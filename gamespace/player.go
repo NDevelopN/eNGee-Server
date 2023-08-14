@@ -26,24 +26,26 @@ func status(msg utils.GameMsg, plr utils.User, game utils.Game) (string, string)
 		return "Error", msg.Content + " is not a valid status"
 	}
 
-	plr.Status = msg.Content
+	if plr.Status != msg.Content {
+		plr.Status = msg.Content
 
-	handler, err := h.GetHandler(game.Type)
-	if err != nil {
-		log.Printf("%v could not get game handler: %v", errStr, err)
-		return "Error", "No game handler found for game type: " + game.Type
-	}
+		handler, err := h.GetHandler(game.Type)
+		if err != nil {
+			log.Printf("%v could not get game handler: %v", errStr, err)
+			return "Error", "No game handler found for game type: " + game.Type
+		}
 
-	cause, resp := handler(msg)
-	if cause != "" {
-		log.Printf("Issue in game handler: %v", resp)
-		return cause, resp
-	}
+		cause, resp := handler(msg)
+		if cause != "" {
+			log.Printf("Issue in game handler: %v", resp)
+			return cause, resp
+		}
 
-	err = u.UpdateUser(plr)
-	if err != nil {
-		log.Printf("%v could not update user: %v", errStr, err)
-		return "Error", "Could not apply update to user"
+		err = u.UpdateUser(plr)
+		if err != nil {
+			log.Printf("%v could not update user: %v", errStr, err)
+			return "Error", "Could not apply update to user"
+		}
 	}
 
 	return "", ""
