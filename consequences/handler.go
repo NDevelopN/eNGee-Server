@@ -393,25 +393,13 @@ func checkPhaseChange(gid string) {
 				return
 			}
 
-			plrs, err := g.GetGamePlayers(gid)
-			if err != nil {
-				log.Printf("[Error] Could not get game players in phase loop: %v", err)
-				return
-			}
-			ready := 0
-			for _, p := range plrs {
-				if p.Status == "Ready" {
-					ready++
-				}
-			}
-
-			cVars.Ready = ready
-
-			if ready > cVars.Active/2 {
-				err := setActivePlayers(gid, "Not Ready", cVars)
-				if err != nil {
-					log.Printf("[Error] Could not reset active players to 'Not Ready': %v", err)
-					return
+			if cVars.Ready > cVars.Active/2 {
+				if cVars.State != POSTPROMPTS && cVars.State != POSTSTORIES {
+					err := setActivePlayers(gid, "Not Ready", cVars)
+					if err != nil {
+						log.Printf("[Error] Could not reset active players to 'Not Ready': %v", err)
+						return
+					}
 				}
 
 				nextState(gid, cVars)
@@ -423,6 +411,17 @@ func checkPhaseChange(gid string) {
 }
 
 func status(msg utils.GameMsg) (string, string) {
+	switch msg.Content {
+	case "Ready":
+		cVars := CVars[msg.GID]
+		cVars.Ready++
+		CVars[msg.GID] = cVars
+	case "Not Ready":
+		cVars := CVars[msg.GID]
+		cVars.Ready--
+		CVars[msg.GID] = cVars
+	}
+
 	return "", ""
 }
 
@@ -485,6 +484,7 @@ func reply(msg utils.GameMsg) (string, string) {
 		return "Error", "Could not update user status after reply."
 	}
 
+	cVars.Ready++
 	cVars.Stories[msg.UID] = replies
 	CVars[msg.GID] = cVars
 
