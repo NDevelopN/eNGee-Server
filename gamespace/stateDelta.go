@@ -7,8 +7,6 @@ import (
 	"log"
 	"sort"
 	"time"
-
-	"golang.org/x/exp/slices"
 )
 
 /**
@@ -19,7 +17,7 @@ import (
  *  TODO: The cycle delay could be a user-specified variable (or gametype specific)
  */
 
-const cycleDelay = 30 * time.Millisecond
+const cycleDelay = 300 * time.Millisecond
 
 func getGame(gid string) (utils.Game, error) {
 	game, err := g.GetGame(gid)
@@ -97,16 +95,6 @@ func CheckPlayers(game utils.Game) {
 
 	gid := game.GID
 
-	userList, err := g.GetGamePlayers(gid)
-	if err != nil {
-		log.Printf("[Error] CheckPlayers start failed: could not get game players: %v", err)
-		return
-	}
-
-	sort.Slice(userList, func(i, j int) bool {
-		return userList[i].UID < userList[j].UID
-	})
-
 	ticker := time.NewTicker(cycleDelay)
 	defer ticker.Stop()
 
@@ -114,7 +102,7 @@ Loop:
 	for {
 		select {
 		case <-ticker.C:
-			nuList, err := g.GetGamePlayers(gid)
+			userList, err := g.GetGamePlayers(gid)
 			if err == utils.ErrNoGame {
 				log.Printf("[Alert] No game found. Ending CheckPlayers")
 				return
@@ -134,47 +122,13 @@ Loop:
 				continue Loop
 			}
 
-			sort.Slice(nuList, func(i, j int) bool {
-				return nuList[i].UID < nuList[j].UID
+			sort.Slice(userList, func(i, j int) bool {
+				return userList[i].UID < userList[j].UID
 			})
 
-			dif := false
-
-			if len(nuList) != len(userList) {
-				dif = true
-			}
-
-			//Check for any missing users from last update
-			nid := []string{}
-			for _, u := range nuList {
-				nid = append(nid, u.UID)
-			}
-
-			for _, u := range userList {
-				if !slices.Contains(nid, u.UID) {
-					dif = true
-					utils.RemoveConnection(gid, u.UID)
-				}
-			}
-
-			//Check if there have been any other changes
-			if !dif {
-				for i, u := range nuList {
-					o := userList[i]
-					if o != u {
-						dif = true
-						break
-					}
-				}
-			}
-
-			if dif {
-				userList = nuList
-				err := pListUpdateBC(gid, userList)
-				if err != nil {
-					log.Printf("[Error] Broadcast Player change failed: %v", err)
-				}
-
+			err = pListUpdateBC(gid, userList)
+			if err != nil {
+				log.Printf("[Error] Broadcast Player change failed: %v", err)
 			}
 		case <-Shutdown[gid]:
 			return
