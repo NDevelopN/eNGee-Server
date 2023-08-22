@@ -110,7 +110,7 @@ func start(msg utils.GameMsg, game utils.Game) (string, string) {
 func reset(msg utils.GameMsg, game utils.Game) (string, string) {
 	errStr := "[Error] Cannot reset game: "
 
-	game.Status = "Resetting"
+	game.Status = "Reset"
 
 	plrs, err := g.GetGamePlayers(game.GID)
 	if err != nil {
