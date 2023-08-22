@@ -144,7 +144,7 @@ func nextState(gid string, cVars ConVars) {
 
 	cVars.Ready = 0
 
-	if cVars.State > POSTSTORIES {
+	if cVars.State > STORIES {
 		cVars.State = LOBBY
 	}
 
@@ -163,9 +163,6 @@ func nextState(gid string, cVars ConVars) {
 		}
 		cVars.Timer = cVars.Settings.Timer1
 		go timer(gid, cVars)
-	case POSTPROMPTS:
-		cVars.Timer = cVars.Settings.Timer1
-		go timer(gid, cVars)
 	case STORIES:
 		err := sendStories(gid, cVars)
 		if err != nil {
@@ -175,9 +172,12 @@ func nextState(gid string, cVars ConVars) {
 		cVars.Timer = cVars.Settings.Timer2
 
 		go timer(gid, cVars)
-	case POSTSTORIES:
-		cVars.Timer = cVars.Settings.Timer1
-		go timer(gid, cVars)
+	}
+
+	err := setActivePlayers(gid, "Not Ready", cVars)
+	if err != nil {
+		log.Printf("[Error] Could not reset active players to 'Not Ready': %v", err)
+		return
 	}
 
 	uMsg := utils.GameMsg{
@@ -186,7 +186,7 @@ func nextState(gid string, cVars ConVars) {
 		Content: fmt.Sprintf("%d", cVars.State),
 	}
 
-	err := utils.Broadcast(uMsg)
+	err = utils.Broadcast(uMsg)
 	if err != nil {
 		log.Printf("[Error] Failed to send state update: %v", err)
 		cVars.State = ERROR
@@ -394,14 +394,6 @@ func checkPhaseChange(gid string) {
 			}
 
 			if cVars.Ready > cVars.Active/2 {
-				if cVars.State != POSTPROMPTS && cVars.State != POSTSTORIES {
-					err := setActivePlayers(gid, "Not Ready", cVars)
-					if err != nil {
-						log.Printf("[Error] Could not reset active players to 'Not Ready': %v", err)
-						return
-					}
-				}
-
 				nextState(gid, cVars)
 			} else {
 				CVars[gid] = cVars

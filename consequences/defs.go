@@ -8,9 +8,7 @@ import (
 const (
 	LOBBY int = iota
 	PROMPTS
-	POSTPROMPTS
 	STORIES
-	POSTSTORIES
 	ERROR
 )
 
