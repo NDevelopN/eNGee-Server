@@ -144,16 +144,27 @@ func nextState(gid string, cVars ConVars) {
 
 	cVars.Ready = 0
 
+	//TODO check for rounds?
 	if cVars.State > STORIES {
 		cVars.State = LOBBY
 	}
 
 	switch cVars.State {
 	case LOBBY:
+		game, err := g.GetGame(gid)
+		if err != nil {
+			log.Printf("[Error] Could not get game to reset to lobby: %v", err)
+			return
+		}
+
+		game.Status = "Lobby"
+		g.UpdateGame(game)
+
 		msg := utils.GameMsg{
 			Type: "Reset",
 			GID:  gid,
 		}
+
 		reset(msg, true)
 	case PROMPTS:
 		err := sendPrompts(gid)
@@ -193,6 +204,8 @@ func nextState(gid string, cVars ConVars) {
 	}
 
 	CVars[gid] = cVars
+
+	go checkPhaseChange(gid)
 }
 
 func initialize(msg utils.GameMsg) (string, string) {
@@ -395,6 +408,7 @@ func checkPhaseChange(gid string) {
 
 			if cVars.Ready > cVars.Active/2 {
 				nextState(gid, cVars)
+				return
 			} else {
 				CVars[gid] = cVars
 			}
