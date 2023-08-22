@@ -690,7 +690,7 @@ func TestReplyPhaseChange(t *testing.T) {
 
 	var cause, resp string
 
-	want := createWant(c.POSTPROMPTS, false, 0, c.TestSettings.Timer1, users, 2, 0)
+	want := createWant(c.STORIES, false, 0, c.TestSettings.Timer1, users, 2, 0)
 	for i, user := range users {
 		gMsg.UID = user
 		cause, resp := c.Handle(gMsg)
