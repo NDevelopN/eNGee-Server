@@ -11,6 +11,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 
+	db "Engee-Server/database"
 	g "Engee-Server/game"
 	gamespace "Engee-Server/gamespace"
 	u "Engee-Server/user"
@@ -46,6 +47,8 @@ func Serve() {
 	router.POST("/users", postUsers)
 	router.PUT("/users/:id", putUsers)
 	router.DELETE("/users/:id", deleteUsers)
+
+	router.GET("/types", getTypes)
 
 	//This special case creates a websocket connection
 	router.GET("/games/:id", Connect)
@@ -356,5 +359,21 @@ func deleteUsers(c *gin.Context) {
 	err = reply(w, utils.Response{Cause: "Accept", Message: "User deleted successfully"}, http.StatusAccepted)
 	if err != nil {
 		log.Printf("[Error] Replying: %v", err)
+	}
+}
+
+func getTypes(c *gin.Context) {
+	w := c.Writer
+
+	types, err := db.GetGameTypes()
+	if err != nil {
+		http.Error(w, "Failed to get types", http.StatusInternalServerError)
+		log.Printf("[Error] Getting types: %v", err)
+		return
+	}
+
+	err = reply(w, types, http.StatusOK)
+	if err != nil {
+		log.Printf("[Error] Replying to GetTypes: %v", err)
 	}
 }

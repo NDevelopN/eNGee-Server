@@ -8,7 +8,7 @@ var NO_HANDLER = false
 type GHandler func(msg GameMsg) (string, string)
 
 type Message interface {
-	[]User | User | []Game | Game | Join | GameMsg | Response
+	[]User | User | []Game | Game | Join | GameMsg | Response | []string
 }
 
 var ErrNoGame = errors.New("no matching rows in game table")
