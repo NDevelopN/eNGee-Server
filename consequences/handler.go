@@ -56,6 +56,13 @@ TickLoop:
 
 			CVars[gid] = cVars
 
+			upd.Content = fmt.Sprintf("%d", cVars.Timer)
+
+			err = utils.Broadcast(upd)
+			if err != nil {
+				log.Printf("[Error] Could not broadcast new timer: %v", err)
+			}
+
 			if t <= 0 {
 				nextState(gid, CVars[gid])
 				break TickLoop
