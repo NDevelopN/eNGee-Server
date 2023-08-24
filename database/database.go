@@ -8,7 +8,6 @@ import (
 	_ "github.com/lib/pq"
 
 	"Engee-Server/utils"
-	u "Engee-Server/utils"
 )
 
 var DB *sql.DB
@@ -80,16 +79,16 @@ func InitDB() {
 /**
 * This function returns all the games in the games table
  */
-func GetAllGames() ([]u.Game, error) {
+func GetAllGames() ([]utils.Game, error) {
 	rows, err := DB.Query("SELECT * FROM games")
 	if err != nil {
 		return nil, fmt.Errorf("db failed: SELECT FROM games: %v", err)
 	}
 	defer rows.Close()
 
-	gms := make([]u.Game, 0)
+	gms := make([]utils.Game, 0)
 	for rows.Next() {
-		gm := new(u.Game)
+		gm := new(utils.Game)
 		err := rows.Scan(
 			&gm.GID,
 			&gm.Name,
@@ -122,10 +121,10 @@ func GetAllGames() ([]u.Game, error) {
 /**
 * This function returns a single game, identified by the unique gid
  */
-func GetGame(gid string) (u.Game, error) {
+func GetGame(gid string) (utils.Game, error) {
 	row := DB.QueryRow("SELECT * FROM games WHERE gid = $1", gid)
 
-	gm := new(u.Game)
+	gm := new(utils.Game)
 	err := row.Scan(
 		&gm.GID,
 		&gm.Name,
@@ -151,7 +150,7 @@ func GetGame(gid string) (u.Game, error) {
 /**
  * This function adds a single new row to the games table
  */
-func CreateGame(gm u.Game) error {
+func CreateGame(gm utils.Game) error {
 	createStatement := `
 		INSERT INTO games (
 			gid,
@@ -189,7 +188,7 @@ func CreateGame(gm u.Game) error {
 * This function updates a row in the games table, identified by the given game's gid
 * All fields are updated in this function
  */
-func UpdateGame(gm u.Game) error {
+func UpdateGame(gm utils.Game) error {
 	updateStatement := `
 		UPDATE games
 		SET name = $2, 
@@ -236,7 +235,7 @@ func UpdateGame(gm u.Game) error {
 * This function gets all players with the gid matching the given gid
 * These are the players that are in the game
  */
-func GetGamePlayers(gid string) ([]u.User, error) {
+func GetGamePlayers(gid string) ([]utils.User, error) {
 	rows, err := DB.Query("SELECT * FROM players WHERE gid = $1", gid)
 	if err == sql.ErrNoRows {
 		return nil, err
@@ -245,9 +244,9 @@ func GetGamePlayers(gid string) ([]u.User, error) {
 	}
 	defer rows.Close()
 
-	plrs := make([]u.User, 0)
+	plrs := make([]utils.User, 0)
 	for rows.Next() {
-		plr := new(u.User)
+		plr := new(utils.User)
 		err := rows.Scan(&plr.UID, &plr.GID, &plr.Name, &plr.Status)
 		if err != nil {
 			return nil, fmt.Errorf("db failed: scanning row: %v", err)
@@ -308,11 +307,11 @@ func GetGamePReady(gid string) int {
 /**
 * This function returns the player with the given uid
  */
-func GetUser(uid string) (u.User, error) {
+func GetUser(uid string) (utils.User, error) {
 
 	row := DB.QueryRow("SELECT * FROM players WHERE uid = $1", uid)
 
-	plr := new(u.User)
+	plr := new(utils.User)
 	err := row.Scan(&plr.UID, &plr.GID, &plr.Name, &plr.Status)
 	if err == sql.ErrNoRows {
 		return *plr, err
@@ -326,7 +325,7 @@ func GetUser(uid string) (u.User, error) {
 /**
  * This function adds a single new row to the players table
  */
-func CreateUser(user u.User) error {
+func CreateUser(user utils.User) error {
 	_, err := DB.Exec("INSERT INTO players VALUES($1, $2, $3, $4)",
 		user.UID,
 		user.GID,
@@ -344,7 +343,7 @@ func CreateUser(user u.User) error {
  * This function updates a row in the players table, identified by the given player's uid
  * All fields are updated in this function
  */
-func UpdateUser(user u.User) error {
+func UpdateUser(user utils.User) error {
 	result, err := DB.Exec(
 		"UPDATE players "+
 			"SET "+
