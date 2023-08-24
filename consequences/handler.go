@@ -1,6 +1,7 @@
 package consequences
 
 import (
+	c "Engee-Server/connections"
 	g "Engee-Server/game"
 	u "Engee-Server/user"
 	"Engee-Server/utils"
@@ -24,7 +25,7 @@ func timer(gid string, cVars ConVars) {
 		Content: fmt.Sprintf("%d", cVars.Timer),
 	}
 
-	err := utils.Broadcast(upd)
+	err := c.Broadcast(upd)
 	if err != nil {
 		log.Printf("[Error] Could not broadcast new timer: %v", err)
 		return
@@ -58,7 +59,7 @@ TickLoop:
 
 			upd.Content = fmt.Sprintf("%d", cVars.Timer)
 
-			err = utils.Broadcast(upd)
+			err = c.Broadcast(upd)
 			if err != nil {
 				log.Printf("[Error] Could not broadcast new timer: %v", err)
 			}
@@ -84,7 +85,7 @@ func sendPrompts(gid string) error {
 		Content: string(prompts),
 	}
 
-	utils.Broadcast(upd)
+	c.Broadcast(upd)
 
 	return nil
 }
@@ -137,7 +138,7 @@ func sendStories(gid string, cVars ConVars) error {
 			Content: string(story),
 		}
 
-		err = utils.SingleMessage(sMsg)
+		err = c.SingleMessage(sMsg)
 		if err != nil {
 			return fmt.Errorf("could not send story: %v", err)
 		}
@@ -204,7 +205,7 @@ func nextState(gid string, cVars ConVars) {
 		Content: fmt.Sprintf("%d", cVars.State),
 	}
 
-	err = utils.Broadcast(uMsg)
+	err = c.Broadcast(uMsg)
 	if err != nil {
 		log.Printf("[Error] Failed to send state update: %v", err)
 		cVars.State = ERROR

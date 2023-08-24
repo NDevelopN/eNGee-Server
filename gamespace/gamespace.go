@@ -1,6 +1,7 @@
 package gamespace
 
 import (
+	c "Engee-Server/connections"
 	g "Engee-Server/game"
 	h "Engee-Server/handlers"
 	u "Engee-Server/user"
@@ -16,7 +17,7 @@ var Shutdown = map[string](chan int){}
 
 func CleanUp(gid string) {
 	Shutdown[gid] <- 0
-	utils.RemoveConnectionPool(gid)
+	c.RemoveConnectionPool(gid)
 }
 
 func pListUpdateBC(gid string, plrs []utils.User) error {
@@ -31,7 +32,7 @@ func pListUpdateBC(gid string, plrs []utils.User) error {
 		Content: string(pList),
 	}
 
-	err = utils.Broadcast(msg)
+	err = c.Broadcast(msg)
 	if err != nil {
 		return fmt.Errorf("could not broadcast player list: %v", err)
 	}
@@ -68,7 +69,7 @@ func gameUpdateBC(game utils.Game) error {
 		Content: string(gm),
 	}
 
-	err = utils.Broadcast(upd)
+	err = c.Broadcast(upd)
 	if err != nil {
 		return fmt.Errorf("could not broadcast game update: %v", err)
 	}
@@ -83,7 +84,7 @@ func gameStatusBC(gid string, status string) error {
 		Content: status,
 	}
 
-	err := utils.Broadcast(upd)
+	err := c.Broadcast(upd)
 	if err != nil {
 		return fmt.Errorf("could not broadcast game status update: %v", err)
 	}
@@ -126,10 +127,10 @@ func initialize(msg utils.GameMsg, game utils.Game) (string, string) {
 		return "Error", "No game players found."
 	}
 
-	pool, err := utils.GetConnections(msg.GID)
+	pool, err := c.GetConnections(msg.GID)
 	if len(pool) == 0 || err != nil {
 		time.Sleep(time.Second * 2)
-		pool, err = utils.GetConnections(msg.GID)
+		pool, err = c.GetConnections(msg.GID)
 		if len(pool) == 0 || err != nil {
 			end(msg, game)
 			fmt.Printf("%v no connections to game: %v", errStr, err)

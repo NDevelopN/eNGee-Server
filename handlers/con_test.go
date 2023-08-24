@@ -6,6 +6,7 @@ import (
 	"testing"
 	"time"
 
+	conn "Engee-Server/connections"
 	c "Engee-Server/consequences"
 	db "Engee-Server/database"
 	g "Engee-Server/game"
@@ -20,7 +21,7 @@ func prepareConGame(t *testing.T, testName string, userCount int) (string, []str
 	db.InitDB()
 	Init()
 
-	utils.SETLOCALTEST(true)
+	conn.SETLOCALTEST(true)
 
 	c.CVars = make(map[string]c.ConVars)
 

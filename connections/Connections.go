@@ -1,9 +1,13 @@
-package utils
+package connections
 
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 	"sync"
+
+	db "Engee-Server/database"
+	"Engee-Server/utils"
 
 	"github.com/gorilla/websocket"
 )
@@ -98,13 +102,15 @@ func GetConnections(gid string) (map[string]*Conn, error) {
 	return pool.v, nil
 }
 
-func Broadcast(msg GameMsg) error {
+func Broadcast(msg utils.GameMsg) error {
 	if LOCALTEST {
 		return nil
 	}
 
 	pool, k := poolMap[msg.GID]
 	if !k {
+		log.Printf("Deleting game, no connection pool")
+		db.RemoveGame(msg.GID)
 		return fmt.Errorf("no connection pool found for given gid: %v", msg.GID)
 	}
 
@@ -112,6 +118,8 @@ func Broadcast(msg GameMsg) error {
 	defer pool.mu.Unlock()
 
 	if len(pool.v) == 0 {
+		log.Printf("Deleting game, no connection pool")
+		db.RemoveGame(msg.GID)
 		return fmt.Errorf("no connections found in the pool")
 	}
 
@@ -129,7 +137,7 @@ func Broadcast(msg GameMsg) error {
 	return nil
 }
 
-func SingleMessage(msg GameMsg) error {
+func SingleMessage(msg utils.GameMsg) error {
 	if LOCALTEST {
 		return nil
 	}

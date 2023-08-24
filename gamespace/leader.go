@@ -1,6 +1,7 @@
 package gamespace
 
 import (
+	c "Engee-Server/connections"
 	g "Engee-Server/game"
 	h "Engee-Server/handlers"
 	u "Engee-Server/user"
@@ -167,7 +168,7 @@ func end(msg utils.GameMsg, game utils.Game) (string, string) {
 		Type: "End",
 	}
 
-	err = utils.Broadcast(eMsg)
+	err = c.Broadcast(eMsg)
 	if err != nil {
 		log.Printf("%v could not broadcast end message: %v", errStr, err)
 	}
@@ -218,7 +219,7 @@ func remove(msg utils.GameMsg, game utils.Game) (string, string) {
 	rMsg.Type = "Removal"
 	//TODO provide a reason?
 
-	err = utils.SingleMessage(rMsg)
+	err = c.SingleMessage(rMsg)
 	if err != nil {
 		log.Printf("%v could not update removed user: %v.", errStr, err)
 		return "Error", "Could not send user removal notice."

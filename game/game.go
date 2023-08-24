@@ -1,6 +1,7 @@
 package game
 
 import (
+	c "Engee-Server/connections"
 	db "Engee-Server/database"
 	"Engee-Server/utils"
 	"database/sql"
@@ -70,7 +71,7 @@ func CreateGame(g utils.Game) (string, error) {
 		return "", fmt.Errorf("failed to create game in database: %v", err)
 	}
 
-	utils.AddConnectionPool(g.GID)
+	c.AddConnectionPool(g.GID)
 
 	return g.GID, nil
 }

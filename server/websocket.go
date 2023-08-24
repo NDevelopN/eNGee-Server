@@ -9,6 +9,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
 
+	c "Engee-Server/connections"
 	g "Engee-Server/game"
 	u "Engee-Server/user"
 	utils "Engee-Server/utils"
@@ -16,11 +17,11 @@ import (
 	gs "Engee-Server/gamespace"
 )
 
-func Connect(c *gin.Context) {
-	w := c.Writer
-	r := c.Request
+func Connect(gc *gin.Context) {
+	w := gc.Writer
+	r := gc.Request
 
-	uid, err := GetID(c)
+	uid, err := GetID(gc)
 	if err != nil {
 		http.Error(w, "Could not get user ID from request path", http.StatusBadRequest)
 		log.Printf("[Error] Getting user ID: %v", err)
@@ -50,7 +51,7 @@ func Connect(c *gin.Context) {
 
 	conn.SetCloseHandler(handleClose)
 
-	err = utils.AddConnection(user.GID, user.UID, conn)
+	err = c.AddConnection(user.GID, user.UID, conn)
 	if err != nil {
 		http.Error(w, "Failed to add connection to pool", http.StatusInternalServerError)
 		log.Printf("[Error] adding connection to pool: %v", err)
@@ -106,12 +107,12 @@ func handleClose(code int, text string) error {
 	return fmt.Errorf("connection closed: %v", text)
 }
 
-func incoming(conn *utils.Conn, gid string, uid string) error {
+func incoming(conn *c.Conn, gid string, uid string) error {
 
 	messageType, data, err := conn.V.ReadMessage()
 	if err != nil {
 		log.Printf("[Close] connection closed: %v", err)
-		utils.RemoveConnection(gid, uid)
+		c.RemoveConnection(gid, uid)
 
 		return err
 	}
@@ -155,14 +156,14 @@ func incoming(conn *utils.Conn, gid string, uid string) error {
 }
 
 func handleIncoming(gid string, uid string) {
-	pool, err := utils.GetConnections(gid)
+	pool, err := c.GetConnections(gid)
 	if err != nil {
 		log.Printf("[Error] getting connection for handler: %v", err)
 	}
 
 	conn := pool[uid]
 
-	for utils.CheckConnection(gid, uid) {
+	for c.CheckConnection(gid, uid) {
 		err = incoming(conn, gid, uid)
 		if err != nil {
 			return
