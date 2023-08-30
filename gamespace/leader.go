@@ -1,176 +1,229 @@
 package gamespace
 
 import (
-	"encoding/json"
+	c "Engee-Server/connections"
+	g "Engee-Server/game"
+	h "Engee-Server/handlers"
+	u "Engee-Server/user"
+	"Engee-Server/utils"
+	"fmt"
 	"log"
-
-	"github.com/gorilla/websocket"
-
-	db "Engee-Server/database"
-	u "Engee-Server/utils"
 )
 
-// TODO freeze timer?
-func Pause(conn *websocket.Conn, gm u.Game) {
-	if gm.Status == "Pause" {
-		gm.Status = gm.OldStatus
+func pause(msg utils.GameMsg, game utils.Game) (string, string) {
+	errStr := "[Error] Could not toggle pause"
+	if game.Status == "Pause" {
+		if game.OldStatus != "" {
+			game.Status = game.OldStatus
+			game.OldStatus = ""
+		} else {
+			log.Printf("%v paused game does not have old status.", errStr)
+			return "Error", "Paused game does not have an old status to return to."
+		}
 	} else {
-		gm.OldStatus = gm.Status
-		gm.Status = "Pause"
+		game.OldStatus = game.Status
+		game.Status = "Pause"
 	}
 
-	err := db.UpdateGame(gm)
+	handler, err := h.GetHandler(game.Type)
 	if err != nil {
-		log.Printf("[Error] Could not update game pause status in database: %v", err)
-		u.SockSend(conn, "Error", "", "", "Could not update game pause status in database")
-		return
+		log.Printf("%v could not get game handler: %v.", errStr, err)
+		return "Error", "No game handler found for game type: " + game.Type
 	}
 
-	UpdateStatus(conn, gm)
+	cause, resp := handler(msg)
+	if cause != "" {
+		log.Printf("%v %v in game handler: %v.", errStr, cause, resp)
+		return cause, resp
+	}
+
+	err = g.UpdateGame(game)
+	if err != nil {
+		log.Printf("%v could not update game: %v.", errStr, err)
+		return "Error", "Could not apply update to game."
+	}
+
+	return "", ""
 }
 
-// TODO add game spec
-func Start(conn *websocket.Conn, gm u.Game) {
-	//TODO add option to toggle this as requirement
-	if true {
-		plrCount := db.GetGamePCount(gm.GID)
+func start(msg utils.GameMsg, game utils.Game) (string, string) {
+	warnStr := "[Warn] Cannot start game: "
+	errStr := "[Error] Cannot start game: "
 
-		if plrCount < gm.MinPlrs {
-			u.SockSend(conn, "Block", "", "", "There are not enough players in the game.")
-			log.Printf("[Block] Attempted to start without enough players in the game.")
-			return
+	if game.Status != "Lobby" {
+		fmt.Printf("%v game status is not 'Lobby': %v.", warnStr, game.Status)
+		return "Warn", "Cannot start a game that isn't in the Lobby."
+	}
+
+	if game.CurPlrs < game.MinPlrs {
+		fmt.Printf("%v current player count too low: %d/%d", warnStr, game.CurPlrs, game.MinPlrs)
+		return "Warn", "Cannot start a game without the minimum player count."
+	}
+
+	plrs, err := g.GetGamePlayers(game.GID)
+	if err != nil {
+		fmt.Printf("%v cannot find game players: %v", errStr, err)
+		return "Error", "Could not find the game players."
+	}
+
+	ready := game.CurPlrs
+	for _, plr := range plrs {
+		if plr.Status == "Not Ready" || plr.Status == "Joining" {
+			ready--
 		}
 	}
 
-	gm.Status = "Play"
-
-	err := db.UpdateGame(gm)
-	if err != nil {
-		log.Printf("[Error] Could not update game status in database: %v", err)
-		u.SockSend(conn, "Error", "", "", "Could not update game status in database")
-		return
+	if ready <= game.CurPlrs/2 { //TODO: Add toggle this
+		fmt.Printf("%v not enough ready players: %v/%v", warnStr, ready, game.CurPlrs)
+		return "Warn", "Cannot start a game with less than half of players ready."
 	}
 
-	err = db.UpdateGamePlayerStatus(gm.GID, "In Game")
+	game.Status = "Play"
+	game.OldStatus = ""
+
+	handler, err := h.GetHandler(game.Type)
 	if err != nil {
-		log.Printf("[Error] Could not update player statuses in database: %v", err)
-		u.SockSend(conn, "Error", "", "", "Could not update player status in database")
-		return
+		log.Printf("%v could not get game handler: %v.", errStr, err)
+		return "Error", "No game handler found for game type: " + game.Type
 	}
 
-	UpdatePlayerList(gm.GID)
+	cause, resp := handler(msg)
+	if cause != "" {
+		log.Printf("%v %v in game handler: %v", errStr, cause, resp)
+		return cause, resp
+	}
 
-	UpdateStatus(conn, gm)
+	err = activePlayersStatusUpdate(plrs, "Not Ready")
+	if err != nil {
+		fmt.Printf("%v could not update the status of the active players: %v.", errStr, err)
+		return "Error", "Could not update players to 'Play' status."
+	}
+
+	err = g.UpdateGame(game)
+	if err != nil {
+		fmt.Printf("%v could not update the game: %v.", errStr, err)
+		return "Error", "Could not apply game update."
+	}
+
+	return "", ""
 }
 
-func End(conn *websocket.Conn, gm u.Game) {
-	err := db.RemoveGame(gm.GID)
+func reset(msg utils.GameMsg, game utils.Game) (string, string) {
+	errStr := "[Error] Cannot reset game: "
+
+	game.Status = "Reset"
+
+	plrs, err := g.GetGamePlayers(game.GID)
 	if err != nil {
-		log.Printf("[Error] Failed to remove game after last player left: %v", err)
+		fmt.Printf("%v cannot find game players: %v.", errStr, err)
+		return "Error", "Could not find the game players."
 	}
 
-	gMsg := u.GameMsg{
-		Type:    "End",
-		GID:     gm.GID,
-		PID:     "",
-		Content: "",
-	}
-
-	msg, err := json.Marshal(gMsg)
+	handler, err := h.GetHandler(game.Type)
 	if err != nil {
-		log.Printf("[Error] Failed to marshal game end message: %v", err)
-		return
+		log.Printf("%v could not get game handler: %v.", errStr, err)
+		return "Error", "No game handler found for game type: " + game.Type
 	}
 
-	Broadcast(gm.GID, msg)
-	delete(u.Connections, gm.GID)
+	cause, resp := handler(msg)
+	if cause != "" {
+		log.Printf("%v %v in game handler: %v", errStr, cause, resp)
+		return cause, resp
+	}
+
+	err = activePlayersStatusUpdate(plrs, "Not Ready")
+	if err != nil {
+		fmt.Printf("%v could not update the status of the active players: %v.", errStr, err)
+		return "Error", "Could not update players to 'Play' status."
+	}
+
+	err = g.UpdateGame(game)
+	if err != nil {
+		fmt.Printf("%v could not update the game: %v.", errStr, err)
+		return "Error", "Could not apply game update."
+	}
+
+	msg.Type = "Init"
+
+	return initialize(msg, game)
 }
 
-func Restart(conn *websocket.Conn, gm u.Game) {
-	gm.Status = "Restart"
+func end(msg utils.GameMsg, game utils.Game) (string, string) {
+	errStr := "[Error] Cannot end game: "
 
-	err := db.UpdateGame(gm)
+	handler, err := h.GetHandler(game.Type)
 	if err != nil {
-		log.Printf("[Error] Could not update game in database: %v", err)
-		u.SockSend(conn, "Error", "", "", "Could not update game in database")
-		return
+		log.Printf("%v could not get game handler: %v.", errStr, err)
+		return "Error", "No game handler found for game type: " + game.Type + "."
 	}
 
-	UpdateStatus(conn, gm)
-
-	err = db.UpdateGamePlayerStatus(gm.GID, "Joined")
-	if err != nil {
-		log.Printf("[Error] Could not update players of game in database: %v", err)
-		u.SockSend(conn, "Error", "", "", "Could not update players of game in database")
-		return
+	cause, resp := handler(msg)
+	if cause != "" {
+		log.Printf("%v %v in game handler: %v.", errStr, cause, resp)
+		return cause, resp
 	}
 
-	gm.OldStatus = ""
-	gm.Status = "Lobby"
-
-	err = db.UpdateGame(gm)
-	if err != nil {
-		log.Printf("[Error] Could not update game in database: %v", err)
-		u.SockSend(conn, "Error", "", "", "Could not update game in database")
-		return
+	eMsg := utils.GameMsg{
+		GID:  msg.GID,
+		Type: "End",
 	}
 
-	UpdatePlayerList(gm.GID)
-	UpdateStatus(conn, gm)
+	err = c.Broadcast(eMsg)
+	if err != nil {
+		log.Printf("%v could not broadcast end message: %v", errStr, err)
+	}
+
+	go func() {
+		Shutdown[game.GID] <- 0
+	}()
+
+	err = g.DeleteGame(game.GID)
+	if err != nil {
+		fmt.Printf("%v could not delete the game: %v.", errStr, err)
+		return "Error", "Could not finalize game deletion."
+	}
+
+	return "", ""
 }
 
-func UpdateRules(conn *websocket.Conn, gm u.Game, content string) {
+func remove(msg utils.GameMsg, game utils.Game) (string, string) {
+	errStr := "[Error] Cannot remove player from game: "
+	warnStr := "[Warn] Cannot remove player from game: "
 
-	var rules u.Game
-	err := json.Unmarshal([]byte(content), &rules)
+	t := msg.Content
+	if t == game.Leader {
+		fmt.Printf("%v leader cannot remove themselves.", warnStr)
+		return "Warn", "A leader cannot remove themselves, they must leave normally."
+	}
+
+	tUser, err := u.GetUser(t)
 	if err != nil {
-		log.Printf("[Error] Could not parse new rules: %v", err)
-		u.SockSend(conn, "Error", "", "", "Could not parse new rules")
-		return
+		fmt.Printf("%v failed to find target user: %v.", errStr, err)
+		return "Error", "Could not find target user to remove."
 	}
 
-	Restart(conn, gm)
+	tUser.GID = ""
 
-	//TODO some checks here
+	rMsg := utils.GameMsg{
+		UID:  t,
+		GID:  game.GID,
+		Type: "Leave",
+	}
 
-	gm.Type = rules.Type
-	gm.MinPlrs = rules.MinPlrs
-	gm.MaxPlrs = rules.MaxPlrs
-	gm.AdditionalRules = rules.AdditionalRules
+	cause, resp := leave(rMsg, tUser, game)
+	if cause != "" {
+		log.Printf("%v %v in leave(removal): %v.", errStr, cause, resp)
+		return cause, resp
+	}
 
-	gUpdate, err := json.Marshal(gm)
+	rMsg.Type = "Removal"
+	//TODO provide a reason?
+
+	err = c.SingleMessage(rMsg)
 	if err != nil {
-		log.Printf("[Error] Could not marshal rules update: %v", err)
-		u.SockSend(conn, "Error", "", "", "Could not marshal updated rules")
-		return
+		log.Printf("%v could not update removed user: %v.", errStr, err)
+		return "Error", "Could not send user removal notice."
 	}
 
-	gMsg := u.GameMsg{
-		Type:    "Update",
-		PID:     "",
-		GID:     gm.GID,
-		Content: string(gUpdate),
-	}
-
-	msg, err := json.Marshal(gMsg)
-	if err != nil {
-		log.Printf("[Error] Failed to marshal update message: %v", err)
-		u.SockSend(conn, "Error", "", "", "Could not marshal update message")
-		return
-	}
-
-	err = db.UpdateGame(gm)
-	if err != nil {
-		log.Printf("[Error] Could not update game in database: %v", err)
-		u.SockSend(conn, "Error", "", "", "Could not update game in database")
-		return
-	}
-
-	// Send the players the rules update
-	Broadcast(gm.GID, msg)
-
-}
-
-func Remove(conn *websocket.Conn, gm u.Game, content string) {
-	//TODO
+	return "", ""
 }

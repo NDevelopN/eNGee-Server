@@ -1,189 +1,267 @@
 package gamespace
 
 import (
+	c "Engee-Server/connections"
+	g "Engee-Server/game"
+	h "Engee-Server/handlers"
+	u "Engee-Server/user"
+	"Engee-Server/utils"
 	"encoding/json"
+	"time"
+
+	"fmt"
 	"log"
-	"net/http"
-
-	"github.com/gorilla/websocket"
-
-	db "Engee-Server/database"
-	u "Engee-Server/utils"
 )
 
-var handler u.MHandler = func(conn *websocket.Conn, data []byte, gHandler u.GHandler) {
+var Shutdown = map[string](chan int){}
 
-	var msg u.GameMsg
-	err := json.Unmarshal(data, &msg)
+func CleanUp(gid string) {
+	Shutdown[gid] <- 0
+	c.RemoveConnectionPool(gid)
+}
+
+func pListUpdateBC(gid string, plrs []utils.User) error {
+	pList, err := json.Marshal(plrs)
 	if err != nil {
-		log.Printf("[Error] Failed to unmarshal message: %v", err)
-		u.SockSend(conn, "Error", "", "", "Failed to read message")
-		return
+		return fmt.Errorf("could not marshal player list: %v", err)
 	}
 
-	//Check if player exists
-	plr, err := db.GetPlayer(msg.PID)
-	if err != nil {
-		log.Printf("[Error] Failed to get player from db in gsHandler: %v", err)
-		u.SockSend(conn, "Error", msg.PID, msg.GID, "Failed to get player from db in gsHandler")
-		return
+	msg := utils.GameMsg{
+		GID:     gid,
+		Type:    "Players",
+		Content: string(pList),
 	}
 
-	//Check if game exists
-	gm, err := db.GetGame(msg.GID)
+	err = c.Broadcast(msg)
 	if err != nil {
-		log.Printf("[Error] Failed to get game from db in gsHandler: %v", err)
-		u.SockSend(conn, "Error", msg.PID, msg.GID, "Failed to get game from db in gsHandler")
-		return
+		return fmt.Errorf("could not broadcast player list: %v", err)
 	}
 
-	//Check if player is in the game
+	return nil
+}
+
+func activePlayersStatusUpdate(plrs []utils.User, status string) error {
+	for _, plr := range plrs {
+		if plr.Status == "Leaving" || plr.Status == "Spectating" {
+			continue
+		}
+
+		plr.Status = status
+
+		err := u.UpdateUser(plr)
+		if err != nil {
+			return fmt.Errorf("failed to update user [%s]: %v", plr.UID, err)
+		}
+	}
+
+	return nil
+}
+
+func gameUpdateBC(game utils.Game) error {
+	gm, err := json.Marshal(game)
+	if err != nil {
+		return fmt.Errorf("could not marshal game update: %v", err)
+	}
+
+	upd := utils.GameMsg{
+		GID:     game.GID,
+		Type:    "Update",
+		Content: string(gm),
+	}
+
+	err = c.Broadcast(upd)
+	if err != nil {
+		return fmt.Errorf("could not broadcast game update: %v", err)
+	}
+
+	return nil
+}
+
+func gameStatusBC(gid string, status string) error {
+	upd := utils.GameMsg{
+		GID:     gid,
+		Type:    "Status",
+		Content: status,
+	}
+
+	err := c.Broadcast(upd)
+	if err != nil {
+		return fmt.Errorf("could not broadcast game status update: %v", err)
+	}
+
+	return nil
+
+}
+
+func getValidPlrGame(msg utils.GameMsg) (utils.User, utils.Game, error) {
+	var plr utils.User
+	var game utils.Game
+
+	plr, err := u.GetUser(msg.UID)
+	if err != nil {
+		return plr, game, fmt.Errorf("could not get user: %v", err)
+	}
+
 	if plr.GID != msg.GID {
-		log.Printf("[Error] Player GID does not match game GID: %v", err)
-		u.SockSend(conn, "Error", msg.PID, msg.GID, "Player GID does not match game GID")
-		return
+		return plr, game, fmt.Errorf("player GID and msg GID do not match: %v", err)
 	}
 
-	//Check if the player is the game leader
-	leader := (msg.PID == gm.Leader)
+	game, err = g.GetGame(msg.GID)
+	if err != nil {
+		return plr, game, fmt.Errorf("could not get game: %v", err)
+	}
+
+	return plr, game, nil
+}
+
+func initialize(msg utils.GameMsg, game utils.Game) (string, string) {
+	errStr := "[Error] Cannot initialize game: "
+
+	log.Printf("Initializing game: %v", msg.GID)
+
+	plrs, err := g.GetGamePlayers(msg.GID)
+	if err != nil {
+		end(msg, game)
+
+		fmt.Printf("%v could not get game players: %v", errStr, err)
+		return "Error", "No game players found."
+	}
+
+	pool, err := c.GetConnections(msg.GID)
+	if len(pool) == 0 || err != nil {
+		time.Sleep(time.Second * 2)
+		pool, err = c.GetConnections(msg.GID)
+		if len(pool) == 0 || err != nil {
+			end(msg, game)
+			fmt.Printf("%v no connections to game: %v", errStr, err)
+			return "Error", "No available connections."
+		}
+	}
+
+	handler, err := h.GetHandler(game.Type)
+	if err != nil {
+		log.Printf("%v could not get game handler: %v.", errStr, err)
+		return "Error", "No game handler found for game type: " + game.Type + "."
+	}
+
+	cause, resp := handler(msg)
+	if cause != "" {
+		log.Printf("%v %v in game handler: %v.", errStr, cause, resp)
+		return cause, resp
+	}
+
+	_, k := Shutdown[msg.GID]
+	if k {
+		Shutdown[msg.GID] <- 0
+	}
+
+	Shutdown[msg.GID] = make(chan int)
+
+	go CheckGame(game)
+	go CheckPlayers(game)
+
+	game.Status = "Lobby"
+	err = g.UpdateGame(game)
+	if err != nil {
+		fmt.Printf("%v could not update game to Lobby status: %v", errStr, err)
+		return "Error", "Could not set game status."
+	}
+
+	err = activePlayersStatusUpdate(plrs, "Not Ready")
+	if err != nil {
+		fmt.Printf("%v could not update active players status: %v", errStr, err)
+		return "Error", "Could not set active players' status."
+	}
+
+	plrs, err = g.GetGamePlayers(msg.GID)
+	if err != nil {
+		log.Printf("%v could not get game players after setting status: %v", errStr, err)
+		return "Error", "Could not get active players' status."
+	}
+
+	pListUpdateBC(msg.GID, plrs)
+
+	return "", ""
+}
+
+func GamespaceHandle(msg utils.GameMsg) (utils.GameMsg, error) {
+	plr, game, err := getValidPlrGame(msg)
+	if err != nil {
+		log.Printf("[Error] Could not validate game or player: %v", err)
+		return utils.CreateReply(msg, "Error", "Invalid ID(s) provided")
+	}
+
+	leader := game.Leader == plr.UID
+
+	var cause, resp string
 
 	switch msg.Type {
-	//Case for first connection
-	case "Connect":
-		//TODO this is not clear
-		if Connect(conn, gm, plr) {
-			gHandler(
-				u.GameMsg{
-					Type:    "Create",
-					PID:     msg.PID,
-					GID:     msg.GID,
-					Content: gm.AdditionalRules,
-				},
-				Broadcast,
-			)
-
+	case "Init":
+		if leader {
+			cause, resp = initialize(msg, game)
+		} else {
+			cause = "Error"
+			resp = "Must be a leader to Init"
 		}
-		gHandler(msg, Broadcast)
+	case "Start":
+		if leader {
+			cause, resp = start(msg, game)
+		} else {
+			cause = "Error"
+			resp = "Must be a leader to Start"
+		}
+	case "Reset":
+		if leader {
+			cause, resp = reset(msg, game)
+		} else {
+			cause = "Error"
+			resp = "Must be a leader to Reset"
+		}
+	case "End":
+		if leader {
+			cause, resp = end(msg, game)
+		} else {
+			cause = "Error"
+			resp = "Must be a leader to End"
+		}
+	case "Pause":
+		if leader {
+			cause, resp = pause(msg, game)
+		} else {
+			cause = "Error"
+			resp = "Must be a leader to Pause"
+		}
+	case "Remove":
+		if leader {
+			cause, resp = remove(msg, game)
+		} else {
+			cause = "Error"
+			resp = "Must be a leader to Remove"
+		}
 	case "Status":
-		ChangePlayerStatus(conn, msg.GID, plr, msg.Content, leader)
+		cause, resp = status(msg, plr, game)
+	case "Leave":
+		log.Printf("Received leave")
+		cause, resp = leave(msg, plr, game)
+	default:
+		errStr := "[Error] Cannot process " + msg.Type + " Request: "
 
-		//If autostart enabled, start the game after more than half of players are ready
-		if true {
-			ready := db.GetGamePReady(msg.GID)
-			threshold := db.GetGamePCount(msg.GID) / 2
-			if ready > threshold {
-				Start(conn, gm)
-				msg.Type = "Start"
-				gHandler(msg, Broadcast)
+		handler, err := h.GetHandler(game.Type)
+		if err != nil {
+			log.Printf("%v could not get game handler: %v.", errStr, err)
+			cause = "Error"
+			resp = "No game handler found for game type: " + game.Type
+		} else {
+			cause, resp = handler(msg)
+			if cause != "" {
+				log.Printf("%v %v in game handler: %v.", errStr, cause, resp)
 			}
 		}
-	case "Leave":
-		gHandler(msg, Broadcast)
-		Leave(conn, plr, gm)
-	case "Pause":
-		if !leader {
-			u.SockSend(conn, "Error", msg.GID, msg.PID, "Player is not the leader")
-			return
-		}
-		Pause(conn, gm)
-	case "Start":
-		if !leader {
-			u.SockSend(conn, "Error", msg.GID, msg.PID, "Player is not the leader")
-			return
-		}
-		Start(conn, gm)
-		gHandler(msg, Broadcast)
-	case "End":
-		if !leader {
-			u.SockSend(conn, "Error", msg.GID, msg.PID, "Player is not the leader")
-			return
-		}
-		End(conn, gm)
-		gHandler(msg, Broadcast)
-	case "Restart":
-		if !leader {
-			u.SockSend(conn, "Error", msg.GID, msg.PID, "Player is not the leader")
-			return
-		}
-		Restart(conn, gm)
-		gHandler(msg, Broadcast)
-	case "Remove":
-		if !leader {
-			u.SockSend(conn, "Error", msg.GID, msg.PID, "Player is not the leader")
-			return
-		}
-		Remove(conn, gm, msg.Content)
-	case "Rules":
-		if !leader {
-			u.SockSend(conn, "Error", msg.GID, msg.PID, "Player is not the leader")
-			return
-		}
-		UpdateRules(conn, gm, msg.Content)
-		gHandler(msg, Broadcast)
-	default:
-		gHandler(msg, Broadcast)
-	}
-}
-
-func UpdateStatus(conn *websocket.Conn, gm u.Game) {
-	gMsg := u.GameMsg{
-		Type:    "Status",
-		GID:     gm.GID,
-		PID:     "",
-		Content: gm.Status,
 	}
 
-	msg, err := json.Marshal(gMsg)
-	if err != nil {
-		u.SockSend(conn, "Error", "", "", "Failed to send status update message")
-		log.Printf("[Error] Failed to marshal status update message: %v", err)
-		return
+	if cause != "" {
+		return utils.CreateReply(msg, cause, resp)
 	}
 
-	Broadcast(gm.GID, msg)
-}
-
-func UpdatePlayerList(gid string) {
-	plrs, err := db.GetGamePlayers(gid)
-	if err != nil {
-		log.Printf("[Error] Failed to get player list from game %v", err)
-		return
-	}
-	list, err := json.Marshal(plrs)
-	if err != nil {
-		log.Printf("[Error] Failed to marshal player list: %v", err)
-		return
-	}
-
-	gMsg := u.GameMsg{
-		Type:    "Players",
-		GID:     gid,
-		PID:     "",
-		Content: string(list),
-	}
-
-	msg, err := json.Marshal(gMsg)
-	if err != nil {
-		log.Printf("[Error] Failed to marshal player list update message: %v", err)
-		return
-	}
-
-	Broadcast(gid, msg)
-}
-
-func GameSpace(w http.ResponseWriter, r *http.Request, gHandler u.GHandler) {
-	u.Sock(w, r, handler, gHandler)
-}
-
-func Broadcast(gid string, msg []byte) {
-	plrs, err := db.GetGamePlayers(gid)
-	if err != nil {
-		log.Printf("[Error] Failed to get players for broadcast: %v", err)
-		return
-	}
-
-	for _, p := range plrs {
-		u.Connections[gid][p.PID].WriteMessage(websocket.TextMessage, msg)
-	}
-
+	return utils.GameMsg{}, nil
 }

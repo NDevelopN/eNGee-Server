@@ -1,105 +1,74 @@
 package gamespace
 
 import (
-	db "Engee-Server/database"
-	u "Engee-Server/utils"
-	"encoding/json"
+	h "Engee-Server/handlers"
+	u "Engee-Server/user"
+	"Engee-Server/utils"
 	"log"
 
-	"github.com/gorilla/websocket"
+	"golang.org/x/exp/slices"
 )
 
-func Connect(conn *websocket.Conn, gm u.Game, plr u.Player) bool {
-	first := false
-
-	// Add new connection to map
-	gCon := u.Connections[gm.GID]
-	gCon[plr.PID] = conn
-	u.Connections[gm.GID] = gCon
-
-	plr.Status = "Joined"
-
-	if gm.Leader == "" || gm.Leader == plr.PID {
-		gm.Leader = plr.PID
-		first = true
-	}
-
-	err := db.UpdatePlayer(plr)
-	if err != nil {
-		log.Printf("[Error] Failed to update player status: %v", err)
-		u.SockSend(conn, "Error", gm.GID, plr.PID, "Failed to update player status")
-		return false
-	}
-
-	info, err := json.Marshal(gm)
-	if err != nil {
-		log.Printf("[Error] Failed to marshal game info: %v", err)
-		return false
-	}
-
-	u.SockSend(conn, "Info", gm.GID, plr.PID, string(info))
-
-	UpdatePlayerList(gm.GID)
-	return first
+var validStatus = []string{
+	"Ready", "Not Ready", "Joining", "Leaving", "Spectating",
 }
 
-func ChangePlayerStatus(conn *websocket.Conn, gid string, plr u.Player, status string, leader bool) {
-	plr.Status = status
+func status(msg utils.GameMsg, plr utils.User, game utils.Game) (string, string) {
+	errStr := "[Error] Could not change player status: "
 
-	err := db.UpdatePlayer(plr)
-	if err != nil {
-		log.Printf("[Error] Failed to update player status in db: %v", err)
-		u.SockSend(conn, "Error", plr.PID, plr.GID, "Failed to update player status in db")
+	if msg.Content == "" {
+		log.Printf("%v empty status provided", errStr)
+		return "Error", "No new status provided"
 	}
 
-	UpdatePlayerList(gid)
-}
-
-func Leave(conn *websocket.Conn, plr u.Player, gm u.Game) {
-	plr.Status = "Browsing"
-	plr.GID = ""
-
-	err := db.UpdatePlayer(plr)
-	if err != nil {
-		log.Printf("Failed to update player after leaving game: %v", err)
-		u.SockSend(conn, "Error", plr.PID, gm.GID, "Could not update player to leave game")
-		return
+	if !slices.Contains(validStatus, msg.Content) {
+		log.Printf("%v invalid status provided: %v", errStr, msg.Content)
+		return "Error", msg.Content + " is not a valid status"
 	}
 
-	delete(u.Connections[plr.GID], plr.PID)
+	if plr.Status != msg.Content {
+		plr.Status = msg.Content
 
-	gm.CurPlrs--
-	if gm.CurPlrs <= 0 {
-		End(conn, gm)
-	}
-
-	db.UpdateGame(gm)
-
-	if gm.Leader == plr.PID {
-		gm.Leader = ""
-		plrs, err := db.GetGamePlayers(gm.GID)
-		//TODO find out better way to choose when to end
+		handler, err := h.GetHandler(game.Type)
 		if err != nil {
-			log.Printf("[Error] Failed to find remaining players in game: %v", err)
-		} else {
-			if len(plrs) > 0 {
-				gm.Leader = plrs[0].PID
+			log.Printf("%v could not get game handler: %v", errStr, err)
+			return "Error", "No game handler found for game type: " + game.Type
+		}
 
-				err = db.UpdateGame(gm)
-				if err != nil {
-					log.Printf("[Error] Failed to update game after finding new leader: %v", err)
-					return
-				}
+		cause, resp := handler(msg)
+		if cause != "" {
+			log.Printf("Issue in game handler: %v", resp)
+			return cause, resp
+		}
 
-				//If there is a new leader, send them an update
-				u.SockSend(u.Connections[gm.GID][gm.Leader], "Leader", gm.GID, gm.Leader, "")
-
-				//Send all players the new player list
-				UpdatePlayerList(gm.GID)
-			} else {
-				//TODO this should be redundant
-				End(conn, gm)
-			}
+		err = u.UpdateUser(plr)
+		if err != nil {
+			log.Printf("%v could not update user: %v", errStr, err)
+			return "Error", "Could not apply update to user"
 		}
 	}
+
+	return "", ""
+}
+
+func leave(msg utils.GameMsg, plr utils.User, game utils.Game) (string, string) {
+	plr.GID = ""
+
+	msg.Type = "Status"
+	msg.Content = "Leaving"
+
+	cause, resp := status(msg, plr, game)
+	if cause != "" {
+		return cause, "Could not remove player from game: " + resp
+	}
+
+	if game.CurPlrs == game.MinPlrs { //TODO add toggle for this
+		msg.Type = "Reset"
+		cause, resp = reset(msg, game)
+		if cause != "" {
+			log.Printf("[Error] Could not reset after falling below min players: %v", resp)
+		}
+	}
+
+	return "", ""
 }
