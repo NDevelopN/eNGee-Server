@@ -1,9 +1,11 @@
 package gamespace
 
 import (
+	c "Engee-Server/connections"
 	h "Engee-Server/handlers"
 	u "Engee-Server/user"
 	"Engee-Server/utils"
+	"encoding/json"
 	"log"
 
 	"golang.org/x/exp/slices"
@@ -11,6 +13,39 @@ import (
 
 var validStatus = []string{
 	"Ready", "Not Ready", "Joining", "Leaving", "Spectating",
+}
+
+func join(msg utils.GameMsg, plr utils.User, game utils.Game) (string, string) {
+	errStr := "[Error] Could not complete joining: "
+
+	gm, err := json.Marshal(game)
+	if err != nil {
+		log.Printf("%v could not marshal game update: %v", errStr, err)
+		return "Error", "Could not create game update reply."
+	}
+
+	rMsg := utils.GameMsg{
+		UID:     plr.UID,
+		GID:     game.GID,
+		Type:    "Update",
+		Content: string(gm),
+	}
+
+	err = c.SingleMessage(rMsg)
+	if err != nil {
+		log.Printf("%v could not send game update: %v", errStr, err)
+		return "Error", "Could not send game update reply."
+	}
+
+	msg.Type = "Status"
+	msg.Content = "Not Ready"
+
+	cause, resp := status(msg, plr, game)
+	if cause != "" {
+		return cause, "Could not update status after joining game: " + resp
+	}
+
+	return "", ""
 }
 
 func status(msg utils.GameMsg, plr utils.User, game utils.Game) (string, string) {
