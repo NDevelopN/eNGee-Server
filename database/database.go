@@ -18,8 +18,18 @@ var DB *sql.DB
 * It then creates the games and players tables
  */
 func InitDB() {
+	const (
+		host = "93.107.46.227"
+		port = 5432
+		user = "ngdbu"
+		pass = "ngp"
+		dbName = "ngdb"
+	)
+
+	dbInfo := fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=disable",
+							host, port, user, pass, dbName)
 	var err error
-	DB, err = sql.Open("postgres", "postgres://ngdbu:ngp@localhost/ngdb")
+	DB, err = sql.Open("postgres", dbInfo)
 	if err != nil {
 		log.Fatalf("[Error] Failed to open connection to sql server: %v", err)
 	}

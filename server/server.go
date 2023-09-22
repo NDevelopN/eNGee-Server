@@ -53,7 +53,7 @@ func Serve() {
 	//This special case creates a websocket connection
 	router.GET("/games/:id", Connect)
 
-	router.Run("localhost:8090")
+	router.Run(":8090")
 }
 
 func intake(c *gin.Context) ([]byte, http.ResponseWriter) {
