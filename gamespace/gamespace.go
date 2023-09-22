@@ -238,6 +238,8 @@ func GamespaceHandle(msg utils.GameMsg) (utils.GameMsg, error) {
 			cause = "Error"
 			resp = "Must be a leader to Remove"
 		}
+	case "Join":
+		cause, resp = join(msg, plr, game)
 	case "Status":
 		cause, resp = status(msg, plr, game)
 	case "Leave":
