@@ -18,6 +18,8 @@ import (
 	"Engee-Server/utils"
 )
 
+var port string
+
 func CORSMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		c.Header("Access-Control-Allow-Origin", "*")
@@ -33,7 +35,7 @@ func CORSMiddleware() gin.HandlerFunc {
 	}
 }
 
-func Serve() {
+func Serve(config utils.Config) {
 	router := gin.Default()
 
 	router.Use(CORSMiddleware())
@@ -53,7 +55,7 @@ func Serve() {
 	//This special case creates a websocket connection
 	router.GET("/games/:id", Connect)
 
-	router.Run(":8090")
+	router.Run(":" + config.Server.Port)
 }
 
 func intake(c *gin.Context) ([]byte, http.ResponseWriter) {

@@ -11,7 +11,7 @@ import (
 )
 
 func TestCreateUserValid(t *testing.T) {
-	db.InitDB()
+	db.ResetDB()
 	msg, err := CreateUser(u.DefUser)
 	_, pe := uuid.Parse(msg)
 	if pe != nil || err != nil {
@@ -20,7 +20,7 @@ func TestCreateUserValid(t *testing.T) {
 }
 
 func TestCreateUserMutli(t *testing.T) {
-	db.InitDB()
+	db.ResetDB()
 	_, _ = CreateUser(u.DefUser)
 	msg, err := CreateUser(u.DefUser)
 	_, pe := uuid.Parse(msg)
@@ -30,7 +30,7 @@ func TestCreateUserMutli(t *testing.T) {
 }
 
 func TestCreateUserEmptyName(t *testing.T) {
-	db.InitDB()
+	db.ResetDB()
 	user := u.DefUser
 	user.Name = ""
 
@@ -41,12 +41,12 @@ func TestCreateUserEmptyName(t *testing.T) {
 }
 
 func TestCreateGameInjection(t *testing.T) {
-	db.InitDB()
+	db.ResetDB()
 	//TODO
 }
 
 func TestGetUserValid(t *testing.T) {
-	db.InitDB()
+	db.ResetDB()
 
 	uid, _ := CreateUser(u.DefUser)
 
@@ -61,7 +61,7 @@ func TestGetUserValid(t *testing.T) {
 }
 
 func TestGetUserMulti(t *testing.T) {
-	db.InitDB()
+	db.ResetDB()
 
 	_, _ = CreateUser(u.DefUser)
 	uid, _ := CreateUser(u.DefUser)
@@ -77,7 +77,7 @@ func TestGetUserMulti(t *testing.T) {
 }
 
 func TestGetUserInvalidGID(t *testing.T) {
-	db.InitDB()
+	db.ResetDB()
 
 	_, _ = CreateUser(u.DefUser)
 
@@ -88,7 +88,7 @@ func TestGetUserInvalidGID(t *testing.T) {
 }
 
 func TestGetUserEmptyUID(t *testing.T) {
-	db.InitDB()
+	db.ResetDB()
 
 	_, _ = CreateUser(u.DefUser)
 
@@ -99,7 +99,7 @@ func TestGetUserEmptyUID(t *testing.T) {
 }
 
 func TestGetUserEmptyDB(t *testing.T) {
-	db.InitDB()
+	db.ResetDB()
 
 	user, err := GetUser(uuid.NewString())
 	if err == nil {
@@ -108,12 +108,12 @@ func TestGetUserEmptyDB(t *testing.T) {
 }
 
 func TestGetUserInjection(t *testing.T) {
-	db.InitDB()
+	db.ResetDB()
 	//TODO
 }
 
 func TestUpdateUserChangeName(t *testing.T) {
-	db.InitDB()
+	db.ResetDB()
 
 	uid, _ := CreateUser(u.DefUser)
 
@@ -136,7 +136,7 @@ func TestUpdateUserChangeName(t *testing.T) {
 }
 
 func TestUpdateUserChangeStatus(t *testing.T) {
-	db.InitDB()
+	db.ResetDB()
 
 	uid, _ := CreateUser(u.DefUser)
 
@@ -158,7 +158,7 @@ func TestUpdateUserChangeStatus(t *testing.T) {
 }
 
 func TestUpdateUserChangeGID(t *testing.T) {
-	db.InitDB()
+	db.ResetDB()
 
 	uid, _ := CreateUser(u.DefUser)
 	gid, _ := g.CreateGame(u.DefGame)
@@ -181,7 +181,7 @@ func TestUpdateUserChangeGID(t *testing.T) {
 }
 
 func TestUpdateUserChangeInvalidGID(t *testing.T) {
-	db.InitDB()
+	db.ResetDB()
 
 	uid, _ := CreateUser(u.DefUser)
 
@@ -205,7 +205,7 @@ func TestUpdateUserChangeInvalidGID(t *testing.T) {
 }
 
 func TestUpdateUserAll(t *testing.T) {
-	db.InitDB()
+	db.ResetDB()
 
 	uid, _ := CreateUser(u.DefUser)
 	gid, _ := g.CreateGame(u.DefGame)
@@ -230,7 +230,7 @@ func TestUpdateUserAll(t *testing.T) {
 }
 
 func TestUpdateUserInvalidUID(t *testing.T) {
-	db.InitDB()
+	db.ResetDB()
 
 	uid, _ := CreateUser(u.DefUser)
 
@@ -254,7 +254,7 @@ func TestUpdateUserInvalidUID(t *testing.T) {
 }
 
 func TestUpdateUserEmptyUID(t *testing.T) {
-	db.InitDB()
+	db.ResetDB()
 
 	uid, _ := CreateUser(u.DefUser)
 
@@ -278,7 +278,7 @@ func TestUpdateUserEmptyUID(t *testing.T) {
 }
 
 func TestUpdateUserEmptyDB(t *testing.T) {
-	db.InitDB()
+	db.ResetDB()
 
 	user := u.DefUser
 	user.UID = uuid.NewString()
@@ -296,7 +296,7 @@ func TestUpdateUserEmptyDB(t *testing.T) {
 }
 
 func TestUpdateUserNoChange(t *testing.T) {
-	db.InitDB()
+	db.ResetDB()
 
 	uid, _ := CreateUser(u.DefUser)
 
@@ -318,7 +318,7 @@ func TestUpdateUserNoChange(t *testing.T) {
 }
 
 func TestDeleteUserValid(t *testing.T) {
-	db.InitDB()
+	db.ResetDB()
 	uid, _ := CreateUser(u.DefUser)
 	err := DeleteUser(uid)
 	if err != nil {
@@ -332,7 +332,7 @@ func TestDeleteUserValid(t *testing.T) {
 }
 
 func TestDeleteUserMulti(t *testing.T) {
-	db.InitDB()
+	db.ResetDB()
 	_, _ = CreateUser(u.DefUser)
 	uid, _ := CreateUser(u.DefUser)
 	err := DeleteUser(uid)
@@ -347,7 +347,7 @@ func TestDeleteUserMulti(t *testing.T) {
 }
 
 func TestDeleteUserInvalidUID(t *testing.T) {
-	db.InitDB()
+	db.ResetDB()
 	uid, _ := CreateUser(u.DefUser)
 
 	err := DeleteUser(uuid.NewString())
@@ -366,7 +366,7 @@ func TestDeleteUserInvalidUID(t *testing.T) {
 }
 
 func TestDeletUserEmptyGID(t *testing.T) {
-	db.InitDB()
+	db.ResetDB()
 	uid, _ := CreateUser(u.DefUser)
 
 	err := DeleteUser("")
@@ -385,7 +385,7 @@ func TestDeletUserEmptyGID(t *testing.T) {
 }
 
 func TestDeleteUserEmptyDB(t *testing.T) {
-	db.InitDB()
+	db.ResetDB()
 
 	err := DeleteUser(uuid.NewString())
 	if err == nil {
@@ -394,7 +394,7 @@ func TestDeleteUserEmptyDB(t *testing.T) {
 }
 
 func TestDeleteUserRepeat(t *testing.T) {
-	db.InitDB()
+	db.ResetDB()
 	uid, _ := CreateUser(u.DefUser)
 	_ = DeleteUser(uid)
 
@@ -405,6 +405,6 @@ func TestDeleteUserRepeat(t *testing.T) {
 }
 
 func TestDeleteUserInjection(t *testing.T) {
-	db.InitDB()
+	db.ResetDB()
 	//TODO
 }

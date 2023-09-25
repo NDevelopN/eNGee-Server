@@ -53,3 +53,16 @@ type Response struct {
 type ACK struct {
 	Message string `json:"message"`
 }
+
+type Config struct {
+	Server struct {
+		Port string `json:"port"`
+	}
+	Database struct {
+		Host string `json:"host"`
+		Port string `json:"port"`
+		User string `json:"user"`
+		Pass string `json:"pass"`
+		Name string `json:"name"`
+	}
+}

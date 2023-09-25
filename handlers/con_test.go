@@ -18,7 +18,7 @@ import (
 const waitForTimeout = true
 
 func prepareConGame(t *testing.T, testName string, userCount int) (string, []string) {
-	db.InitDB()
+	db.ResetDB()
 	Init()
 
 	conn.SETLOCALTEST(true)

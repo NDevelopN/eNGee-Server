@@ -1,0 +1,13 @@
+{
+    "server": {
+        "port": "8090"
+    },
+
+    "database": {
+        "host": "93.107.46.227",
+        "port": "5432",
+        "user": "ngdbu",
+        "pass": "ngp",
+        "name": "ngdb"
+    }
+}

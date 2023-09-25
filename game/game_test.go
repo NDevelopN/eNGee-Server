@@ -12,7 +12,7 @@ import (
 var user utils.User
 
 func prepTest() {
-	db.InitDB()
+	db.ResetDB()
 	utils.NO_HANDLER = true
 	user = utils.DefUser
 	user.UID = uuid.NewString()

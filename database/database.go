@@ -17,24 +17,23 @@ var DB *sql.DB
 * It checks for existing tables and currently removes them
 * It then creates the games and players tables
  */
-func InitDB() {
-	const (
-		host = "93.107.46.227"
-		port = 5432
-		user = "ngdbu"
-		pass = "ngp"
-		dbName = "ngdb"
-	)
+func InitDB(config utils.Config) {
+	dbc := config.Database
 
-	dbInfo := fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=disable",
-							host, port, user, pass, dbName)
+	dbInfo := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=disable",
+		dbc.Host, dbc.Port, dbc.User, dbc.Pass, dbc.Name)
 	var err error
 	DB, err = sql.Open("postgres", dbInfo)
 	if err != nil {
 		log.Fatalf("[Error] Failed to open connection to sql server: %v", err)
 	}
 
-	_, err = DB.Query("DROP TABLE IF EXISTS games;")
+	ResetDB()
+}
+
+func ResetDB() {
+
+	_, err := DB.Query("DROP TABLE IF EXISTS games;")
 	if err != nil {
 		log.Fatalf("[Error] Failed to drop games table: %v", err)
 	}
