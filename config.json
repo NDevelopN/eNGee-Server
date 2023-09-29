@@ -4,7 +4,7 @@
     },
 
     "database": {
-        "host": "93.107.46.227",
+        "host": "localhost",
         "port": "5432",
         "user": "ngdbu",
         "pass": "ngp",
