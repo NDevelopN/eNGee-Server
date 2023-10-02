@@ -20,8 +20,8 @@ func loadEnv() {
 		config.Database.Host = os.Getenv("POSTGRES_HOST")
 		config.Database.Port = os.Getenv("POSTGRES_OUTER")
 		config.Database.User = os.Getenv("POSTGRES_USER")
-		config.Database.Pass = os.Getenv("POSTGRES_PASS")
-		config.Database.Name = os.Getenv("POSTGRES_NAME")
+		config.Database.Pass = os.Getenv("POSTGRES_PASSWORD")
+		config.Database.Name = os.Getenv("POSTGRES_DB")
 	} else {
 		log.Printf("Environment doesn't seem to be set. Checking config file.")
 		loadConfig()
