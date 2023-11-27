@@ -6,15 +6,28 @@ import (
 	"github.com/google/uuid"
 )
 
+type user struct {
+	UID    string
+	Name   string
+	Status string
+}
+
+var users []user
+
 func CreateUser(name string) (string, error) {
 	err := validateUserName(name)
 	if err != nil {
 		return "", err
 	}
 
-	id := uuid.NewString()
+	var newUser user
+	newUser.UID = uuid.NewString()
+	newUser.Name = name
+	newUser.Status = "New"
 
-	return id, nil
+	users = append(users, newUser)
+
+	return newUser.UID, nil
 }
 
 func validateUserName(name string) error {
