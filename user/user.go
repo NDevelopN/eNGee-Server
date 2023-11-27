@@ -58,6 +58,18 @@ func UpdateUserName(uid string, name string) error {
 	return nil
 }
 
+func UpdateUserStatus(uid string, status string) error {
+	user, err := getUserByID(uid)
+	if err != nil {
+		return err
+	}
+
+	user.Status = status
+	users[uid] = user
+
+	return nil
+}
+
 func getUserByID(uid string) (user, error) {
 	var err error
 

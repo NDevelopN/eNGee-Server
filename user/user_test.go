@@ -13,6 +13,8 @@ var testUser = user{
 const testUserName = "Test User"
 const newTestName = "New Name"
 
+const updatedStatus = "Updated"
+
 func TestCreateUser(t *testing.T) {
 	id, err := CreateUser(testUserName)
 	if id == "" || err != nil {
@@ -37,6 +39,18 @@ func TestUpdateUserName(t *testing.T) {
 	err := UpdateUserName(id, newTestName)
 	if err != nil {
 		t.Fatalf(`UpdateUserName(%s, %s) = %v, want nil`, id, newTestName, err)
+	}
+
+	checkExpectedUserData(t, id, tuInstance)
+}
+
+func TestUpdateUserStatus(t *testing.T) {
+	id, tuInstance := setupUserTest()
+	tuInstance.Status = updatedStatus
+
+	err := UpdateUserStatus(id, updatedStatus)
+	if err != nil {
+		t.Fatalf(`UpdateUserStatus(%s, %s) = %v, want nil`, id, updatedStatus, err)
 	}
 
 	checkExpectedUserData(t, id, tuInstance)
