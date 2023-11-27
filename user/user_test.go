@@ -82,6 +82,17 @@ func TestUpdateUserStatus(t *testing.T) {
 	checkExpectedUserData(t, id, tuInstance)
 }
 
+func TestDeleteUser(t *testing.T) {
+	id, _ := setupUserTest()
+
+	err := DeleteUser(id)
+	if err != nil {
+		t.Fatalf(`DeleteUser(Valid) = %v, want nil`, err)
+	}
+
+	confirmUserNotExist(t, id)
+}
+
 func setupUserTest() (string, user) {
 	id, _ := CreateUser(testUserName)
 
@@ -94,6 +105,13 @@ func setupUserTest() (string, user) {
 func checkExpectedUserData(t *testing.T, id string, expected user) {
 	user, err := GetUser(id)
 	if user != expected || err != nil {
-		t.Fatalf(`GetUser(UpdateUser) = %v, %v, want %v, nil`, user, err, expected)
+		t.Fatalf(`GetUser(UpdatedUser) = %v, %v, want %v, nil`, user, err, expected)
+	}
+}
+
+func confirmUserNotExist(t *testing.T, id string) {
+	user, err := GetUser(id)
+	if err == nil {
+		t.Fatalf(`GetUser(DeletedUser) %v, %v, want nil, err`, user, err)
 	}
 }

@@ -70,6 +70,17 @@ func UpdateUserStatus(uid string, status string) error {
 	return nil
 }
 
+func DeleteUser(uid string) error {
+	_, err := getUserByID(uid)
+	if err != nil {
+		return err
+	}
+
+	delete(users, uid)
+
+	return nil
+}
+
 func getUserByID(uid string) (user, error) {
 	var err error
 
