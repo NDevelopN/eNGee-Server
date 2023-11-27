@@ -36,3 +36,14 @@ func validateUserName(name string) error {
 
 	return nil
 }
+
+func GetUser(uid string) (user, error) {
+	var err error = nil
+	user, found := users[uid]
+
+	if !found {
+		err = fmt.Errorf("no user found with id: %q", uid)
+	}
+
+	return user, err
+}
