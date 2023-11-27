@@ -5,6 +5,14 @@ import "testing"
 const testRoomName = "Test Room"
 const newRoomName = "New Room"
 
+var testRoom = room{
+	RID:     "",
+	Name:    testRoomName,
+	Type:    "None",
+	Status:  "New",
+	CurPlrs: 0,
+}
+
 func TestCreateRoom(t *testing.T) {
 	id, err := CreateRoom(testRoomName)
 	if id == "" || err != nil {
@@ -33,4 +41,22 @@ func TestCreateRoomNoName(t *testing.T) {
 	if id != "" || err == nil {
 		t.Fatalf(`CreateRoom(EmptyName) = %q, %v, want "", nil`, id, err)
 	}
+}
+
+func TestGetRoom(t *testing.T) {
+	id, trInstance := setupRoomTest()
+
+	room, err := GetRoom(id)
+	if room != trInstance || err != nil {
+		t.Fatalf(`GetRoom(ValidID) = %v, %v, want %v, nil`, room, err, trInstance)
+	}
+}
+
+func setupRoomTest() (string, room) {
+	id, _ := CreateRoom(testRoomName)
+
+	tuInstance := testRoom
+	tuInstance.RID = id
+
+	return id, tuInstance
 }

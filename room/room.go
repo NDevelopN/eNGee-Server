@@ -2,6 +2,7 @@ package room
 
 import (
 	"Engee-Server/utils"
+	"fmt"
 
 	"github.com/google/uuid"
 )
@@ -34,4 +35,19 @@ func CreateRoom(name string) (string, error) {
 	rooms[id] = newRoom
 
 	return id, nil
+}
+
+func GetRoom(rid string) (room, error) {
+	return getRoomByID(rid)
+}
+
+func getRoomByID(rid string) (room, error) {
+	var err error
+
+	room, found := rooms[rid]
+	if !found {
+		err = fmt.Errorf("no room found with id: %q", rid)
+	}
+
+	return room, err
 }
