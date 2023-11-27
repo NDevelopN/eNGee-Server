@@ -1,6 +1,12 @@
 package room
 
-import "testing"
+import (
+	"testing"
+
+	"github.com/google/uuid"
+)
+
+var randomID = uuid.NewString()
 
 const testRoomName = "Test Room"
 const newRoomName = "New Room"
@@ -49,6 +55,22 @@ func TestGetRoom(t *testing.T) {
 	room, err := GetRoom(id)
 	if room != trInstance || err != nil {
 		t.Fatalf(`GetRoom(ValidID) = %v, %v, want %v, nil`, room, err, trInstance)
+	}
+}
+
+func TestGetRoomEmptyID(t *testing.T) {
+	setupRoomTest()
+	room, err := GetRoom("")
+	if err == nil {
+		t.Fatalf(`GetRoom(EmptyID) = %v, %v, want nil, err`, room, err)
+	}
+}
+
+func TestGetUserInvalidID(t *testing.T) {
+	setupRoomTest()
+	room, err := GetRoom(randomID)
+	if err == nil {
+		t.Fatalf(`GetUser(InvalidID) = %v, %v, want nil, err`, room, err)
 	}
 }
 
