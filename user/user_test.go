@@ -42,4 +42,9 @@ func TestUpdateUserName(t *testing.T) {
 	if err != nil {
 		t.Fatalf(`UpdateUserName(%s, %s) = %v, want nil`, id, newTestName, err)
 	}
+
+	user, err := GetUser(id)
+	if user != tuInstance || err != nil {
+		t.Fatalf(`UpdateUserName(%s, %s) = %v, %v, want %v, nil`, id, newTestName, user, err, tuInstance)
+	}
 }
