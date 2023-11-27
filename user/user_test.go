@@ -178,6 +178,34 @@ func TestDeleteUser(t *testing.T) {
 	confirmUserNotExist(t, id)
 }
 
+func TestDeleteEmptyID(t *testing.T) {
+	setupUserTest()
+
+	err := DeleteUser("")
+	if err == nil {
+		t.Fatalf(`DeleteUser(EmptyID) = %v, want err`, err)
+	}
+}
+
+func TestDeleteInvalidID(t *testing.T) {
+	setupUserTest()
+
+	err := DeleteUser(randomID)
+	if err == nil {
+		t.Fatalf(`DeleteUser(InvalidID) = %v, want err`, err)
+	}
+}
+
+func TestDeleteDouble(t *testing.T) {
+	id, _ := setupUserTest()
+
+	DeleteUser(id)
+	err := DeleteUser(id)
+	if err == nil {
+		t.Fatalf(`DeleteUser(Double) = %v, want err`, err)
+	}
+}
+
 func setupUserTest() (string, user) {
 	id, _ := CreateUser(testUserName)
 
