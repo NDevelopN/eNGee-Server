@@ -49,7 +49,7 @@ func TestGetUserEmptyID(t *testing.T) {
 	}
 }
 
-func TestGetUserInvlidID(t *testing.T) {
+func TestGetUserInvalidID(t *testing.T) {
 	setupUserTest()
 	user, err := GetUser(randomID)
 	if err == nil {
