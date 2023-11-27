@@ -121,7 +121,7 @@ func TestUpdateUserNameEmptyID(t *testing.T) {
 func TestUpdateUserStatusEmptyStatus(t *testing.T) {
 	id, tuInstance := setupUserTest()
 
-	err := UpdateUserName(id, "")
+	err := UpdateUserStatus(id, "")
 	if err == nil {
 		t.Fatalf(`UpdateUserStatus(EmptyStatus) = %v, want err`, err)
 	}
