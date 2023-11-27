@@ -6,15 +6,15 @@ import (
 	"github.com/google/uuid"
 )
 
-type game struct {
-	GID     string
+type room struct {
+	RID     string
 	Name    string
 	Type    string
 	Status  string
 	CurPlrs int
 }
 
-var games = make(map[string]game)
+var rooms = make(map[string]room)
 
 func CreateRoom(name string) (string, error) {
 	err := utils.ValidateInputRefuseEmpty(name, nil)
@@ -23,15 +23,15 @@ func CreateRoom(name string) (string, error) {
 	}
 
 	id := uuid.NewString()
-	newGame := game{
-		GID:     id,
+	newRoom := room{
+		RID:     id,
 		Name:    name,
 		Type:    "None",
 		Status:  "New",
 		CurPlrs: 0,
 	}
 
-	games[id] = newGame
+	rooms[id] = newRoom
 
 	return id, nil
 }
