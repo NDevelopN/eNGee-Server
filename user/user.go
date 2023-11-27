@@ -12,7 +12,7 @@ type user struct {
 	Status string
 }
 
-var users []user
+var users = make(map[string]user)
 
 func CreateUser(name string) (string, error) {
 	err := validateUserName(name)
@@ -25,8 +25,7 @@ func CreateUser(name string) (string, error) {
 	newUser.Name = name
 	newUser.Status = "New"
 
-	users = append(users, newUser)
-
+	users[newUser.UID] = newUser
 	return newUser.UID, nil
 }
 
