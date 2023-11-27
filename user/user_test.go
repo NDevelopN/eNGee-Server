@@ -31,7 +31,6 @@ func TestCreateUserNoName(t *testing.T) {
 
 func TestGetUser(t *testing.T) {
 	id, tuInstance := setupUserTest()
-	const updatedStatus = "Updated"
 	user, err := GetUser(id)
 	if user != tuInstance || err != nil {
 		t.Fatalf(`GetUser(%s) = %v, %v, want obj, nil`, id, user, err)
