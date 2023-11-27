@@ -70,6 +70,27 @@ func TestUpdateUserName(t *testing.T) {
 	checkExpectedUserData(t, id, tuInstance)
 }
 
+func TestUpdateUserNameEmptyName(t *testing.T) {
+	id, tuInstance := setupUserTest()
+
+	err := UpdateUserName(id, "")
+	if err == nil {
+		t.Fatalf(`UpdateUserName(EmptyName) = %v, want err`, err)
+	}
+
+	checkExpectedUserData(t, id, tuInstance)
+}
+
+func TestUpdateUserNameNoChange(t *testing.T) {
+	id, tuInstance := setupUserTest()
+
+	err := UpdateUserName(id, testUserName)
+	if err != nil {
+		t.Fatalf(`UpdateUserName(NoChange) = %v, want err`, err)
+	}
+
+	checkExpectedUserData(t, id, tuInstance)
+}
 func TestUpdateUserNameEmptyID(t *testing.T) {
 	id, tuInstance := setupUserTest()
 
@@ -81,6 +102,26 @@ func TestUpdateUserNameEmptyID(t *testing.T) {
 	checkExpectedUserData(t, id, tuInstance)
 }
 
+func TestUpdateUserStatusEmptyStatus(t *testing.T) {
+	id, tuInstance := setupUserTest()
+
+	err := UpdateUserName(id, "")
+	if err == nil {
+		t.Fatalf(`UpdateUserStatus(EmptyStatus) = %v, want err`, err)
+	}
+
+	checkExpectedUserData(t, id, tuInstance)
+}
+func TestUpdateUserStatusNoChange(t *testing.T) {
+	id, tuInstance := setupUserTest()
+
+	err := UpdateUserStatus(id, testUser.Status)
+	if err != nil {
+		t.Fatalf(`UpdateUserStatus(NoChange) = %v, want err`, err)
+	}
+
+	checkExpectedUserData(t, id, tuInstance)
+}
 func TestUpdateUserNameInvalidID(t *testing.T) {
 	id, tuInstance := setupUserTest()
 
