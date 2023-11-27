@@ -11,6 +11,7 @@ var testUser = user{
 }
 
 const testUserName = "Test User"
+const newTestName = "New Name"
 
 func TestCreateUser(t *testing.T) {
 	id, err := CreateUser(testUserName)
@@ -27,5 +28,18 @@ func TestGetUser(t *testing.T) {
 	user, err := GetUser(id)
 	if user != testUser || err != nil {
 		t.Fatalf(`GetUser(%s) = %v, %v, want obj, nil`, id, user, err)
+	}
+}
+
+func TestUpdateUserName(t *testing.T) {
+	id, _ := CreateUser(testUserName)
+
+	tuInstance := testUser
+	tuInstance.UID = id
+	tuInstance.Name = newTestName
+
+	err := UpdateUserName(id, newTestName)
+	if err != nil {
+		t.Fatalf(`UpdateUserName(%s, %s) = %v, want nil`, id, newTestName, err)
 	}
 }
