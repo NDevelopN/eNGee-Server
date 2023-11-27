@@ -22,9 +22,16 @@ func TestCreateUser(t *testing.T) {
 	}
 }
 
+func TestCreateUserNoName(t *testing.T) {
+	id, err := CreateUser("")
+	if id != "" || err == nil {
+		t.Fatalf(`CreateUser("") = %q, %v, want "", err`, id, err)
+	}
+}
+
 func TestGetUser(t *testing.T) {
 	id, tuInstance := setupUserTest()
-
+	const updatedStatus = "Updated"
 	user, err := GetUser(id)
 	if user != tuInstance || err != nil {
 		t.Fatalf(`GetUser(%s) = %v, %v, want obj, nil`, id, user, err)
