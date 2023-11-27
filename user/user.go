@@ -3,6 +3,8 @@ package user
 import (
 	"fmt"
 
+	"Engee-Server/utils"
+
 	"github.com/google/uuid"
 )
 
@@ -15,7 +17,7 @@ type user struct {
 var users = make(map[string]user)
 
 func CreateUser(name string) (string, error) {
-	err := validateInputNoEmpty(name, nil)
+	err := utils.ValidateInputRefuseEmpty(name, nil)
 	if err != nil {
 		return "", err
 	}
@@ -34,7 +36,7 @@ func GetUser(uid string) (user, error) {
 }
 
 func UpdateUserName(uid string, name string) error {
-	err := validateInputNoEmpty(name, nil)
+	err := utils.ValidateInputRefuseEmpty(name, nil)
 	if err != nil {
 		return err
 	}
@@ -51,7 +53,7 @@ func UpdateUserName(uid string, name string) error {
 }
 
 func UpdateUserStatus(uid string, status string) error {
-	err := validateInputNoEmpty(status, nil)
+	err := utils.ValidateInputRefuseEmpty(status, nil)
 	if err != nil {
 		return err
 	}
@@ -65,27 +67,6 @@ func UpdateUserStatus(uid string, status string) error {
 	users[uid] = user
 
 	return nil
-}
-
-func validateInputNoEmpty(input string, allowed map[string]struct{}) error {
-	if input == "" {
-		return fmt.Errorf("input is empty")
-	}
-
-	return validateInput(input, allowed)
-}
-
-func validateInput(input string, allowed map[string]struct{}) error {
-	if len(allowed) == 0 {
-		return nil
-	}
-
-	_, contains := allowed[input]
-	if contains {
-		return nil
-	}
-
-	return fmt.Errorf("%q is not a valid input", input)
 }
 
 func DeleteUser(uid string) error {
