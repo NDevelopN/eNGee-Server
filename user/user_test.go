@@ -2,6 +2,8 @@ package user
 
 import (
 	"testing"
+
+	"github.com/google/uuid"
 )
 
 var testUser = user{
@@ -9,6 +11,8 @@ var testUser = user{
 	Name:   testUserName,
 	Status: "New",
 }
+
+var randomID = uuid.NewString()
 
 const testUserName = "Test User"
 const newTestName = "New Name"
@@ -33,7 +37,23 @@ func TestGetUser(t *testing.T) {
 	id, tuInstance := setupUserTest()
 	user, err := GetUser(id)
 	if user != tuInstance || err != nil {
-		t.Fatalf(`GetUser(%s) = %v, %v, want obj, nil`, id, user, err)
+		t.Fatalf(`GetUser(ValidID) = %v, %v, want obj, nil`, user, err)
+	}
+}
+
+func TestGetUserEmptyID(t *testing.T) {
+	setupUserTest()
+	user, err := GetUser("")
+	if err == nil {
+		t.Fatalf(`GetUser(EmptyID) = %v, %v, want nil, err`, user, err)
+	}
+}
+
+func TestGetUserInvlidID(t *testing.T) {
+	setupUserTest()
+	user, err := GetUser(randomID)
+	if err == nil {
+		t.Fatalf(`GetUser(InvalidID) = %v, %v, want nil, err`, user, err)
 	}
 }
 
