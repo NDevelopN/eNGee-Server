@@ -21,21 +21,17 @@ func TestCreateUser(t *testing.T) {
 }
 
 func TestGetUser(t *testing.T) {
-	id, _ := CreateUser(testUserName)
-
-	testUser.UID = id
+	id, tuInstance := setupUserTest()
 
 	user, err := GetUser(id)
-	if user != testUser || err != nil {
+	if user != tuInstance || err != nil {
 		t.Fatalf(`GetUser(%s) = %v, %v, want obj, nil`, id, user, err)
 	}
 }
 
 func TestUpdateUserName(t *testing.T) {
-	id, _ := CreateUser(testUserName)
+	id, tuInstance := setupUserTest()
 
-	tuInstance := testUser
-	tuInstance.UID = id
 	tuInstance.Name = newTestName
 
 	err := UpdateUserName(id, newTestName)
@@ -43,8 +39,21 @@ func TestUpdateUserName(t *testing.T) {
 		t.Fatalf(`UpdateUserName(%s, %s) = %v, want nil`, id, newTestName, err)
 	}
 
+	checkExpectedUserData(t, id, tuInstance)
+}
+
+func setupUserTest() (string, user) {
+	id, _ := CreateUser(testUserName)
+
+	tuInstance := testUser
+	tuInstance.UID = id
+
+	return id, tuInstance
+}
+
+func checkExpectedUserData(t *testing.T, id string, expected user) {
 	user, err := GetUser(id)
-	if user != tuInstance || err != nil {
-		t.Fatalf(`UpdateUserName(%s, %s) = %v, %v, want %v, nil`, id, newTestName, user, err, tuInstance)
+	if user != expected || err != nil {
+		t.Fatalf(`GetUser(UpdateUser) = %v, %v, want %v, nil`, user, err, expected)
 	}
 }
