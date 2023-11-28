@@ -150,7 +150,7 @@ func TestUpdateRoomStatus(t *testing.T) {
 
 	err := UpdateRoomStatus(id, updatedRoomStatus)
 	if err != nil {
-		t.Fatalf(`UpdateRoomStatus(%s, %s) = %v, want nil`, id, updatedRoomStatus, err)
+		t.Fatalf(`UpdateRoomStatus(Valid) = %v, want nil`, err)
 	}
 
 	checkExpectedRoomData(t, id, trInstance)
@@ -184,7 +184,7 @@ func TestUpdateRoomType(t *testing.T) {
 
 	err := UpdateRoomType(id, updatedRoomType)
 	if err != nil {
-		t.Fatalf(`UpdateRoomType(%s, %s) = %v, want nil`, id, updatedRoomType, err)
+		t.Fatalf(`UpdateRoomType(Valid) = %v, want nil`, err)
 	}
 
 	checkExpectedRoomData(t, id, trInstance)

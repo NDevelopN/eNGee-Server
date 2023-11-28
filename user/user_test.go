@@ -22,7 +22,7 @@ const updatedUserStatus = "Updated"
 func TestCreateUser(t *testing.T) {
 	id, err := CreateUser(testUserName)
 	if id == "" || err != nil {
-		t.Fatalf(`CreateUser(%s) = %q, %v, want "uuid", nil`, testUserName, id, err)
+		t.Fatalf(`CreateUser(Valid) = %q, %v, want "uuid", nil`, id, err)
 	}
 }
 
@@ -42,10 +42,10 @@ func TestCreateSameNameUsers(t *testing.T) {
 	}
 }
 
-func TestCreateUserNoName(t *testing.T) {
+func TestCreateUserEmptyName(t *testing.T) {
 	id, err := CreateUser("")
 	if id != "" || err == nil {
-		t.Fatalf(`CreateUser("") = %q, %v, want "", err`, id, err)
+		t.Fatalf(`CreateUser(EmptyName) = %q, %v, want "", err`, id, err)
 	}
 }
 
@@ -155,7 +155,7 @@ func TestUpdateUserStatus(t *testing.T) {
 
 	err := UpdateUserStatus(id, updatedUserStatus)
 	if err != nil {
-		t.Fatalf(`UpdateUserStatus(%s, %s) = %v, want nil`, id, updatedUserStatus, err)
+		t.Fatalf(`UpdateUserStatus(Valid) = %v, want nil`, err)
 	}
 
 	checkExpectedUserData(t, id, tuInstance)
