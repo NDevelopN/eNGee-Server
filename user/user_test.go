@@ -15,9 +15,9 @@ var testUser = user{
 var randomID = uuid.NewString()
 
 const testUserName = "Test User"
-const newTestName = "New Name"
+const newUserName = "New Name"
 
-const updatedStatus = "Updated"
+const updatedUserStatus = "Updated"
 
 func TestCreateUser(t *testing.T) {
 	id, err := CreateUser(testUserName)
@@ -28,7 +28,7 @@ func TestCreateUser(t *testing.T) {
 
 func TestCreateUniqueNameUsers(t *testing.T) {
 	CreateUser(testUserName)
-	id, err := CreateUser(newTestName)
+	id, err := CreateUser(newUserName)
 	if id == "" || err != nil {
 		t.Fatalf(`CreateUser(Unique Name) = %q, %v, want "uuid", nil`, id, err)
 	}
@@ -76,9 +76,9 @@ func TestGetUserInvalidID(t *testing.T) {
 func TestUpdateUserName(t *testing.T) {
 	id, tuInstance := setupUserTest()
 
-	tuInstance.Name = newTestName
+	tuInstance.Name = newUserName
 
-	err := UpdateUserName(id, newTestName)
+	err := UpdateUserName(id, newUserName)
 	if err != nil {
 		t.Fatalf(`UpdateUserName(Valid) = %v, want nil`, err)
 	}
@@ -110,7 +110,7 @@ func TestUpdateUserNameNoChange(t *testing.T) {
 func TestUpdateUserNameEmptyID(t *testing.T) {
 	id, tuInstance := setupUserTest()
 
-	err := UpdateUserName("", newTestName)
+	err := UpdateUserName("", newUserName)
 	if err == nil {
 		t.Fatalf(`UpdateUserName(EmptyID) = %v, want err`, err)
 	}
@@ -141,7 +141,7 @@ func TestUpdateUserStatusNoChange(t *testing.T) {
 func TestUpdateUserNameInvalidID(t *testing.T) {
 	id, tuInstance := setupUserTest()
 
-	err := UpdateUserName(randomID, newTestName)
+	err := UpdateUserName(randomID, newUserName)
 	if err == nil {
 		t.Fatalf(`UpdateUserName(InvalidID) = %v, want err`, err)
 	}
@@ -151,11 +151,11 @@ func TestUpdateUserNameInvalidID(t *testing.T) {
 
 func TestUpdateUserStatus(t *testing.T) {
 	id, tuInstance := setupUserTest()
-	tuInstance.Status = updatedStatus
+	tuInstance.Status = updatedUserStatus
 
-	err := UpdateUserStatus(id, updatedStatus)
+	err := UpdateUserStatus(id, updatedUserStatus)
 	if err != nil {
-		t.Fatalf(`UpdateUserStatus(%s, %s) = %v, want nil`, id, updatedStatus, err)
+		t.Fatalf(`UpdateUserStatus(%s, %s) = %v, want nil`, id, updatedUserStatus, err)
 	}
 
 	checkExpectedUserData(t, id, tuInstance)
@@ -164,7 +164,7 @@ func TestUpdateUserStatus(t *testing.T) {
 func TestUpdateUserStatusEmptyID(t *testing.T) {
 	id, tuInstance := setupUserTest()
 
-	err := UpdateUserName("", newTestName)
+	err := UpdateUserName("", newUserName)
 	if err == nil {
 		t.Fatalf(`UpdateUserStatus(EmptyID) = %v, want err`, err)
 	}
@@ -175,7 +175,7 @@ func TestUpdateUserStatusEmptyID(t *testing.T) {
 func TestUpdateUserStatusInvalidID(t *testing.T) {
 	id, tuInstance := setupUserTest()
 
-	err := UpdateUserStatus(randomID, updatedStatus)
+	err := UpdateUserStatus(randomID, updatedUserStatus)
 	if err == nil {
 		t.Fatalf(`UpdateUserStatus(InvalidID) = %v, want err`, err)
 	}
