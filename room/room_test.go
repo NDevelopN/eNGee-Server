@@ -26,14 +26,20 @@ func TestCreateRoom(t *testing.T) {
 	if id == "" || err != nil {
 		t.Fatalf(`CreateRoom(Valid) = %q, %v, want "uuid", nil`, id, err)
 	}
+
+	t.Cleanup(cleanUpAfterTest)
 }
 
 func TestCreateUniqueNameRooms(t *testing.T) {
 	CreateRoom(testRoomName)
+
 	id, err := CreateRoom(newRoomName)
+
 	if id == "" || err != nil {
 		t.Fatalf(`CreateRoom(Unique Name) = %q, %v, want "uuid", nil`, id, err)
 	}
+
+	t.Cleanup(cleanUpAfterTest)
 }
 
 func TestCreateSameNameRooms(t *testing.T) {
@@ -42,6 +48,8 @@ func TestCreateSameNameRooms(t *testing.T) {
 	if id == "" || err != nil {
 		t.Fatalf(`CreateRoom(Same Name) = %q, %v, want "uuid", nil`, id, err)
 	}
+
+	t.Cleanup(cleanUpAfterTest)
 }
 
 func TestCreateRoomNoName(t *testing.T) {
@@ -49,6 +57,8 @@ func TestCreateRoomNoName(t *testing.T) {
 	if id != "" || err == nil {
 		t.Fatalf(`CreateRoom(EmptyName) = %q, %v, want "", nil`, id, err)
 	}
+
+	t.Cleanup(cleanUpAfterTest)
 }
 
 func TestGetRoom(t *testing.T) {
@@ -99,6 +109,7 @@ func TestGetRoomsEmpty(t *testing.T) {
 		t.Fatalf(`GetRooms(Empty) = %v, %v, want [], err`, rooms, err)
 	}
 }
+
 func TestUpdateRoomName(t *testing.T) {
 	id, trInstance := setupRoomTest(t)
 
@@ -133,6 +144,7 @@ func TestUpdateRoomNameNoChange(t *testing.T) {
 
 	checkExpectedRoomData(t, id, trInstance)
 }
+
 func TestUpdateRoomNameEmptyID(t *testing.T) {
 	id, trInstance := setupRoomTest(t)
 

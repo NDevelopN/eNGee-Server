@@ -24,6 +24,8 @@ func TestCreateUser(t *testing.T) {
 	if id == "" || err != nil {
 		t.Fatalf(`CreateUser(Valid) = %q, %v, want "uuid", nil`, id, err)
 	}
+
+	t.Cleanup(cleanAfterTest)
 }
 
 func TestCreateUniqueNameUsers(t *testing.T) {
@@ -32,6 +34,8 @@ func TestCreateUniqueNameUsers(t *testing.T) {
 	if id == "" || err != nil {
 		t.Fatalf(`CreateUser(Unique Name) = %q, %v, want "uuid", nil`, id, err)
 	}
+
+	t.Cleanup(cleanAfterTest)
 }
 
 func TestCreateSameNameUsers(t *testing.T) {
@@ -40,6 +44,8 @@ func TestCreateSameNameUsers(t *testing.T) {
 	if id == "" || err != nil {
 		t.Fatalf(`CreateUser(Same Name) = %q, %v, want "uuid", nil`, id, err)
 	}
+
+	t.Cleanup(cleanAfterTest)
 }
 
 func TestCreateUserEmptyName(t *testing.T) {
@@ -47,6 +53,8 @@ func TestCreateUserEmptyName(t *testing.T) {
 	if id != "" || err == nil {
 		t.Fatalf(`CreateUser(EmptyName) = %q, %v, want "", err`, id, err)
 	}
+
+	t.Cleanup(cleanAfterTest)
 }
 
 func TestGetUser(t *testing.T) {
