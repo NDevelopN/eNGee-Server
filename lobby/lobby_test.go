@@ -16,7 +16,7 @@ const testUserName = "Test User"
 const moreUserCount = 3
 
 func TestJoinUserToRoom(t *testing.T) {
-	uid, rid := createUserAndRoom()
+	uid, rid := createUserAndRoom(t)
 
 	err := JoinUserToRoom(uid, rid)
 	if err != nil {
@@ -25,7 +25,7 @@ func TestJoinUserToRoom(t *testing.T) {
 }
 
 func TestJoinUserToRoomInvalidUID(t *testing.T) {
-	_, rid := createUserAndRoom()
+	_, rid := createUserAndRoom(t)
 
 	err := JoinUserToRoom(randomID, rid)
 	if err == nil {
@@ -34,7 +34,7 @@ func TestJoinUserToRoomInvalidUID(t *testing.T) {
 }
 
 func TestJoinUserToRoomInvalidRID(t *testing.T) {
-	uid, _ := createUserAndRoom()
+	uid, _ := createUserAndRoom(t)
 
 	err := JoinUserToRoom(uid, randomID)
 	if err == nil {
@@ -43,7 +43,7 @@ func TestJoinUserToRoomInvalidRID(t *testing.T) {
 }
 
 func TestJoinUserToRoomDouble(t *testing.T) {
-	uid, rid := createUserAndRoom()
+	uid, rid := createUserAndRoom(t)
 
 	JoinUserToRoom(uid, rid)
 
@@ -54,7 +54,7 @@ func TestJoinUserToRoomDouble(t *testing.T) {
 }
 
 func TestRemoveUserFromRoom(t *testing.T) {
-	uid, rid := setupLobbyTest()
+	uid, rid := setupLobbyTest(t)
 
 	err := RemoveUserFromRoom(uid, rid)
 	if err != nil {
@@ -63,7 +63,7 @@ func TestRemoveUserFromRoom(t *testing.T) {
 }
 
 func TestRemoveUserFromRoomInvalidUID(t *testing.T) {
-	_, rid := setupLobbyTest()
+	_, rid := setupLobbyTest(t)
 
 	err := RemoveUserFromRoom(randomID, rid)
 	if err == nil {
@@ -72,7 +72,7 @@ func TestRemoveUserFromRoomInvalidUID(t *testing.T) {
 }
 
 func TestRemoveUserFromRoomInvalidRID(t *testing.T) {
-	uid, _ := setupLobbyTest()
+	uid, _ := setupLobbyTest(t)
 
 	err := RemoveUserFromRoom(uid, randomID)
 	if err == nil {
@@ -81,7 +81,7 @@ func TestRemoveUserFromRoomInvalidRID(t *testing.T) {
 }
 
 func TestRemoveUserFromRoomDouble(t *testing.T) {
-	uid, rid := setupLobbyTest()
+	uid, rid := setupLobbyTest(t)
 
 	RemoveUserFromRoom(uid, rid)
 
@@ -93,7 +93,7 @@ func TestRemoveUserFromRoomDouble(t *testing.T) {
 }
 
 func TestGetUsersInRoom(t *testing.T) {
-	uid, rid := setupLobbyTest()
+	uid, rid := setupLobbyTest(t)
 
 	users, err := GetUsersInRoom(rid)
 	if len(users) != 1 || err != nil {
@@ -102,13 +102,13 @@ func TestGetUsersInRoom(t *testing.T) {
 }
 
 func TestGetMultiUsersInRoom(t *testing.T) {
-	uid, rid := setupLobbyTest()
+	uid, rid := setupLobbyTest(t)
 
 	var expected = []string{
 		uid,
 	}
 
-	expected = append(expected, addMoreUsersToLobby(rid)...)
+	expected = append(expected, addMoreUsersToLobby(t, rid)...)
 
 	users, err := GetUsersInRoom(rid)
 	if len(users) != len(expected) || err != nil {
@@ -123,7 +123,7 @@ func TestGetMultiUsersInRoom(t *testing.T) {
 }
 
 func TestGetUsersInRoomInvalidRID(t *testing.T) {
-	setupLobbyTest()
+	setupLobbyTest(t)
 
 	users, err := GetUsersInRoom(randomID)
 	if len(users) != 0 || err == nil {
@@ -132,7 +132,7 @@ func TestGetUsersInRoomInvalidRID(t *testing.T) {
 }
 
 func TestGetUsersInEmptyRoom(t *testing.T) {
-	_, rid := createUserAndRoom()
+	_, rid := createUserAndRoom(t)
 
 	users, err := GetUsersInRoom(rid)
 	if len(users) != 0 || err == nil {
@@ -141,7 +141,7 @@ func TestGetUsersInEmptyRoom(t *testing.T) {
 }
 
 func TestGetUsersInRoomAfterDelete(t *testing.T) {
-	uid, rid := setupLobbyTest()
+	uid, rid := setupLobbyTest(t)
 
 	RemoveUserFromRoom(uid, rid)
 
@@ -151,22 +151,31 @@ func TestGetUsersInRoomAfterDelete(t *testing.T) {
 	}
 }
 
-func setupLobbyTest() (string, string) {
-	uid, rid := createUserAndRoom()
+func setupLobbyTest(t *testing.T) (string, string) {
+	uid, rid := createUserAndRoom(t)
 
 	JoinUserToRoom(uid, rid)
 
+	t.Cleanup(func() {
+		lobbies = make(map[string][]string)
+	})
+
 	return uid, rid
 }
 
-func createUserAndRoom() (string, string) {
+func createUserAndRoom(t *testing.T) (string, string) {
 	uid, _ := user.CreateUser(testUserName)
 	rid, _ := room.CreateRoom(testRoomName)
 
+	t.Cleanup(func() {
+		user.DeleteUser(uid)
+		room.DeleteRoom(rid)
+	})
+
 	return uid, rid
 }
 
-func addMoreUsersToLobby(rid string) []string {
+func addMoreUsersToLobby(t *testing.T, rid string) []string {
 	users := make([]string, 0)
 	i := 0
 	for i < moreUserCount {
@@ -175,6 +184,12 @@ func addMoreUsersToLobby(rid string) []string {
 		users = append(users, uid)
 		i++
 	}
+
+	t.Cleanup(func() {
+		for _, uid := range users {
+			user.DeleteUser(uid)
+		}
+	})
 
 	return users
 }
