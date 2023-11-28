@@ -8,11 +8,10 @@ import (
 )
 
 type room struct {
-	RID     string
-	Name    string
-	Type    string
-	Status  string
-	CurPlrs int
+	RID    string
+	Name   string
+	Type   string
+	Status string
 }
 
 var rooms = make(map[string]room)
@@ -25,11 +24,10 @@ func CreateRoom(name string) (string, error) {
 
 	id := uuid.NewString()
 	newRoom := room{
-		RID:     id,
-		Name:    name,
-		Type:    "None",
-		Status:  "New",
-		CurPlrs: 0,
+		RID:    id,
+		Name:   name,
+		Type:   "None",
+		Status: "New",
 	}
 
 	rooms[id] = newRoom

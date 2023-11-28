@@ -15,11 +15,10 @@ const updatedRoomStatus = "Updated"
 const updatedRoomType = "New Type"
 
 var testRoom = room{
-	RID:     "",
-	Name:    testRoomName,
-	Type:    "None",
-	Status:  "New",
-	CurPlrs: 0,
+	RID:    "",
+	Name:   testRoomName,
+	Type:   "None",
+	Status: "New",
 }
 
 func TestCreateRoom(t *testing.T) {
