@@ -98,6 +98,18 @@ func UpdateRoomType(rid string, rType string) error {
 
 	return nil
 }
+
+func DeleteRoom(rid string) error {
+	_, err := getRoomByID(rid)
+	if err != nil {
+		return err
+	}
+
+	delete(rooms, rid)
+
+	return nil
+}
+
 func getRoomByID(rid string) (room, error) {
 	var err error
 

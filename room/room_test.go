@@ -99,7 +99,6 @@ func TestGetRoomsEmpty(t *testing.T) {
 		t.Fatalf(`GetRooms(Empty) = %v, %v, want [], err`, rooms, err)
 	}
 }
-
 func TestUpdateRoomName(t *testing.T) {
 	id, trInstance := setupRoomTest()
 
@@ -222,6 +221,45 @@ func setupRoomTest() (string, room) {
 	return id, tuInstance
 }
 
+func TestDeleteRoom(t *testing.T) {
+	id, _ := setupRoomTest()
+
+	err := DeleteRoom(id)
+	if err != nil {
+		t.Fatalf(`DeleteRoom(Valid) = %v, want nil`, err)
+	}
+
+	confirmRoomNotExist(t, id)
+}
+
+func TestDeleteEmptyID(t *testing.T) {
+	setupRoomTest()
+
+	err := DeleteRoom("")
+	if err == nil {
+		t.Fatalf(`DeleteRoom(EmptyID) = %v, want err`, err)
+	}
+}
+
+func TestDeleteInvalidID(t *testing.T) {
+	setupRoomTest()
+
+	err := DeleteRoom(randomID)
+	if err == nil {
+		t.Fatalf(`DeleteRoom(InvalidID) = %v, want err`, err)
+	}
+}
+
+func TestDeleteDouble(t *testing.T) {
+	id, _ := setupRoomTest()
+
+	DeleteRoom(id)
+	err := DeleteRoom(id)
+	if err == nil {
+		t.Fatalf(`DeleteRoom(Double) = %v, want err`, err)
+	}
+}
+
 func setupAddRoomTest() (string, room) {
 	id, _ := CreateRoom(newRoomName)
 
@@ -233,8 +271,15 @@ func setupAddRoomTest() (string, room) {
 }
 
 func checkExpectedRoomData(t *testing.T, id string, expected room) {
-	user, err := GetRoom(id)
-	if user != expected || err != nil {
-		t.Fatalf(`GetRoom(UpdatedRoom) = %v, %v, want %v, nil`, user, err, expected)
+	room, err := GetRoom(id)
+	if room != expected || err != nil {
+		t.Fatalf(`GetRoom(UpdatedRoom) = %v, %v, want %v, nil`, room, err, expected)
+	}
+}
+
+func confirmRoomNotExist(t *testing.T, id string) {
+	room, err := GetRoom(id)
+	if err == nil {
+		t.Fatalf(`GetRoom(DeletedRoom) %v, %v, want nil, err`, room, err)
 	}
 }
