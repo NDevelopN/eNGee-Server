@@ -52,7 +52,7 @@ func TestCreateRoomNoName(t *testing.T) {
 }
 
 func TestGetRoom(t *testing.T) {
-	id, trInstance := setupRoomTest()
+	id, trInstance := setupRoomTest(t)
 
 	room, err := GetRoom(id)
 	if room != trInstance || err != nil {
@@ -61,7 +61,7 @@ func TestGetRoom(t *testing.T) {
 }
 
 func TestGetRoomEmptyID(t *testing.T) {
-	setupRoomTest()
+	setupRoomTest(t)
 	room, err := GetRoom("")
 	if err == nil {
 		t.Fatalf(`GetRoom(EmptyID) = %v, %v, want nil, err`, room, err)
@@ -69,7 +69,7 @@ func TestGetRoomEmptyID(t *testing.T) {
 }
 
 func TestGetRoomInvalidID(t *testing.T) {
-	setupRoomTest()
+	setupRoomTest(t)
 	room, err := GetRoom(randomID)
 	if err == nil {
 		t.Fatalf(`GetRoom(InvalidID) = %v, %v, want nil, err`, room, err)
@@ -77,7 +77,7 @@ func TestGetRoomInvalidID(t *testing.T) {
 }
 
 func TestGetRooms(t *testing.T) {
-	fID, fRoom := setupRoomTest()
+	fID, fRoom := setupRoomTest(t)
 	sID, sRoom := setupAddRoomTest()
 	expected := map[string]room{fID: fRoom, sID: sRoom}
 
@@ -100,7 +100,7 @@ func TestGetRoomsEmpty(t *testing.T) {
 	}
 }
 func TestUpdateRoomName(t *testing.T) {
-	id, trInstance := setupRoomTest()
+	id, trInstance := setupRoomTest(t)
 
 	trInstance.Name = newRoomName
 
@@ -113,7 +113,7 @@ func TestUpdateRoomName(t *testing.T) {
 }
 
 func TestUpdateRoomNameEmptyName(t *testing.T) {
-	id, trInstance := setupRoomTest()
+	id, trInstance := setupRoomTest(t)
 
 	err := UpdateRoomName(id, "")
 	if err == nil {
@@ -124,7 +124,7 @@ func TestUpdateRoomNameEmptyName(t *testing.T) {
 }
 
 func TestUpdateRoomNameNoChange(t *testing.T) {
-	id, trInstance := setupRoomTest()
+	id, trInstance := setupRoomTest(t)
 
 	err := UpdateRoomName(id, testRoomName)
 	if err != nil {
@@ -134,7 +134,7 @@ func TestUpdateRoomNameNoChange(t *testing.T) {
 	checkExpectedRoomData(t, id, trInstance)
 }
 func TestUpdateRoomNameEmptyID(t *testing.T) {
-	id, trInstance := setupRoomTest()
+	id, trInstance := setupRoomTest(t)
 
 	err := UpdateRoomName("", newRoomName)
 	if err == nil {
@@ -145,7 +145,7 @@ func TestUpdateRoomNameEmptyID(t *testing.T) {
 }
 
 func TestUpdateRoomStatus(t *testing.T) {
-	id, trInstance := setupRoomTest()
+	id, trInstance := setupRoomTest(t)
 	trInstance.Status = updatedRoomStatus
 
 	err := UpdateRoomStatus(id, updatedRoomStatus)
@@ -157,7 +157,7 @@ func TestUpdateRoomStatus(t *testing.T) {
 }
 
 func TestUpdateRoomStatusEmptyID(t *testing.T) {
-	id, trInstance := setupRoomTest()
+	id, trInstance := setupRoomTest(t)
 
 	err := UpdateRoomName("", newRoomName)
 	if err == nil {
@@ -168,7 +168,7 @@ func TestUpdateRoomStatusEmptyID(t *testing.T) {
 }
 
 func TestUpdateRoomStatusInvalidID(t *testing.T) {
-	id, trInstance := setupRoomTest()
+	id, trInstance := setupRoomTest(t)
 
 	err := UpdateRoomStatus(randomID, updatedRoomStatus)
 	if err == nil {
@@ -179,7 +179,7 @@ func TestUpdateRoomStatusInvalidID(t *testing.T) {
 }
 
 func TestUpdateRoomType(t *testing.T) {
-	id, trInstance := setupRoomTest()
+	id, trInstance := setupRoomTest(t)
 	trInstance.Type = updatedRoomType
 
 	err := UpdateRoomType(id, updatedRoomType)
@@ -191,7 +191,7 @@ func TestUpdateRoomType(t *testing.T) {
 }
 
 func TestUpdateRoomTypeEmptyID(t *testing.T) {
-	id, trInstance := setupRoomTest()
+	id, trInstance := setupRoomTest(t)
 
 	err := UpdateRoomName("", newRoomName)
 	if err == nil {
@@ -202,7 +202,7 @@ func TestUpdateRoomTypeEmptyID(t *testing.T) {
 }
 
 func TestUpdateRoomTypeInvalidID(t *testing.T) {
-	id, trInstance := setupRoomTest()
+	id, trInstance := setupRoomTest(t)
 
 	err := UpdateRoomType(randomID, updatedRoomType)
 	if err == nil {
@@ -212,17 +212,8 @@ func TestUpdateRoomTypeInvalidID(t *testing.T) {
 	checkExpectedRoomData(t, id, trInstance)
 }
 
-func setupRoomTest() (string, room) {
-	id, _ := CreateRoom(testRoomName)
-
-	trInstance := testRoom
-	trInstance.RID = id
-
-	return id, trInstance
-}
-
 func TestDeleteRoom(t *testing.T) {
-	id, _ := setupRoomTest()
+	id, _ := setupRoomTest(t)
 
 	err := DeleteRoom(id)
 	if err != nil {
@@ -233,7 +224,7 @@ func TestDeleteRoom(t *testing.T) {
 }
 
 func TestDeleteEmptyID(t *testing.T) {
-	setupRoomTest()
+	setupRoomTest(t)
 
 	err := DeleteRoom("")
 	if err == nil {
@@ -242,7 +233,7 @@ func TestDeleteEmptyID(t *testing.T) {
 }
 
 func TestDeleteInvalidID(t *testing.T) {
-	setupRoomTest()
+	setupRoomTest(t)
 
 	err := DeleteRoom(randomID)
 	if err == nil {
@@ -251,13 +242,25 @@ func TestDeleteInvalidID(t *testing.T) {
 }
 
 func TestDeleteDouble(t *testing.T) {
-	id, _ := setupRoomTest()
+	id, _ := setupRoomTest(t)
 
 	DeleteRoom(id)
 	err := DeleteRoom(id)
 	if err == nil {
 		t.Fatalf(`DeleteRoom(Double) = %v, want err`, err)
 	}
+}
+
+func setupRoomTest(t *testing.T) (string, room) {
+
+	id, _ := CreateRoom(testRoomName)
+
+	trInstance := testRoom
+	trInstance.RID = id
+
+	t.Cleanup(cleanUpAfterTest)
+
+	return id, trInstance
 }
 
 func setupAddRoomTest() (string, room) {
@@ -282,4 +285,8 @@ func confirmRoomNotExist(t *testing.T, id string) {
 	if err == nil {
 		t.Fatalf(`GetRoom(DeletedRoom) %v, %v, want nil, err`, room, err)
 	}
+}
+
+func cleanUpAfterTest() {
+	rooms = make(map[string]room)
 }
