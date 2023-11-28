@@ -151,6 +151,46 @@ func TestGetUsersInRoomAfterDelete(t *testing.T) {
 	}
 }
 
+func TestGetRoomUserCount(t *testing.T) {
+	_, rid := setupLobbyTest(t)
+
+	count, err := GetRoomUserCount(rid)
+	if count != 1 || err != nil {
+		t.Fatalf(`TestGetRoomUserCount(Single) = %d, %v, want 1, nil`, count, err)
+	}
+}
+
+func TestGetRoomUserCountMulti(t *testing.T) {
+	_, rid := setupLobbyTest(t)
+	addMoreUsersToLobby(t, rid)
+
+	expected := 1 + moreUserCount
+	count, err := GetRoomUserCount(rid)
+	if count != expected || err != nil {
+		t.Fatalf(`TestGetRoomUserCount(Multi) = %d, %v, want %d, nil`, count, err, expected)
+	}
+}
+
+func TestGetRoomUserCountInvalidRID(t *testing.T) {
+	setupLobbyTest(t)
+
+	count, err := GetRoomUserCount(randomID)
+	if count != 0 || err == nil {
+		t.Fatalf(`TestGetRoomUserCount(InvalidRID) = %d, %v, want 0, err`, count, err)
+	}
+}
+
+func TestGetRoomUserCountAfterDelete(t *testing.T) {
+	uid, rid := setupLobbyTest(t)
+
+	RemoveUserFromRoom(uid, rid)
+
+	count, err := GetRoomUserCount(rid)
+	if count != 0 || err != nil {
+		t.Fatalf(`TestGetRoomUserCount(AfterUserDelete) = %d, %v, want 0, nil`, count, err)
+	}
+}
+
 func setupLobbyTest(t *testing.T) (string, string) {
 	uid, rid := createUserAndRoom(t)
 

@@ -61,6 +61,15 @@ func GetUsersInRoom(rid string) ([]string, error) {
 	return nil, fmt.Errorf("no users in this room")
 }
 
+func GetRoomUserCount(rid string) (int, error) {
+	_, err := room.GetRoom(rid)
+	if err != nil {
+		return 0, err
+	}
+
+	return len(lobbies[rid]), nil
+}
+
 func checkUserAndRoomExist(uid string, rid string) error {
 	_, err := user.GetUser(uid)
 	if err != nil {
