@@ -39,6 +39,15 @@ func GetRoom(rid string) (room, error) {
 	return getRoomByID(rid)
 }
 
+func GetRooms() (map[string]room, error) {
+	var err error = nil
+	if len(rooms) == 0 {
+		err = fmt.Errorf("no rooms to return")
+	}
+
+	return rooms, err
+}
+
 func UpdateRoomName(rid string, name string) error {
 	err := utils.ValidateInputRefuseEmpty(name, nil)
 	if err != nil {

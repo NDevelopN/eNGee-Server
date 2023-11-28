@@ -76,6 +76,30 @@ func TestGetRoomInvalidID(t *testing.T) {
 	}
 }
 
+func TestGetRooms(t *testing.T) {
+	fID, fRoom := setupRoomTest()
+	sID, sRoom := setupAddRoomTest()
+	expected := map[string]room{fID: fRoom, sID: sRoom}
+
+	rooms, err := GetRooms()
+	if len(rooms) != 2 || err != nil {
+		t.Fatalf(`GetRooms(Valid) = %v, %v, want %v, nil`, rooms, err, expected)
+	}
+
+	for id, r := range rooms {
+		if r != expected[id] {
+			t.Fatalf(`GetRooms(Valid) = %v, want %v`, r, expected[id])
+		}
+	}
+}
+
+func TestGetRoomsEmpty(t *testing.T) {
+	rooms, err := GetRooms()
+	if len(rooms) != 0 || err == nil {
+		t.Fatalf(`GetRooms(Empty) = %v, %v, want [], err`, rooms, err)
+	}
+}
+
 func TestUpdateRoomName(t *testing.T) {
 	id, trInstance := setupRoomTest()
 
@@ -193,6 +217,16 @@ func setupRoomTest() (string, room) {
 	id, _ := CreateRoom(testRoomName)
 
 	tuInstance := testRoom
+	tuInstance.RID = id
+
+	return id, tuInstance
+}
+
+func setupAddRoomTest() (string, room) {
+	id, _ := CreateRoom(newRoomName)
+
+	tuInstance := testRoom
+	tuInstance.Name = newRoomName
 	tuInstance.RID = id
 
 	return id, tuInstance
