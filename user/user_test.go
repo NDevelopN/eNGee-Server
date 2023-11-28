@@ -50,7 +50,7 @@ func TestCreateUserEmptyName(t *testing.T) {
 }
 
 func TestGetUser(t *testing.T) {
-	id, tuInstance := setupUserTest()
+	id, tuInstance := setupUserTest(t)
 	user, err := GetUser(id)
 	if user != tuInstance || err != nil {
 		t.Fatalf(`GetUser(ValidID) = %v, %v, want obj, nil`, user, err)
@@ -58,7 +58,7 @@ func TestGetUser(t *testing.T) {
 }
 
 func TestGetUserEmptyID(t *testing.T) {
-	setupUserTest()
+	setupUserTest(t)
 	user, err := GetUser("")
 	if err == nil {
 		t.Fatalf(`GetUser(EmptyID) = %v, %v, want nil, err`, user, err)
@@ -66,7 +66,7 @@ func TestGetUserEmptyID(t *testing.T) {
 }
 
 func TestGetUserInvalidID(t *testing.T) {
-	setupUserTest()
+	setupUserTest(t)
 	user, err := GetUser(randomID)
 	if err == nil {
 		t.Fatalf(`GetUser(InvalidID) = %v, %v, want nil, err`, user, err)
@@ -74,7 +74,7 @@ func TestGetUserInvalidID(t *testing.T) {
 }
 
 func TestUpdateUserName(t *testing.T) {
-	id, tuInstance := setupUserTest()
+	id, tuInstance := setupUserTest(t)
 
 	tuInstance.Name = newUserName
 
@@ -87,7 +87,7 @@ func TestUpdateUserName(t *testing.T) {
 }
 
 func TestUpdateUserNameEmptyName(t *testing.T) {
-	id, tuInstance := setupUserTest()
+	id, tuInstance := setupUserTest(t)
 
 	err := UpdateUserName(id, "")
 	if err == nil {
@@ -98,7 +98,7 @@ func TestUpdateUserNameEmptyName(t *testing.T) {
 }
 
 func TestUpdateUserNameNoChange(t *testing.T) {
-	id, tuInstance := setupUserTest()
+	id, tuInstance := setupUserTest(t)
 
 	err := UpdateUserName(id, testUserName)
 	if err != nil {
@@ -108,7 +108,7 @@ func TestUpdateUserNameNoChange(t *testing.T) {
 	checkExpectedUserData(t, id, tuInstance)
 }
 func TestUpdateUserNameEmptyID(t *testing.T) {
-	id, tuInstance := setupUserTest()
+	id, tuInstance := setupUserTest(t)
 
 	err := UpdateUserName("", newUserName)
 	if err == nil {
@@ -119,7 +119,7 @@ func TestUpdateUserNameEmptyID(t *testing.T) {
 }
 
 func TestUpdateUserStatusEmptyStatus(t *testing.T) {
-	id, tuInstance := setupUserTest()
+	id, tuInstance := setupUserTest(t)
 
 	err := UpdateUserStatus(id, "")
 	if err == nil {
@@ -129,7 +129,7 @@ func TestUpdateUserStatusEmptyStatus(t *testing.T) {
 	checkExpectedUserData(t, id, tuInstance)
 }
 func TestUpdateUserStatusNoChange(t *testing.T) {
-	id, tuInstance := setupUserTest()
+	id, tuInstance := setupUserTest(t)
 
 	err := UpdateUserStatus(id, testUser.Status)
 	if err != nil {
@@ -139,7 +139,7 @@ func TestUpdateUserStatusNoChange(t *testing.T) {
 	checkExpectedUserData(t, id, tuInstance)
 }
 func TestUpdateUserNameInvalidID(t *testing.T) {
-	id, tuInstance := setupUserTest()
+	id, tuInstance := setupUserTest(t)
 
 	err := UpdateUserName(randomID, newUserName)
 	if err == nil {
@@ -150,7 +150,7 @@ func TestUpdateUserNameInvalidID(t *testing.T) {
 }
 
 func TestUpdateUserStatus(t *testing.T) {
-	id, tuInstance := setupUserTest()
+	id, tuInstance := setupUserTest(t)
 	tuInstance.Status = updatedUserStatus
 
 	err := UpdateUserStatus(id, updatedUserStatus)
@@ -162,7 +162,7 @@ func TestUpdateUserStatus(t *testing.T) {
 }
 
 func TestUpdateUserStatusEmptyID(t *testing.T) {
-	id, tuInstance := setupUserTest()
+	id, tuInstance := setupUserTest(t)
 
 	err := UpdateUserName("", newUserName)
 	if err == nil {
@@ -173,7 +173,7 @@ func TestUpdateUserStatusEmptyID(t *testing.T) {
 }
 
 func TestUpdateUserStatusInvalidID(t *testing.T) {
-	id, tuInstance := setupUserTest()
+	id, tuInstance := setupUserTest(t)
 
 	err := UpdateUserStatus(randomID, updatedUserStatus)
 	if err == nil {
@@ -184,7 +184,7 @@ func TestUpdateUserStatusInvalidID(t *testing.T) {
 }
 
 func TestDeleteUser(t *testing.T) {
-	id, _ := setupUserTest()
+	id, _ := setupUserTest(t)
 
 	err := DeleteUser(id)
 	if err != nil {
@@ -195,7 +195,7 @@ func TestDeleteUser(t *testing.T) {
 }
 
 func TestDeleteEmptyID(t *testing.T) {
-	setupUserTest()
+	setupUserTest(t)
 
 	err := DeleteUser("")
 	if err == nil {
@@ -204,7 +204,7 @@ func TestDeleteEmptyID(t *testing.T) {
 }
 
 func TestDeleteInvalidID(t *testing.T) {
-	setupUserTest()
+	setupUserTest(t)
 
 	err := DeleteUser(randomID)
 	if err == nil {
@@ -213,7 +213,7 @@ func TestDeleteInvalidID(t *testing.T) {
 }
 
 func TestDeleteDouble(t *testing.T) {
-	id, _ := setupUserTest()
+	id, _ := setupUserTest(t)
 
 	DeleteUser(id)
 	err := DeleteUser(id)
@@ -222,11 +222,13 @@ func TestDeleteDouble(t *testing.T) {
 	}
 }
 
-func setupUserTest() (string, user) {
+func setupUserTest(t *testing.T) (string, user) {
 	id, _ := CreateUser(testUserName)
 
 	tuInstance := testUser
 	tuInstance.UID = id
+
+	t.Cleanup(cleanAfterTest)
 
 	return id, tuInstance
 }
@@ -243,4 +245,8 @@ func confirmUserNotExist(t *testing.T, id string) {
 	if err == nil {
 		t.Fatalf(`GetUser(DeletedUser) %v, %v, want nil, err`, user, err)
 	}
+}
+
+func cleanAfterTest() {
+	users = make(map[string]user)
 }
