@@ -58,6 +58,23 @@ func UpdateRoomName(rid string, name string) error {
 	return nil
 }
 
+func UpdateRoomStatus(rid string, status string) error {
+	err := utils.ValidateInputRefuseEmpty(status, nil)
+	if err != nil {
+		return err
+	}
+
+	room, err := getRoomByID(rid)
+	if err != nil {
+		return err
+	}
+
+	room.Status = status
+	rooms[rid] = room
+
+	return nil
+}
+
 func getRoomByID(rid string) (room, error) {
 	var err error
 
