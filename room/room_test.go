@@ -66,11 +66,11 @@ func TestGetRoomEmptyID(t *testing.T) {
 	}
 }
 
-func TestGetUserInvalidID(t *testing.T) {
+func TestGetRoomInvalidID(t *testing.T) {
 	setupRoomTest()
 	room, err := GetRoom(randomID)
 	if err == nil {
-		t.Fatalf(`GetUser(InvalidID) = %v, %v, want nil, err`, room, err)
+		t.Fatalf(`GetRoom(InvalidID) = %v, %v, want nil, err`, room, err)
 	}
 }
 
