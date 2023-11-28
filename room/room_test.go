@@ -74,6 +74,51 @@ func TestGetRoomInvalidID(t *testing.T) {
 	}
 }
 
+func TestUpdateRoomName(t *testing.T) {
+	id, trInstance := setupRoomTest()
+
+	trInstance.Name = newRoomName
+
+	err := UpdateRoomName(id, newRoomName)
+	if err != nil {
+		t.Fatalf(`UpdateRoomName(Valid) = %v, want nil`, err)
+	}
+
+	checkExpectedRoomData(t, id, trInstance)
+}
+
+func TestUpdateRoomNameEmptyName(t *testing.T) {
+	id, tuInstance := setupRoomTest()
+
+	err := UpdateRoomName(id, "")
+	if err == nil {
+		t.Fatalf(`UpdateRoomName(EmptyName) = %v, want err`, err)
+	}
+
+	checkExpectedRoomData(t, id, tuInstance)
+}
+
+func TestUpdateRoomNameNoChange(t *testing.T) {
+	id, tuInstance := setupRoomTest()
+
+	err := UpdateRoomName(id, testRoomName)
+	if err != nil {
+		t.Fatalf(`UpdateRoomName(NoChange) = %v, want err`, err)
+	}
+
+	checkExpectedRoomData(t, id, tuInstance)
+}
+func TestUpdateRoomNameEmptyID(t *testing.T) {
+	id, tuInstance := setupRoomTest()
+
+	err := UpdateRoomName("", newRoomName)
+	if err == nil {
+		t.Fatalf(`UpdateRoomName(EmptyID) = %v, want err`, err)
+	}
+
+	checkExpectedRoomData(t, id, tuInstance)
+}
+
 func setupRoomTest() (string, room) {
 	id, _ := CreateRoom(testRoomName)
 
@@ -81,4 +126,11 @@ func setupRoomTest() (string, room) {
 	tuInstance.RID = id
 
 	return id, tuInstance
+}
+
+func checkExpectedRoomData(t *testing.T, id string, expected room) {
+	user, err := GetRoom(id)
+	if user != expected || err != nil {
+		t.Fatalf(`GetRoom(UpdatedRoom) = %v, %v, want %v, nil`, user, err, expected)
+	}
 }
