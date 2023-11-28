@@ -14,7 +14,7 @@ const testRoomName = "Test Room"
 const testUserName = "Test User"
 
 func TestJoinUserToRoom(t *testing.T) {
-	uid, rid := setupLobbyTest()
+	uid, rid := createUserAndRoom()
 
 	err := JoinUserToRoom(uid, rid)
 	if err != nil {
@@ -23,7 +23,7 @@ func TestJoinUserToRoom(t *testing.T) {
 }
 
 func TestJoinUserToRoomInvalidUID(t *testing.T) {
-	_, rid := setupLobbyTest()
+	_, rid := createUserAndRoom()
 
 	err := JoinUserToRoom(randomID, rid)
 	if err == nil {
@@ -32,7 +32,7 @@ func TestJoinUserToRoomInvalidUID(t *testing.T) {
 }
 
 func TestJoinUserToRoomInvalidRID(t *testing.T) {
-	uid, _ := setupLobbyTest()
+	uid, _ := createUserAndRoom()
 
 	err := JoinUserToRoom(uid, randomID)
 	if err == nil {
@@ -41,7 +41,7 @@ func TestJoinUserToRoomInvalidRID(t *testing.T) {
 }
 
 func TestJoinUserToRoomDouble(t *testing.T) {
-	uid, rid := setupLobbyTest()
+	uid, rid := createUserAndRoom()
 
 	JoinUserToRoom(uid, rid)
 
@@ -51,7 +51,53 @@ func TestJoinUserToRoomDouble(t *testing.T) {
 	}
 }
 
+func TestRemoveUserFromRoom(t *testing.T) {
+	uid, rid := setupLobbyTest()
+
+	err := RemoveUserFromRoom(uid, rid)
+	if err != nil {
+		t.Fatalf(`TestRemoveUserFromRoom(Valid) = %v, want err`, err)
+	}
+}
+
+func TestRemoveUserFromRoomInvalidUID(t *testing.T) {
+	_, rid := setupLobbyTest()
+
+	err := RemoveUserFromRoom(randomID, rid)
+	if err == nil {
+		t.Fatalf(`TestRemoveUserFromRoom(InvalidUID) = %v, want err`, err)
+	}
+}
+
+func TestRemoveUserFromRoomInvalidRID(t *testing.T) {
+	uid, _ := setupLobbyTest()
+
+	err := RemoveUserFromRoom(uid, randomID)
+	if err == nil {
+		t.Fatalf(`TestRemoveUserFromRoom(InvalidRID) = %v, want err`, err)
+	}
+}
+
+func TestRemoveUserFromRoomDouble(t *testing.T) {
+	uid, rid := setupLobbyTest()
+
+	RemoveUserFromRoom(uid, rid)
+
+	err := RemoveUserFromRoom(uid, rid)
+	if err == nil {
+		t.Fatalf(`TestRemoveUserFromRoom(Double) = %v, want err`, err)
+	}
+}
+
 func setupLobbyTest() (string, string) {
+	uid, rid := createUserAndRoom()
+
+	JoinUserToRoom(uid, rid)
+
+	return uid, rid
+}
+
+func createUserAndRoom() (string, string) {
 	uid, _ := user.CreateUser(testUserName)
 	rid, _ := room.CreateRoom(testRoomName)
 

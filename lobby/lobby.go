@@ -3,7 +3,9 @@ package lobby
 import (
 	"Engee-Server/room"
 	"Engee-Server/user"
+	"Engee-Server/utils"
 	"fmt"
+	"log"
 )
 
 var lobbies = make(map[string][]string)
@@ -25,6 +27,25 @@ func JoinUserToRoom(uid string, rid string) error {
 	lobbies[rid] = append(lobbies[rid], uid)
 
 	return nil
+}
+
+func RemoveUserFromRoom(uid string, rid string) error {
+	err := checkUserAndRoomExist(uid, rid)
+	if err != nil {
+		return err
+	}
+
+	err = fmt.Errorf("room does not contain user")
+
+	if checkRoomLobbyExists(rid) {
+		if checkRoomContainsUser(uid, rid) {
+			log.Printf("Lobbies before: %v", lobbies)
+			lobbies[rid], err = utils.RemoveElementFromSlice(lobbies[rid], uid)
+			log.Printf("Lobbies after: %v (%v)", lobbies, err)
+		}
+	}
+
+	return err
 }
 
 func checkUserAndRoomExist(uid string, rid string) error {
