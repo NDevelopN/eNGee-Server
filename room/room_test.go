@@ -113,112 +113,112 @@ func TestUpdateRoomName(t *testing.T) {
 }
 
 func TestUpdateRoomNameEmptyName(t *testing.T) {
-	id, tuInstance := setupRoomTest()
+	id, trInstance := setupRoomTest()
 
 	err := UpdateRoomName(id, "")
 	if err == nil {
 		t.Fatalf(`UpdateRoomName(EmptyName) = %v, want err`, err)
 	}
 
-	checkExpectedRoomData(t, id, tuInstance)
+	checkExpectedRoomData(t, id, trInstance)
 }
 
 func TestUpdateRoomNameNoChange(t *testing.T) {
-	id, tuInstance := setupRoomTest()
+	id, trInstance := setupRoomTest()
 
 	err := UpdateRoomName(id, testRoomName)
 	if err != nil {
 		t.Fatalf(`UpdateRoomName(NoChange) = %v, want err`, err)
 	}
 
-	checkExpectedRoomData(t, id, tuInstance)
+	checkExpectedRoomData(t, id, trInstance)
 }
 func TestUpdateRoomNameEmptyID(t *testing.T) {
-	id, tuInstance := setupRoomTest()
+	id, trInstance := setupRoomTest()
 
 	err := UpdateRoomName("", newRoomName)
 	if err == nil {
 		t.Fatalf(`UpdateRoomName(EmptyID) = %v, want err`, err)
 	}
 
-	checkExpectedRoomData(t, id, tuInstance)
+	checkExpectedRoomData(t, id, trInstance)
 }
 
 func TestUpdateRoomStatus(t *testing.T) {
-	id, tuInstance := setupRoomTest()
-	tuInstance.Status = updatedRoomStatus
+	id, trInstance := setupRoomTest()
+	trInstance.Status = updatedRoomStatus
 
 	err := UpdateRoomStatus(id, updatedRoomStatus)
 	if err != nil {
 		t.Fatalf(`UpdateRoomStatus(%s, %s) = %v, want nil`, id, updatedRoomStatus, err)
 	}
 
-	checkExpectedRoomData(t, id, tuInstance)
+	checkExpectedRoomData(t, id, trInstance)
 }
 
 func TestUpdateRoomStatusEmptyID(t *testing.T) {
-	id, tuInstance := setupRoomTest()
+	id, trInstance := setupRoomTest()
 
 	err := UpdateRoomName("", newRoomName)
 	if err == nil {
 		t.Fatalf(`UpdateRoomStatus(EmptyID) = %v, want err`, err)
 	}
 
-	checkExpectedRoomData(t, id, tuInstance)
+	checkExpectedRoomData(t, id, trInstance)
 }
 
 func TestUpdateRoomStatusInvalidID(t *testing.T) {
-	id, tuInstance := setupRoomTest()
+	id, trInstance := setupRoomTest()
 
 	err := UpdateRoomStatus(randomID, updatedRoomStatus)
 	if err == nil {
 		t.Fatalf(`UpdateRoomStatus(InvalidID) = %v, want err`, err)
 	}
 
-	checkExpectedRoomData(t, id, tuInstance)
+	checkExpectedRoomData(t, id, trInstance)
 }
 
 func TestUpdateRoomType(t *testing.T) {
-	id, tuInstance := setupRoomTest()
-	tuInstance.Type = updatedRoomType
+	id, trInstance := setupRoomTest()
+	trInstance.Type = updatedRoomType
 
 	err := UpdateRoomType(id, updatedRoomType)
 	if err != nil {
 		t.Fatalf(`UpdateRoomType(%s, %s) = %v, want nil`, id, updatedRoomType, err)
 	}
 
-	checkExpectedRoomData(t, id, tuInstance)
+	checkExpectedRoomData(t, id, trInstance)
 }
 
 func TestUpdateRoomTypeEmptyID(t *testing.T) {
-	id, tuInstance := setupRoomTest()
+	id, trInstance := setupRoomTest()
 
 	err := UpdateRoomName("", newRoomName)
 	if err == nil {
 		t.Fatalf(`UpdateRoomType(EmptyID) = %v, want err`, err)
 	}
 
-	checkExpectedRoomData(t, id, tuInstance)
+	checkExpectedRoomData(t, id, trInstance)
 }
 
 func TestUpdateRoomTypeInvalidID(t *testing.T) {
-	id, tuInstance := setupRoomTest()
+	id, trInstance := setupRoomTest()
 
 	err := UpdateRoomType(randomID, updatedRoomType)
 	if err == nil {
 		t.Fatalf(`UpdateRoomType(InvalidID) = %v, want err`, err)
 	}
 
-	checkExpectedRoomData(t, id, tuInstance)
+	checkExpectedRoomData(t, id, trInstance)
 }
 
 func setupRoomTest() (string, room) {
 	id, _ := CreateRoom(testRoomName)
 
-	tuInstance := testRoom
-	tuInstance.RID = id
+	trInstance := testRoom
+	trInstance.RID = id
 
-	return id, tuInstance
+	return id, trInstance
 }
 
 func TestDeleteRoom(t *testing.T) {
@@ -263,11 +263,11 @@ func TestDeleteDouble(t *testing.T) {
 func setupAddRoomTest() (string, room) {
 	id, _ := CreateRoom(newRoomName)
 
-	tuInstance := testRoom
-	tuInstance.Name = newRoomName
-	tuInstance.RID = id
+	trInstance := testRoom
+	trInstance.Name = newRoomName
+	trInstance.RID = id
 
-	return id, tuInstance
+	return id, trInstance
 }
 
 func checkExpectedRoomData(t *testing.T, id string, expected room) {
