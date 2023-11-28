@@ -12,6 +12,7 @@ const testRoomName = "Test Room"
 const newRoomName = "New Room"
 
 const updatedRoomStatus = "Updated"
+const updatedRoomType = "New Type"
 
 var testRoom = room{
 	RID:     "",
@@ -150,6 +151,40 @@ func TestUpdateRoomStatusInvalidID(t *testing.T) {
 	err := UpdateRoomStatus(randomID, updatedRoomStatus)
 	if err == nil {
 		t.Fatalf(`UpdateRoomStatus(InvalidID) = %v, want err`, err)
+	}
+
+	checkExpectedRoomData(t, id, tuInstance)
+}
+
+func TestUpdateRoomType(t *testing.T) {
+	id, tuInstance := setupRoomTest()
+	tuInstance.Type = updatedRoomType
+
+	err := UpdateRoomType(id, updatedRoomType)
+	if err != nil {
+		t.Fatalf(`UpdateRoomType(%s, %s) = %v, want nil`, id, updatedRoomType, err)
+	}
+
+	checkExpectedRoomData(t, id, tuInstance)
+}
+
+func TestUpdateRoomTypeEmptyID(t *testing.T) {
+	id, tuInstance := setupRoomTest()
+
+	err := UpdateRoomName("", newRoomName)
+	if err == nil {
+		t.Fatalf(`UpdateRoomType(EmptyID) = %v, want err`, err)
+	}
+
+	checkExpectedRoomData(t, id, tuInstance)
+}
+
+func TestUpdateRoomTypeInvalidID(t *testing.T) {
+	id, tuInstance := setupRoomTest()
+
+	err := UpdateRoomType(randomID, updatedRoomType)
+	if err == nil {
+		t.Fatalf(`UpdateRoomType(InvalidID) = %v, want err`, err)
 	}
 
 	checkExpectedRoomData(t, id, tuInstance)
