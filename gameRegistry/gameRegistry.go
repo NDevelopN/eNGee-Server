@@ -13,7 +13,8 @@ func RegisterGameType(name string, buildFunc func() (string, error)) error {
 		return err
 	}
 
-	if checkGameTypeRegistered(name) {
+	_, found := registry[name]
+	if found {
 		return fmt.Errorf("a gametype with that name already exists")
 	}
 
@@ -21,7 +22,11 @@ func RegisterGameType(name string, buildFunc func() (string, error)) error {
 	return nil
 }
 
-func checkGameTypeRegistered(name string) bool {
-	_, found := registry[name]
-	return found
+func BuildGame(name string) (string, error) {
+	buildFunc, found := registry[name]
+	if !found {
+		return "", fmt.Errorf("no matching gametype found")
+	}
+
+	return buildFunc()
 }
