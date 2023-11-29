@@ -273,6 +273,45 @@ func TestBuildRoomGameTypeNotRegistered(t *testing.T) {
 	}
 }
 
+func TestCloseRoomGame(t *testing.T) {
+	id, _ := setupRoomGameTest(t)
+
+	BuildRoomGame(id)
+
+	err := CloseRoomGame(id)
+	if err != nil {
+		t.Fatalf(`TestCloseRoomGame(Valid) = %v, want nil`, err)
+	}
+}
+
+func TestCloseRoomNotBuilt(t *testing.T) {
+	id, _ := setupRoomGameTest(t)
+
+	err := CloseRoomGame(id)
+	if err == nil {
+		t.Fatalf(`TestCloseRoomGame(NotBuilt) = %v, want err`, err)
+	}
+}
+
+func TestCloseRoomGameDouble(t *testing.T) {
+	id, _ := setupRoomGameTest(t)
+
+	CloseRoomGame(id)
+	err := CloseRoomGame(id)
+	if err == nil {
+		t.Fatalf(`TestCloseRoomGame(Double) = %v, want err`, err)
+	}
+}
+
+func TestCloseRoomInvalidRID(t *testing.T) {
+	setupRoomGameTest(t)
+
+	err := CloseRoomGame(randomID)
+	if err == nil {
+		t.Fatalf(`TestCloseRoomGame(Invalid RID) = %v, want err`, err)
+	}
+}
+
 func TestDeleteRoom(t *testing.T) {
 	id, _ := setupRoomTest(t)
 

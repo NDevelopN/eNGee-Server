@@ -124,6 +124,23 @@ func BuildRoomGame(rid string) (string, error) {
 	return addr, err
 }
 
+func CloseRoomGame(rid string) error {
+	room, err := getRoomByID(rid)
+	if err != nil {
+		return err
+	}
+
+	if room.Addr == "" {
+		return fmt.Errorf("no active game address")
+	}
+
+	//TODO - Create mechanism to send close to game instance at Addr
+	room.Addr = ""
+	rooms[rid] = room
+
+	return nil
+}
+
 func DeleteRoom(rid string) error {
 	_, err := getRoomByID(rid)
 	if err != nil {
