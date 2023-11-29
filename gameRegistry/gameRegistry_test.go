@@ -86,6 +86,34 @@ func TestBuildGameInvalidType(t *testing.T) {
 	}
 }
 
+func TestRemoveGameFromRegistry(t *testing.T) {
+	setupRegisterTest(t)
+
+	err := RemoveGame(testGameType)
+	if err != nil {
+		t.Fatalf(`TestRemoveGameFromRegistry(Valid) = %v, want nil`, err)
+	}
+}
+
+func TestRemoveGameFromRegistryInvalidType(t *testing.T) {
+	setupRegisterTest(t)
+
+	err := RemoveGame(badGameType)
+	if err == nil {
+		t.Fatalf(`TestRemoveGameFromRegistry(Invalid Type) = %v, want err`, err)
+	}
+}
+
+func TestRemoveGameFromRegistryDouble(t *testing.T) {
+	setupRegisterTest(t)
+
+	RemoveGame(testGameType)
+	err := RemoveGame(testGameType)
+	if err == nil {
+		t.Fatalf(`TestRemoveGameFromRegistry(Double) = %v, want err`, err)
+	}
+}
+
 func setupRegisterTest(t *testing.T) {
 	RegisterGameType(testGameType, testDummyFunc)
 

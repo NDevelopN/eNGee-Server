@@ -30,3 +30,14 @@ func BuildGame(name string) (string, error) {
 
 	return buildFunc()
 }
+
+func RemoveGame(name string) error {
+	_, found := registry[name]
+	if !found {
+		return fmt.Errorf("no matching gametype found")
+	}
+
+	delete(registry, name)
+
+	return nil
+}
