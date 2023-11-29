@@ -1,6 +1,7 @@
 package room
 
 import (
+	reg "Engee-Server/gameRegistry"
 	"testing"
 
 	"github.com/google/uuid"
@@ -12,13 +13,20 @@ const testRoomName = "Test Room"
 const newRoomName = "New Room"
 
 const updatedRoomStatus = "Updated"
-const updatedRoomType = "New Type"
+const testRoomType = "Test"
+
+const testAddress = "Address"
+
+var testDummyFunc = func() (string, error) {
+	return testAddress, nil
+}
 
 var testRoom = room{
 	RID:    "",
 	Name:   testRoomName,
 	Type:   "None",
 	Status: "New",
+	Addr:   "",
 }
 
 func TestCreateRoom(t *testing.T) {
@@ -192,9 +200,9 @@ func TestUpdateRoomStatusInvalidID(t *testing.T) {
 
 func TestUpdateRoomType(t *testing.T) {
 	id, trInstance := setupRoomTest(t)
-	trInstance.Type = updatedRoomType
+	trInstance.Type = testRoomType
 
-	err := UpdateRoomType(id, updatedRoomType)
+	err := UpdateRoomType(id, testRoomType)
 	if err != nil {
 		t.Fatalf(`UpdateRoomType(Valid) = %v, want nil`, err)
 	}
@@ -216,12 +224,53 @@ func TestUpdateRoomTypeEmptyID(t *testing.T) {
 func TestUpdateRoomTypeInvalidID(t *testing.T) {
 	id, trInstance := setupRoomTest(t)
 
-	err := UpdateRoomType(randomID, updatedRoomType)
+	err := UpdateRoomType(randomID, testRoomType)
 	if err == nil {
 		t.Fatalf(`UpdateRoomType(InvalidID) = %v, want err`, err)
 	}
 
 	checkExpectedRoomData(t, id, trInstance)
+}
+
+func TestBuildRoomGame(t *testing.T) {
+	id, _ := setupRoomGameTest(t)
+
+	addr, err := BuildRoomGame(id)
+	if addr != testAddress || err != nil {
+		t.Fatalf(`TestBuildRoomGame(Valid) = %q, %v, want %q, nil`, addr, err, testAddress)
+	}
+}
+
+func TestBuildRoomGameDouble(t *testing.T) {
+	id, _ := setupRoomGameTest(t)
+
+	BuildRoomGame(id)
+	addr, err := BuildRoomGame(id)
+	if addr != "" || err == nil {
+		t.Fatalf(`TestBuildRoomGame(Double) = %q, %v, want "", err`, addr, err)
+	}
+}
+
+func TestBuildRoomGameNoTestType(t *testing.T) {
+	id, _ := setupRoomTest(t)
+
+	reg.RegisterGameType(testRoomType, testDummyFunc)
+
+	addr, err := BuildRoomGame(id)
+	if addr != "" || err == nil {
+		t.Fatalf(`TestBuildRoomGame(NoTestType) = %q, %v, want "", err`, addr, err)
+	}
+}
+
+func TestBuildRoomGameTypeNotRegistered(t *testing.T) {
+	id, _ := setupRoomGameTest(t)
+
+	reg.RemoveGame(testRoomType)
+
+	addr, err := BuildRoomGame(id)
+	if addr != "" || err == nil {
+		t.Fatalf(`TestBuildRoomGame(TypeNotRegistered) = %q, %v, want "", err`, addr, err)
+	}
 }
 
 func TestDeleteRoom(t *testing.T) {
@@ -264,7 +313,6 @@ func TestDeleteDouble(t *testing.T) {
 }
 
 func setupRoomTest(t *testing.T) (string, room) {
-
 	id, _ := CreateRoom(testRoomName)
 
 	trInstance := testRoom
@@ -281,6 +329,19 @@ func setupAddRoomTest() (string, room) {
 	trInstance := testRoom
 	trInstance.Name = newRoomName
 	trInstance.RID = id
+
+	return id, trInstance
+}
+
+func setupRoomGameTest(t *testing.T) (string, room) {
+	id, trInstance := setupRoomTest(t)
+
+	UpdateRoomType(id, testRoomType)
+	trInstance.Type = testRoomType
+
+	reg.RegisterGameType(testRoomType, testDummyFunc)
+
+	t.Cleanup(func() { reg.RemoveGame(testRoomType) })
 
 	return id, trInstance
 }

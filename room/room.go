@@ -1,6 +1,7 @@
 package room
 
 import (
+	registry "Engee-Server/gameRegistry"
 	"Engee-Server/utils"
 	"fmt"
 
@@ -12,6 +13,7 @@ type room struct {
 	Name   string
 	Type   string
 	Status string
+	Addr   string
 }
 
 var rooms = make(map[string]room)
@@ -97,6 +99,29 @@ func UpdateRoomType(rid string, rType string) error {
 	rooms[rid] = room
 
 	return nil
+}
+
+func BuildRoomGame(rid string) (string, error) {
+	room, err := getRoomByID(rid)
+	if err != nil {
+		return "", err
+	}
+
+	if room.Type == "None" {
+		return "", fmt.Errorf("no gametype set")
+	}
+
+	if room.Addr != "" {
+		return "", fmt.Errorf("game already built. it must be closed before building again")
+	}
+
+	addr, err := registry.BuildGame(room.Type)
+	if err == nil {
+		room.Addr = addr
+		rooms[rid] = room
+	}
+
+	return addr, err
 }
 
 func DeleteRoom(rid string) error {
