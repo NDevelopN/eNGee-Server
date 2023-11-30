@@ -6,6 +6,7 @@ import (
 )
 
 var registry = make(map[string]func() (string, error))
+var roomGames = make(map[string]string)
 
 func RegisterGameType(name string, buildFunc func() (string, error)) error {
 	err := utils.ValidateInputRefuseEmpty(name, nil)
@@ -29,6 +30,22 @@ func RemoveGame(name string) error {
 	}
 
 	delete(registry, name)
+
+	return nil
+}
+
+func SelectRoomGame(uid string, name string) error {
+	_, found := registry[name]
+	if !found {
+		return fmt.Errorf("no mathcing gametype found")
+	}
+
+	err := utils.ValidateInputRefuseEmpty(uid, nil)
+	if err != nil {
+		return err
+	}
+
+	roomGames[uid] = name
 
 	return nil
 }
