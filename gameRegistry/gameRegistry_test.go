@@ -61,7 +61,7 @@ func TestRegisterGameEmptyType(t *testing.T) {
 func TestRemoveGameFromRegistry(t *testing.T) {
 	setupRegisterTest(t)
 
-	err := RemoveGame(testGameType)
+	err := RemoveGameType(testGameType)
 	if err != nil {
 		t.Fatalf(`TestRemoveGameFromRegistry(Valid) = %v, want nil`, err)
 	}
@@ -70,7 +70,7 @@ func TestRemoveGameFromRegistry(t *testing.T) {
 func TestRemoveGameFromRegistryInvalidType(t *testing.T) {
 	setupRegisterTest(t)
 
-	err := RemoveGame(badGameType)
+	err := RemoveGameType(badGameType)
 	if err == nil {
 		t.Fatalf(`TestRemoveGameFromRegistry(Invalid Type) = %v, want err`, err)
 	}
@@ -79,8 +79,8 @@ func TestRemoveGameFromRegistryInvalidType(t *testing.T) {
 func TestRemoveGameFromRegistryDouble(t *testing.T) {
 	setupRegisterTest(t)
 
-	RemoveGame(testGameType)
-	err := RemoveGame(testGameType)
+	RemoveGameType(testGameType)
+	err := RemoveGameType(testGameType)
 	if err == nil {
 		t.Fatalf(`TestRemoveGameFromRegistry(Double) = %v, want err`, err)
 	}
