@@ -1,6 +1,8 @@
 package gameRegistry
 
-import "testing"
+import (
+	"testing"
+)
 
 const testAddress = "Address"
 
@@ -49,41 +51,6 @@ func TestRegisterGameEmptyType(t *testing.T) {
 	}
 
 	t.Cleanup(cleanUpAfterTest)
-}
-
-func TestBuildGame(t *testing.T) {
-	setupRegisterTest(t)
-	addr, err := BuildGame(testGameType)
-	if addr != testAddress || err != nil {
-		t.Fatalf(`TestBuildGame(Valid) = %q, %v, want %q, nil`, addr, err, testAddress)
-	}
-
-	t.Cleanup(cleanUpAfterTest)
-}
-
-func TestBuildGameMulti(t *testing.T) {
-	setupRegisterTest(t)
-	BuildGame(testGameType)
-	addr, err := BuildGame(testGameType)
-	if addr != testAddress || err != nil {
-		t.Fatalf(`TestBuildGame(Valid) = %q, %v, want %q, nil`, addr, err, testAddress)
-	}
-}
-
-func TestBuildGameEmptyType(t *testing.T) {
-	setupRegisterTest(t)
-	addr, err := BuildGame("")
-	if addr != "" || err == nil {
-		t.Fatalf(`TestBuildGame(EmptyType) = %q, %v, want "", err`, addr, err)
-	}
-}
-
-func TestBuildGameInvalidType(t *testing.T) {
-	setupRegisterTest(t)
-	addr, err := BuildGame(badGameType)
-	if addr != "" || err == nil {
-		t.Fatalf(`TestBuildGame(InvalidType) = %q, %v, want "", err`, addr, err)
-	}
 }
 
 func TestRemoveGameFromRegistry(t *testing.T) {

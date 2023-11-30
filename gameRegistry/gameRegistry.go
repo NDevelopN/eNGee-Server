@@ -22,15 +22,6 @@ func RegisterGameType(name string, buildFunc func() (string, error)) error {
 	return nil
 }
 
-func BuildGame(name string) (string, error) {
-	buildFunc, found := registry[name]
-	if !found {
-		return "", fmt.Errorf("no matching gametype found")
-	}
-
-	return buildFunc()
-}
-
 func RemoveGame(name string) error {
 	_, found := registry[name]
 	if !found {
