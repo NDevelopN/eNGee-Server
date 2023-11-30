@@ -22,3 +22,13 @@ func ValidateInput(input string, allowed map[string]struct{}) error {
 
 	return fmt.Errorf("%q is not a valid input", input)
 }
+
+func ValidateURL(url string) error {
+	if url == "" {
+		return fmt.Errorf("provided url is empty string")
+	}
+
+	//TODO ensure URL is valid
+
+	return nil
+}

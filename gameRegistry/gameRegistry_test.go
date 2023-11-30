@@ -15,12 +15,8 @@ const badGameType = "Invalid"
 var testRID = uuid.NewString()
 var altRID = uuid.NewString()
 
-var testDummyFunc = func() (string, error) {
-	return testAddress, nil
-}
-
 func TestRegisterGame(t *testing.T) {
-	err := RegisterGameType(testGameType, testDummyFunc)
+	err := RegisterGameType(testGameType, testAddress)
 	if err != nil {
 		t.Fatalf(`TestRegisterGame(Valid) = %v, want nil`, err)
 	}
@@ -29,9 +25,9 @@ func TestRegisterGame(t *testing.T) {
 }
 
 func TestRegisterUniqueNameGame(t *testing.T) {
-	RegisterGameType(testGameType, testDummyFunc)
+	RegisterGameType(testGameType, testAddress)
 
-	err := RegisterGameType(altGameType, testDummyFunc)
+	err := RegisterGameType(altGameType, testAddress)
 	if err != nil {
 		t.Fatalf(`TestRegisterGame(Unique Name) = %v, want nil`, err)
 	}
@@ -40,8 +36,8 @@ func TestRegisterUniqueNameGame(t *testing.T) {
 }
 
 func TestRegisterSameNameGame(t *testing.T) {
-	RegisterGameType(testGameType, testDummyFunc)
-	err := RegisterGameType(testGameType, testDummyFunc)
+	RegisterGameType(testGameType, testAddress)
+	err := RegisterGameType(testGameType, testAddress)
 	if err == nil {
 		t.Fatalf(`TestRegisterGame(Same Name) = %v, want err`, err)
 	}
@@ -50,12 +46,19 @@ func TestRegisterSameNameGame(t *testing.T) {
 }
 
 func TestRegisterGameEmptyType(t *testing.T) {
-	err := RegisterGameType("", testDummyFunc)
+	err := RegisterGameType("", testAddress)
 	if err == nil {
 		t.Fatalf(`TestRegisterGame(Empty Name) = %v, want err`, err)
 	}
 
 	t.Cleanup(cleanUpAfterTest)
+}
+
+func TestRegisterGameEmptyURL(t *testing.T) {
+	err := RegisterGameType(testGameType, "")
+	if err == nil {
+		t.Fatalf(`TestRegisterGame(Empty URL) = %v, want err`, err)
+	}
 }
 
 func TestRemoveGameFromRegistry(t *testing.T) {
@@ -164,12 +167,12 @@ func TestSelectRoomMultiUnique(t *testing.T) {
 }
 
 func setupRegisterTest(t *testing.T) {
-	RegisterGameType(testGameType, testDummyFunc)
-	RegisterGameType(altGameType, testDummyFunc)
+	RegisterGameType(testGameType, testAddress)
+	RegisterGameType(altGameType, testAddress)
 
 	t.Cleanup(cleanUpAfterTest)
 }
 
 func cleanUpAfterTest() {
-	registry = make(map[string]func() (string, error))
+	urlRegistry = make(map[string]string)
 }
