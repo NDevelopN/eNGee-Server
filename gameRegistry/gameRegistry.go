@@ -34,6 +34,15 @@ func RemoveGameType(name string) error {
 	return nil
 }
 
+func GetGameTypes() []string {
+	var gTypes []string
+	for name, _ := range registry {
+		gTypes = append(gTypes, name)
+	}
+
+	return gTypes
+}
+
 func SelectRoomGame(uid string, name string) error {
 	_, found := registry[name]
 	if !found {
