@@ -171,6 +171,42 @@ func TestStartGameDouble(t *testing.T) {
 	}
 }
 
+func TestPauseGame(t *testing.T) {
+	setupActiveGameTest(t)
+
+	err := PauseGame(testRID)
+	if err != nil {
+		t.Fatalf(`TestPauseGame(Valid) = %v, want nil`, err)
+	}
+}
+
+func TestPauseGameDouble(t *testing.T) {
+	setupActiveGameTest(t)
+
+	PauseGame(testRID)
+	err := PauseGame(testRID)
+	if err != nil {
+		t.Fatalf(`TestPauseGame(Double) = %v, want nil`, err)
+	}
+}
+
+func TestPauseGameNotStarted(t *testing.T) {
+	setupGameTest(t)
+
+	err := PauseGame(testRID)
+	if err == nil {
+		t.Fatalf(`TestPauseGame(Not Started) = %v, want err`, err)
+	}
+}
+
+func TestPauseGameInvalidRID(t *testing.T) {
+	setupActiveGameTest(t)
+
+	err := PauseGame(badRID)
+	if err == nil {
+		t.Fatalf(`TestPauseGame(InvalidRID) = %v, want err`, err)
+	}
+}
 func setupGameSuite() {
 	go gamedummy.Start(testConPort)
 	go gamedummy.Start(altConPort)
@@ -184,6 +220,13 @@ func setupGameTest(t *testing.T) {
 	CreateGame(altRID, altConURL)
 
 	t.Cleanup(cleanUpAfterTest)
+}
+
+func setupActiveGameTest(t *testing.T) {
+	setupGameTest(t)
+
+	StartGame(testRID)
+	StartGame(altRID)
 }
 
 func cleanUpAfterTest() {

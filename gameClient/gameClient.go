@@ -76,7 +76,10 @@ func PauseGame(rid string) error {
 		return err
 	}
 
-	return nil
+	url := gameURLs[rid]
+
+	_, err = sendUpdateRequest(url, rid, "Pause")
+	return err
 }
 
 func Reset(rid string) error {
