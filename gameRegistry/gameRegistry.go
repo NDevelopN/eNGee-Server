@@ -6,7 +6,6 @@ import (
 )
 
 var urlRegistry = make(map[string]string)
-var roomGames = make(map[string]string)
 
 func RegisterGameType(name string, url string) error {
 	if name == "" {
@@ -40,7 +39,7 @@ func RemoveGameType(name string) error {
 
 func GetGameTypes() []string {
 	var gTypes []string
-	for name, _ := range urlRegistry {
+	for name := range urlRegistry {
 		gTypes = append(gTypes, name)
 	}
 
@@ -54,20 +53,4 @@ func GetGameURL(name string) (string, error) {
 	}
 
 	return url, nil
-}
-
-func SelectRoomGame(uid string, name string) error {
-	_, found := urlRegistry[name]
-	if !found {
-		return fmt.Errorf("no mathcing gametype found")
-	}
-
-	err := utils.ValidateInputRefuseEmpty(uid, nil)
-	if err != nil {
-		return err
-	}
-
-	roomGames[uid] = name
-
-	return nil
 }
