@@ -24,12 +24,12 @@ func CreateNewInstance(rid string) (string, error) {
 }
 
 func DeleteInstance(rid string) error {
-	instance, found := instances[rid]
-	if !found {
-		return fmt.Errorf("game does not exist for room %s", rid)
+	instance, err := getInstance(rid)
+	if err != nil {
+		return err
 	}
 
-	err := instance.EndGame()
+	err = instance.EndGame()
 	if err != nil {
 		return err
 	}
@@ -37,4 +37,29 @@ func DeleteInstance(rid string) error {
 	delete(instances, rid)
 
 	return nil
+}
+
+func StartInstance(rid string) error {
+	instance, err := getInstance(rid)
+	if err != nil {
+		return err
+	}
+
+	instance, err = instance.StartGame()
+	if err != nil {
+		return err
+	}
+
+	instances[rid] = instance
+
+	return nil
+}
+
+func getInstance(rid string) (GameDummy, error) {
+	instance, found := instances[rid]
+	if !found {
+		return instance, fmt.Errorf("game does not exist for room %s", rid)
+	}
+
+	return instance, nil
 }

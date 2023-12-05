@@ -1,6 +1,7 @@
 package gamedummy
 
 import (
+	"encoding/json"
 	"fmt"
 	"io"
 	"log"
@@ -8,6 +9,11 @@ import (
 
 	"github.com/gin-gonic/gin"
 )
+
+type updateMessage struct {
+	RID    string `json:"rid"`
+	Update string `json:"update"`
+}
 
 func CORSMiddleWare() gin.HandlerFunc {
 	return func(c *gin.Context) {
@@ -30,6 +36,7 @@ func Serve(port string) {
 	router.Use(CORSMiddleWare())
 
 	router.POST("/games", postGame)
+	router.PUT("/games/:id", updateGame)
 	router.DELETE("/games/:id", deleteGame)
 
 	router.Run(":" + port)
@@ -50,6 +57,31 @@ func postGame(c *gin.Context) {
 		log.Printf("[Error] Replying after creating game: %v", err)
 		return
 	}
+}
+
+func updateGame(c *gin.Context) {
+	reqBody, w := processMessage(c)
+
+	var um updateMessage
+
+	err := json.Unmarshal(reqBody, &um)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Failed to parse update message: %v", reqBody), http.StatusBadRequest)
+		log.Printf("[Error] Reading update message: %v", err)
+		return
+	}
+
+	switch um.Update {
+	case ("Start"):
+		err = StartInstance(um.RID)
+	}
+
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Failed to update game: %v", err), http.StatusInternalServerError)
+		log.Printf("[Error] Updating(%s) game: %v", um.Update, err)
+		return
+	}
+
 }
 
 func deleteGame(c *gin.Context) {
