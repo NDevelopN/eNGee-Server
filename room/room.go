@@ -1,8 +1,11 @@
 package room
 
 import (
+	gameclient "Engee-Server/gameClient"
 	"Engee-Server/utils"
 	"fmt"
+
+	registry "Engee-Server/gameRegistry"
 
 	"github.com/google/uuid"
 )
@@ -95,15 +98,38 @@ func UpdateRoomType(rid string, rType string) error {
 	}
 
 	room.Type = rType
-	rooms[rid] = room
 
-	return nil
+	room.Addr, err = registry.GetGameURL(rType)
+	if err == nil {
+		rooms[rid] = room
+		return nil
+	} else {
+		return err
+	}
 }
+
+func CreateRoomInstance(rid string) error {
+	room, err := getRoomByID(rid)
+	if err != nil {
+		return err
+	}
+
+	_, err = gameclient.CreateGame(rid, room.Addr)
+	if err != nil {
+		room.Status = "Created"
+		rooms[rid] = room
+	}
+
+	return err
+}
+
 func DeleteRoom(rid string) error {
 	_, err := getRoomByID(rid)
 	if err != nil {
 		return err
 	}
+
+	gameclient.EndGame(rid)
 
 	delete(rooms, rid)
 

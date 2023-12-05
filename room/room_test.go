@@ -1,8 +1,13 @@
 package room
 
 import (
+	gameclient "Engee-Server/gameClient"
 	reg "Engee-Server/gameRegistry"
+	"os"
 	"testing"
+	"time"
+
+	"Engee-Server/gamedummy"
 
 	"github.com/google/uuid"
 )
@@ -13,13 +18,14 @@ const testRoomName = "Test Room"
 const newRoomName = "New Room"
 
 const updatedRoomStatus = "Updated"
+
 const testRoomType = "Test"
+const altRoomType = "Alt"
 
-const testAddress = "Address"
-
-var testDummyFunc = func() (string, error) {
-	return testAddress, nil
-}
+const testConPort = "8091"
+const altConPort = "8092"
+const testConURL = "http://localhost:" + testConPort
+const altConURL = "http://localhost:" + altConPort
 
 var testRoom = room{
 	RID:    "",
@@ -27,6 +33,13 @@ var testRoom = room{
 	Type:   "None",
 	Status: "New",
 	Addr:   "",
+}
+
+func TestMain(m *testing.M) {
+	setupRoomSuite()
+	code := m.Run()
+	cleanUpAfterSuite()
+	os.Exit(code)
 }
 
 func TestCreateRoom(t *testing.T) {
@@ -201,6 +214,7 @@ func TestUpdateRoomStatusInvalidID(t *testing.T) {
 func TestUpdateRoomType(t *testing.T) {
 	id, trInstance := setupRoomTest(t)
 	trInstance.Type = testRoomType
+	trInstance.Addr = testConURL
 
 	err := UpdateRoomType(id, testRoomType)
 	if err != nil {
@@ -232,8 +246,60 @@ func TestUpdateRoomTypeInvalidID(t *testing.T) {
 	checkExpectedRoomData(t, id, trInstance)
 }
 
-func TestDeleteRoom(t *testing.T) {
+func TestCreateRoomInstance(t *testing.T) {
 	id, _ := setupRoomTest(t)
+	UpdateRoomType(id, testRoomType)
+
+	err := CreateRoomInstance(id)
+	if err != nil {
+		t.Fatalf(`CreateRoomGameInstance(Valid) = %v, want nil`, err)
+	}
+}
+
+func TestCreateRoomInstanceDouble(t *testing.T) {
+	id, _ := setupRoomTest(t)
+	UpdateRoomType(id, testRoomType)
+
+	CreateRoomInstance(id)
+	err := CreateRoomInstance(id)
+	if err == nil {
+		t.Fatalf(`CreateRoomGameInstance(Double) = %v, want err`, err)
+	}
+}
+func TestCreateRoomInstanceInvalidRID(t *testing.T) {
+	id, _ := setupRoomTest(t)
+	UpdateRoomType(id, testRoomType)
+
+	err := CreateRoomInstance(randomID)
+	if err == nil {
+		t.Fatalf(`CreateRoomGameInstance(Invalid RID) = %v, want err`, err)
+	}
+}
+func TestCreateRoomInstanceTypeNotSet(t *testing.T) {
+	id, _ := setupRoomTest(t)
+
+	err := CreateRoomInstance(id)
+	if err == nil {
+		t.Fatalf(`CreateRoomGameInstance(Room Type Not Set) = %v, want err`, err)
+	}
+}
+
+func TestCreateRoomInstanceDeletedRoom(t *testing.T) {
+	id, _ := setupRoomTest(t)
+	UpdateRoomType(id, testRoomType)
+
+	err := DeleteRoom(id)
+	if err != nil {
+		t.Fatalf(`Failed to delete: %v`, err)
+	}
+	err = CreateRoomInstance(id)
+	if err == nil {
+		t.Fatalf(`CreateRoomGameInstance(Deleted Room) = %v, want err`, err)
+	}
+}
+
+func TestDeleteRoom(t *testing.T) {
+	id, _ := setupActiveRoomTest(t)
 
 	err := DeleteRoom(id)
 	if err != nil {
@@ -244,7 +310,7 @@ func TestDeleteRoom(t *testing.T) {
 }
 
 func TestDeleteEmptyID(t *testing.T) {
-	setupRoomTest(t)
+	setupActiveRoomTest(t)
 
 	err := DeleteRoom("")
 	if err == nil {
@@ -253,7 +319,7 @@ func TestDeleteEmptyID(t *testing.T) {
 }
 
 func TestDeleteInvalidID(t *testing.T) {
-	setupRoomTest(t)
+	setupActiveRoomTest(t)
 
 	err := DeleteRoom(randomID)
 	if err == nil {
@@ -262,7 +328,7 @@ func TestDeleteInvalidID(t *testing.T) {
 }
 
 func TestDeleteDouble(t *testing.T) {
-	id, _ := setupRoomTest(t)
+	id, _ := setupActiveRoomTest(t)
 
 	DeleteRoom(id)
 	err := DeleteRoom(id)
@@ -292,17 +358,26 @@ func setupAddRoomTest() (string, room) {
 	return id, trInstance
 }
 
-func setupRoomGameTest(t *testing.T) (string, room) {
-	id, trInstance := setupRoomTest(t)
+func setupActiveRoomTest(t *testing.T) (string, room) {
+	id, _ := setupRoomTest(t)
 
 	UpdateRoomType(id, testRoomType)
-	trInstance.Type = testRoomType
 
-	reg.RegisterGameType(testRoomType, testDummyFunc)
+	trInstance, _ := GetRoom(id)
 
-	t.Cleanup(func() { reg.RemoveGame(testRoomType) })
+	gameclient.CreateGame(id, trInstance.Addr)
 
 	return id, trInstance
+}
+
+func setupRoomSuite() {
+	go gamedummy.Start(testConPort)
+	go gamedummy.Start(altConPort)
+
+	reg.RegisterGameType(testRoomType, testConURL)
+	reg.RegisterGameType(altRoomType, altConURL)
+
+	time.Sleep(200 * time.Millisecond)
 }
 
 func checkExpectedRoomData(t *testing.T, id string, expected room) {
@@ -321,4 +396,8 @@ func confirmRoomNotExist(t *testing.T, id string) {
 
 func cleanUpAfterTest() {
 	rooms = make(map[string]room)
+}
+
+func cleanUpAfterSuite() {
+
 }
