@@ -3,10 +3,16 @@ package gameclient
 import (
 	"Engee-Server/utils"
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"net/http"
 )
+
+type updateMessage struct {
+	RID    string `json:"rid"`
+	Update string `json:"update"`
+}
 
 var gameURLs = make(map[string]string)
 
@@ -50,6 +56,18 @@ func EndGame(rid string) error {
 
 	delete(gameURLs, rid)
 	return nil
+}
+
+func StartGame(rid string) error {
+	err := checkRID(rid)
+	if err != nil {
+		return err
+	}
+
+	url := gameURLs[rid]
+
+	_, err = sendUpdateRequest(url, rid, "Start")
+	return err
 }
 
 func PauseGame(rid string) error {
@@ -114,4 +132,18 @@ func sendRequest(url string, method string, body []byte) (string, error) {
 	}
 
 	return string(resBody), nil
+}
+
+func sendUpdateRequest(url string, rid string, update string) (string, error) {
+	um := updateMessage{
+		RID:    rid,
+		Update: update,
+	}
+
+	body, err := json.Marshal(um)
+	if err != nil {
+		return "", err
+	}
+
+	return sendRequest(url, http.MethodPut, []byte(body))
 }
