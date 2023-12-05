@@ -55,6 +55,22 @@ func StartInstance(rid string) error {
 	return nil
 }
 
+func PauseInstance(rid string) error {
+	instance, err := getInstance(rid)
+	if err != nil {
+		return err
+	}
+
+	instance, err = instance.PauseGame()
+	if err != nil {
+		return err
+	}
+
+	instances[rid] = instance
+
+	return nil
+}
+
 func getInstance(rid string) (GameDummy, error) {
 	instance, found := instances[rid]
 	if !found {

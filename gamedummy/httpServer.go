@@ -74,6 +74,8 @@ func updateGame(c *gin.Context) {
 	switch um.Update {
 	case ("Start"):
 		err = StartInstance(um.RID)
+	case ("Pause"):
+		err = PauseInstance(um.RID)
 	default:
 		http.Error(w, fmt.Sprintf("Failed to update game, command: %q not recognised", um.Update), http.StatusBadRequest)
 		log.Printf("[Error] Invalid update command %q", um.Update)
