@@ -5,7 +5,6 @@ import (
 	"Engee-Server/user"
 	"Engee-Server/utils"
 	"fmt"
-	"log"
 )
 
 var lobbies = make(map[string][]string)
@@ -39,9 +38,7 @@ func RemoveUserFromRoom(uid string, rid string) error {
 
 	if checkRoomLobbyExists(rid) {
 		if checkRoomContainsUser(uid, rid) {
-			log.Printf("Lobbies before: %v", lobbies)
-			lobbies[rid], err = utils.RemoveElementFromSlice(lobbies[rid], uid)
-			log.Printf("Lobbies after: %v (%v)", lobbies, err)
+			lobbies[rid], err = utils.RemoveElementFromSliceOrdered(lobbies[rid], uid)
 		}
 	}
 
@@ -68,6 +65,19 @@ func GetRoomUserCount(rid string) (int, error) {
 	}
 
 	return len(lobbies[rid]), nil
+}
+
+func GetRoomLeader(rid string) (string, error) {
+	_, err := room.GetRoom(rid)
+	if err != nil {
+		return "", err
+	}
+
+	if checkRoomLobbyExists(rid) {
+		return lobbies[rid][0], nil
+	}
+
+	return "", fmt.Errorf("lobby for %q does not exists", rid)
 }
 
 func checkUserAndRoomExist(uid string, rid string) error {
