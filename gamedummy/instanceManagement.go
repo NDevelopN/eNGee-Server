@@ -55,6 +55,21 @@ func StartInstance(rid string) error {
 	return nil
 }
 
+func SetInstanceRules(rid string, rules string) error {
+	instance, err := getInstance(rid)
+	if err != nil {
+		return err
+	}
+
+	instance, err = instance.SetRules(rules)
+	if err != nil {
+		return err
+	}
+
+	instances[rid] = instance
+	return nil
+}
+
 func PauseInstance(rid string) error {
 	instance, err := getInstance(rid)
 	if err != nil {

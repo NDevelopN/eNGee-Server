@@ -37,6 +37,7 @@ func Serve(port string) {
 
 	router.POST("/games", postGame)
 	router.PUT("/games/:id", updateGame)
+	router.PUT("/games/:id/rules", updateGameRules)
 	router.DELETE("/games/:id", deleteGame)
 
 	router.Run(":" + port)
@@ -89,7 +90,26 @@ func updateGame(c *gin.Context) {
 		log.Printf("[Error] Updating(%s) game: %v", um.Update, err)
 		return
 	}
+}
 
+func updateGameRules(c *gin.Context) {
+	reqBody, w := processMessage(c)
+
+	var um updateMessage
+
+	err := json.Unmarshal(reqBody, &um)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Failed to parse rules update: %v", reqBody), http.StatusBadRequest)
+		log.Printf("[Error] Reading rules update: %v", err)
+		return
+	}
+
+	err = SetInstanceRules(um.RID, um.Update)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Failed to update game rules: %v", err), http.StatusInternalServerError)
+		log.Printf("[Error] Updating(%s) game rules: %v", um.Update, err)
+		return
+	}
 }
 
 func deleteGame(c *gin.Context) {

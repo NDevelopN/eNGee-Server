@@ -29,6 +29,18 @@ func CreateDefaultGame() GameDummy {
 	return newDummy
 }
 
+func (dummy GameDummy) SetRules(rules string) (GameDummy, error) {
+	err := checkValidGame(dummy, []int{NEW, RESET})
+	if err != nil {
+		return dummy, err
+	}
+
+	dummy.Rules = rules
+
+	return dummy, nil
+
+}
+
 func (dummy GameDummy) StartGame() (GameDummy, error) {
 	err := checkValidGame(dummy, []int{NEW, RESET})
 	if err != nil {
