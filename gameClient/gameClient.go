@@ -82,13 +82,16 @@ func PauseGame(rid string) error {
 	return err
 }
 
-func Reset(rid string) error {
+func ResetGame(rid string) error {
 	err := checkRID(rid)
 	if err != nil {
 		return err
 	}
 
-	return nil
+	url := gameURLs[rid]
+
+	_, err = sendUpdateRequest(url, rid, "Reset")
+	return err
 }
 
 func RemovePlayer(rid string, targedID string) error {
