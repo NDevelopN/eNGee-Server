@@ -20,6 +20,8 @@ const testConURL = "http://localhost:" + testConPort
 const altConURL = "http://localhost:" + altConPort
 const testPlayURL = "http://localhost:8099"
 
+const updatedRules = "New Rules"
+
 const badURL = "http://notahost:8080"
 
 func TestMain(m *testing.M) {
@@ -140,6 +142,43 @@ func TestEndGameEmptyRID(t *testing.T) {
 	err := EndGame("")
 	if err == nil {
 		t.Fatalf(`TestEndGame(EmptyRID) = %v, want err`, err)
+	}
+}
+
+func TestSetGameRules(t *testing.T) {
+	setupGameTest(t)
+
+	err := SetGameRules(testRID, updatedRules)
+	if err != nil {
+		t.Fatalf(`TestSetGameRules(Valid) = %v, want nil`, err)
+	}
+}
+
+func TestSetGameRulesDouble(t *testing.T) {
+	setupGameTest(t)
+
+	SetGameRules(testRID, updatedRules)
+	err := SetGameRules(testRID, updatedRules)
+	if err != nil {
+		t.Fatalf(`TestSetGameRules(Double) = %v, want nil`, err)
+	}
+}
+
+func TestSetGameRulesAfterStart(t *testing.T) {
+	setupActiveGameTest(t)
+
+	err := SetGameRules(testRID, updatedRules)
+	if err == nil {
+		t.Fatalf(`TestSetGameRules(After Start) = %v, want err`, err)
+	}
+}
+
+func TestSetGameRulesInvalidRID(t *testing.T) {
+	setupGameTest(t)
+
+	err := SetGameRules(badRID, updatedRules)
+	if err == nil {
+		t.Fatalf(`TestSetGameRules(InvalidRID) = %v, want err`, err)
 	}
 }
 

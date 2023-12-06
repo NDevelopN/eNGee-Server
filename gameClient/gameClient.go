@@ -58,6 +58,18 @@ func EndGame(rid string) error {
 	return nil
 }
 
+func SetGameRules(rid string, rules string) error {
+	err := checkRID(rid)
+	if err != nil {
+		return err
+	}
+
+	url := gameURLs[rid] + "/rules"
+
+	_, err = sendUpdateRequest(url, rid, rules)
+	return err
+}
+
 func StartGame(rid string) error {
 	err := checkRID(rid)
 	if err != nil {
