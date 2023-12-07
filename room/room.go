@@ -10,15 +10,15 @@ import (
 	"github.com/google/uuid"
 )
 
-type room struct {
-	RID    string
-	Name   string
-	Type   string
-	Status string
-	Addr   string
+type Room struct {
+	RID    string `json:"rid"`
+	Name   string `json:"name"`
+	Type   string `json:"type"`
+	Status string `json:"status"`
+	Addr   string `json:"addr"`
 }
 
-var rooms = make(map[string]room)
+var rooms = make(map[string]Room)
 
 func CreateRoom(name string) (string, error) {
 	err := utils.ValidateInputRefuseEmpty(name, nil)
@@ -27,7 +27,7 @@ func CreateRoom(name string) (string, error) {
 	}
 
 	id := uuid.NewString()
-	newRoom := room{
+	newRoom := Room{
 		RID:    id,
 		Name:   name,
 		Type:   "None",
@@ -39,17 +39,30 @@ func CreateRoom(name string) (string, error) {
 	return id, nil
 }
 
-func GetRoom(rid string) (room, error) {
+func GetRoom(rid string) (Room, error) {
 	return getRoomByID(rid)
 }
 
-func GetRooms() (map[string]room, error) {
+func GetRooms() (map[string]Room, error) {
 	var err error = nil
 	if len(rooms) == 0 {
 		err = fmt.Errorf("no rooms to return")
 	}
 
 	return rooms, err
+}
+
+func GetRoomURL(rid string) (string, error) {
+	room, err := getRoomByID(rid)
+	if err != nil {
+		return "", err
+	}
+
+	if room.Addr == "" {
+		return "", fmt.Errorf("room URL not set")
+	}
+
+	return room.Addr, nil
 }
 
 func UpdateRoomName(rid string, name string) error {
@@ -136,7 +149,7 @@ func DeleteRoom(rid string) error {
 	return nil
 }
 
-func getRoomByID(rid string) (room, error) {
+func getRoomByID(rid string) (Room, error) {
 	var err error
 
 	room, found := rooms[rid]

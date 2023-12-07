@@ -27,7 +27,7 @@ const altConPort = "8092"
 const testConURL = "http://localhost:" + testConPort
 const altConURL = "http://localhost:" + altConPort
 
-var testRoom = room{
+var testRoom = Room{
 	RID:    "",
 	Name:   testRoomName,
 	Type:   "None",
@@ -110,7 +110,7 @@ func TestGetRoomInvalidID(t *testing.T) {
 func TestGetRooms(t *testing.T) {
 	fID, fRoom := setupRoomTest(t)
 	sID, sRoom := setupAddRoomTest()
-	expected := map[string]room{fID: fRoom, sID: sRoom}
+	expected := map[string]Room{fID: fRoom, sID: sRoom}
 
 	rooms, err := GetRooms()
 	if len(rooms) != 2 || err != nil {
@@ -337,7 +337,7 @@ func TestDeleteDouble(t *testing.T) {
 	}
 }
 
-func setupRoomTest(t *testing.T) (string, room) {
+func setupRoomTest(t *testing.T) (string, Room) {
 	id, _ := CreateRoom(testRoomName)
 
 	trInstance := testRoom
@@ -348,7 +348,7 @@ func setupRoomTest(t *testing.T) (string, room) {
 	return id, trInstance
 }
 
-func setupAddRoomTest() (string, room) {
+func setupAddRoomTest() (string, Room) {
 	id, _ := CreateRoom(newRoomName)
 
 	trInstance := testRoom
@@ -358,7 +358,7 @@ func setupAddRoomTest() (string, room) {
 	return id, trInstance
 }
 
-func setupActiveRoomTest(t *testing.T) (string, room) {
+func setupActiveRoomTest(t *testing.T) (string, Room) {
 	id, _ := setupRoomTest(t)
 
 	UpdateRoomType(id, testRoomType)
@@ -380,7 +380,7 @@ func setupRoomSuite() {
 	time.Sleep(200 * time.Millisecond)
 }
 
-func checkExpectedRoomData(t *testing.T, id string, expected room) {
+func checkExpectedRoomData(t *testing.T, id string, expected Room) {
 	room, err := GetRoom(id)
 	if room != expected || err != nil {
 		t.Fatalf(`GetRoom(UpdatedRoom) = %v, %v, want %v, nil`, room, err, expected)
@@ -395,7 +395,7 @@ func confirmRoomNotExist(t *testing.T, id string) {
 }
 
 func cleanUpAfterTest() {
-	rooms = make(map[string]room)
+	rooms = make(map[string]Room)
 }
 
 func cleanUpAfterSuite() {
