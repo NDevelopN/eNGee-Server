@@ -75,6 +75,15 @@ func (dummy *GameDummy) ResetGame() error {
 	return nil
 }
 
+func (dummy *GameDummy) RemovePlayer(uid string) error {
+	err := checkValidGame(dummy, []int{})
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (dummy *GameDummy) EndGame() error {
 	err := checkValidGame(dummy, []int{})
 	if err != nil {
