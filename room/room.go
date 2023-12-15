@@ -127,7 +127,7 @@ func CreateRoomInstance(rid string) error {
 		return err
 	}
 
-	_, err = gameclient.CreateGame(rid, room.Addr)
+	err = gameclient.CreateGame(rid, room.Addr)
 	if err != nil {
 		room.Status = "Created"
 		rooms[rid] = room

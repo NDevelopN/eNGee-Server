@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"net/http"
 )
 
@@ -16,29 +17,31 @@ type updateMessage struct {
 
 var gameURLs = make(map[string]string)
 
-func CreateGame(rid string, url string) (string, error) {
+func CreateGame(rid string, url string) error {
 	if rid == "" {
-		return "", fmt.Errorf("empty RID provided")
+		return fmt.Errorf("empty RID provided")
 	}
 
 	err := utils.ValidateURL(url)
 	if err != nil {
-		return "", err
+		return err
 	}
 
 	prev, found := gameURLs[rid]
-	if found || prev != "" {
-		return "", fmt.Errorf("game already exists for room %s", rid)
+	if found {
+		return fmt.Errorf("game already exists for room %s", rid)
 	}
 
-	resp, err := sendRequest(url+"/games", http.MethodPost, []byte(rid))
+	log.Printf("Previous info: %v ", prev)
+
+	_, err = sendRequest(url+"/games", http.MethodPost, []byte(rid))
 	if err != nil {
-		return "", err
+		return err
 	}
 
 	gameURLs[rid] = url + "/games/" + rid
 
-	return resp, nil
+	return nil
 }
 
 func EndGame(rid string) error {

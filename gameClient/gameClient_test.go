@@ -14,11 +14,10 @@ var testRID = uuid.NewString()
 var altRID = uuid.NewString()
 var badRID = uuid.NewString()
 
-const testConPort = "8091"
-const altConPort = "8092"
-const testConURL = "http://localhost:" + testConPort
-const altConURL = "http://localhost:" + altConPort
-const testPlayURL = "http://localhost:8099"
+const testPort = "8091"
+const altPort = "8092"
+const testURL = "http://localhost:" + testPort
+const altURL = "http://localhost:" + altPort
 
 const updatedRules = "New Rules"
 
@@ -32,76 +31,76 @@ func TestMain(m *testing.M) {
 }
 
 func TestCreateGame(t *testing.T) {
-	pURL, err := CreateGame(testRID, testConURL)
-	if pURL != testPlayURL || err != nil {
-		t.Fatalf(`TestCreateGame(Valid) = %q, %v, want %q, nil`, pURL, err, testPlayURL)
+	err := CreateGame(testRID, testURL)
+	if err != nil {
+		t.Fatalf(`TestCreateGame(Valid) = %v, want nil`, err)
 	}
 
 	t.Cleanup(cleanUpAfterTest)
 }
 
 func TestCreateGameDoubleSameURL(t *testing.T) {
-	CreateGame(testRID, testConURL)
-	pURL, err := CreateGame(testRID, testConURL)
-	if pURL != "" || err == nil {
-		t.Fatalf(`TestCreateGame(Double Same) = %q, %v, want "", err`, pURL, err)
+	CreateGame(testRID, testURL)
+	err := CreateGame(testRID, testURL)
+	if err == nil {
+		t.Fatalf(`TestCreateGame(Double Same) = %v, want err`, err)
 	}
 
 	t.Cleanup(cleanUpAfterTest)
 }
 
 func TestCreateGameDoubleUniqueURL(t *testing.T) {
-	CreateGame(testRID, testConURL)
-	pURL, err := CreateGame(testRID, altConURL)
-	if pURL != "" || err == nil {
-		t.Fatalf(`TestCreateGame(Double Unique) = %q, %v, want "", err`, pURL, err)
+	CreateGame(testRID, testURL)
+	err := CreateGame(testRID, altURL)
+	if err == nil {
+		t.Fatalf(`TestCreateGame(Double Unique) = %v, want err`, err)
 	}
 
 	t.Cleanup(cleanUpAfterTest)
 }
 
 func TestCreateGameMultiSameURL(t *testing.T) {
-	CreateGame(testRID, testConURL)
-	pURL, err := CreateGame(altRID, testConURL)
-	if pURL != testPlayURL || err != nil {
-		t.Fatalf(`TestCreateGame(Same URL) = %q, %v, want %q, nil`, pURL, err, testPlayURL)
+	CreateGame(testRID, testURL)
+	err := CreateGame(altRID, testURL)
+	if err != nil {
+		t.Fatalf(`TestCreateGame(Same URL) = %v, want nil`, err)
 	}
 
 	t.Cleanup(cleanUpAfterTest)
 }
 
 func TestCreateGameMultiUniqueURL(t *testing.T) {
-	CreateGame(testRID, testConURL)
-	pURL, err := CreateGame(altRID, altConURL)
-	if pURL != testPlayURL || err != nil {
-		t.Fatalf(`TestCreateGame(Unique URL) = %q, %v, want %q, nil`, pURL, err, testPlayURL)
+	CreateGame(testRID, testURL)
+	err := CreateGame(altRID, altURL)
+	if err != nil {
+		t.Fatalf(`TestCreateGame(Unique URL) = %v, want nil`, err)
 	}
 
 	t.Cleanup(cleanUpAfterTest)
 }
 
 func TestCreateGameEmptyRID(t *testing.T) {
-	pURL, err := CreateGame("", testConURL)
-	if pURL != "" || err == nil {
-		t.Fatalf(`TestCreateGame(Empty RID) = %q, %v, want "", err`, pURL, err)
+	err := CreateGame("", testURL)
+	if err == nil {
+		t.Fatalf(`TestCreateGame(Empty RID) %v, want err`, err)
 	}
 
 	t.Cleanup(cleanUpAfterTest)
 }
 
 func TestCreateGameEmptyURL(t *testing.T) {
-	pURL, err := CreateGame(testRID, "")
-	if pURL != "" || err == nil {
-		t.Fatalf(`TestCreateGame(Empty URL) = %q, %v, want "", err`, pURL, err)
+	err := CreateGame(testRID, "")
+	if err == nil {
+		t.Fatalf(`TestCreateGame(Empty URL) %v, want err`, err)
 	}
 
 	t.Cleanup(cleanUpAfterTest)
 }
 
 func TestCreateGameInvalidURL(t *testing.T) {
-	pURL, err := CreateGame(testRID, badURL)
-	if pURL != "" || err == nil {
-		t.Fatalf(`TestCreateGame(Valid) = %q, %v, want "", err`, pURL, err)
+	err := CreateGame(testRID, badURL)
+	if err == nil {
+		t.Fatalf(`TestCreateGame(Valid) %v, want err`, err)
 	}
 
 	t.Cleanup(cleanUpAfterTest)
@@ -284,16 +283,16 @@ func TestResetGameInvalidRID(t *testing.T) {
 }
 
 func setupGameSuite() {
-	go gamedummy.Start(testConPort)
-	go gamedummy.Start(altConPort)
+	go gamedummy.Start(testPort)
+	go gamedummy.Start(altPort)
 
 	time.Sleep(200 * time.Millisecond)
 }
 
 func setupGameTest(t *testing.T) {
 
-	CreateGame(testRID, testConURL)
-	CreateGame(altRID, altConURL)
+	CreateGame(testRID, testURL)
+	CreateGame(altRID, altURL)
 
 	t.Cleanup(cleanUpAfterTest)
 }
