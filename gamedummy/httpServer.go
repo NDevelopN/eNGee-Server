@@ -1,7 +1,7 @@
 package gamedummy
 
 import (
-	"encoding/json"
+	"Engee-Server/utils"
 	"fmt"
 	"io"
 	"log"
@@ -9,11 +9,6 @@ import (
 
 	"github.com/gin-gonic/gin"
 )
-
-type updateMessage struct {
-	RID    string `json:"rid"`
-	Update string `json:"update"`
-}
 
 func CORSMiddleWare() gin.HandlerFunc {
 	return func(c *gin.Context) {
@@ -36,8 +31,11 @@ func Serve(port string) {
 	router.Use(CORSMiddleWare())
 
 	router.POST("/games", postGame)
-	router.PUT("/games/:id", updateGame)
+	router.PUT("/games/:id/start", startGame)
+	router.PUT("/games/:id/pause", pauseGame)
+	router.PUT("/games/:id/reset", resetGame)
 	router.PUT("/games/:id/rules", updateGameRules)
+	router.DELETE("/games/:id/players/:id", removePlayer)
 	router.DELETE("/games/:id", deleteGame)
 
 	router.Run(":" + port)
@@ -60,54 +58,92 @@ func postGame(c *gin.Context) {
 	}
 }
 
-func updateGame(c *gin.Context) {
-	reqBody, w := processMessage(c)
+func startGame(c *gin.Context) {
+	_, w := processMessage(c)
+	ids := utils.GetRequestIDs(c.Request)
 
-	var um updateMessage
-
-	err := json.Unmarshal(reqBody, &um)
+	err := StartInstance(ids[0])
 	if err != nil {
-		http.Error(w, fmt.Sprintf("Failed to parse update message: %v", reqBody), http.StatusBadRequest)
-		log.Printf("[Error] Reading update message: %v", err)
+		http.Error(w, fmt.Sprintf("Failed to start game: %v", err), http.StatusInternalServerError)
+		log.Printf("[Error] Starting game: %v", err)
 		return
 	}
 
-	switch um.Update {
-	case ("Start"):
-		err = StartInstance(um.RID)
-	case ("Pause"):
-		err = PauseInstance(um.RID)
-	case ("Reset"):
-		err = ResetInstance(um.RID)
-	default:
-		http.Error(w, fmt.Sprintf("Failed to update game, command: %q not recognised", um.Update), http.StatusBadRequest)
-		log.Printf("[Error] Invalid update command %q", um.Update)
+	err = sendReply(w, "", 200)
+	if err != nil {
+		log.Printf("[Error] Replying after starting game: %v", err)
+		return
+	}
+}
+
+func pauseGame(c *gin.Context) {
+	_, w := processMessage(c)
+	ids := utils.GetRequestIDs(c.Request)
+
+	err := PauseInstance(ids[0])
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Failed to pause/unpause game: %v", err), http.StatusInternalServerError)
+		log.Printf("[Error] Pausing/Unpausing game: %v", err)
 		return
 	}
 
+	err = sendReply(w, "", 200)
 	if err != nil {
-		http.Error(w, fmt.Sprintf("Failed to update game: %v", err), http.StatusInternalServerError)
-		log.Printf("[Error] Updating(%s) game: %v", um.Update, err)
+		log.Printf("[Error] Replying after pausing game: %v", err)
+		return
+	}
+}
+
+func resetGame(c *gin.Context) {
+	_, w := processMessage(c)
+	ids := utils.GetRequestIDs(c.Request)
+
+	err := ResetInstance(ids[0])
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Failed to reset game: %v", err), http.StatusInternalServerError)
+		log.Printf("[Error] Resetting game: %v", err)
+		return
+	}
+
+	err = sendReply(w, "", 200)
+	if err != nil {
+		log.Printf("[Error] Replying after resetting game: %v", err)
 		return
 	}
 }
 
 func updateGameRules(c *gin.Context) {
 	reqBody, w := processMessage(c)
+	ids := utils.GetRequestIDs(c.Request)
 
-	var um updateMessage
-
-	err := json.Unmarshal(reqBody, &um)
+	err := SetInstanceRules(ids[0], string(reqBody))
 	if err != nil {
-		http.Error(w, fmt.Sprintf("Failed to parse rules update: %v", reqBody), http.StatusBadRequest)
-		log.Printf("[Error] Reading rules update: %v", err)
+		http.Error(w, fmt.Sprintf("Failed to update game rules: %v", err), http.StatusInternalServerError)
+		log.Printf("[Error] Updating game rules: %v", err)
 		return
 	}
 
-	err = SetInstanceRules(um.RID, um.Update)
+	err = sendReply(w, "", 200)
 	if err != nil {
-		http.Error(w, fmt.Sprintf("Failed to update game rules: %v", err), http.StatusInternalServerError)
-		log.Printf("[Error] Updating(%s) game rules: %v", um.Update, err)
+		log.Printf("[Error] Replying after updating game rules: %v", err)
+		return
+	}
+}
+
+func removePlayer(c *gin.Context) {
+	_, w := processMessage(c)
+	ids := utils.GetRequestIDs(c.Request)
+
+	err := RemovePlayerFromInstance(ids[0], ids[1])
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Failed to remove player from game: %v", err), http.StatusInternalServerError)
+		log.Printf("[Error] Removing player from game: %v", err)
+		return
+	}
+
+	err = sendReply(w, "", 200)
+	if err != nil {
+		log.Printf("[Error] Replying after removing player: %v", err)
 		return
 	}
 }

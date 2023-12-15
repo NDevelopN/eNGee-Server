@@ -3,16 +3,10 @@ package gameclient
 import (
 	"Engee-Server/utils"
 	"bytes"
-	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"net/http"
 )
-
-type updateMessage struct {
-	RID    string `json:"rid"`
-	Update string `json:"update"`
-}
 
 var gameURLs = make(map[string]string)
 
@@ -67,7 +61,7 @@ func SetGameRules(rid string, rules string) error {
 
 	url := gameURLs[rid] + "/rules"
 
-	_, err = sendUpdateRequest(url, rid, rules)
+	_, err = sendRequest(url, http.MethodPut, []byte(rules))
 	return err
 }
 
@@ -77,9 +71,9 @@ func StartGame(rid string) error {
 		return err
 	}
 
-	url := gameURLs[rid]
+	url := gameURLs[rid] + "/start"
 
-	_, err = sendUpdateRequest(url, rid, "Start")
+	_, err = sendRequest(url, http.MethodPut, []byte{})
 	return err
 }
 
@@ -89,9 +83,9 @@ func PauseGame(rid string) error {
 		return err
 	}
 
-	url := gameURLs[rid]
+	url := gameURLs[rid] + "/pause"
 
-	_, err = sendUpdateRequest(url, rid, "Pause")
+	_, err = sendRequest(url, http.MethodPut, []byte{})
 	return err
 }
 
@@ -101,20 +95,22 @@ func ResetGame(rid string) error {
 		return err
 	}
 
-	url := gameURLs[rid]
+	url := gameURLs[rid] + "/reset"
 
-	_, err = sendUpdateRequest(url, rid, "Reset")
+	_, err = sendRequest(url, http.MethodPut, []byte{})
 	return err
 }
 
-func RemovePlayer(rid string, targedID string) error {
+func RemovePlayer(rid string, targetUID string) error {
 	err := checkRID(rid)
 	if err != nil {
 		return err
 	}
 
-	return nil
+	url := gameURLs[rid] + "/players/" + targetUID
 
+	_, err = sendRequest(url, http.MethodDelete, []byte{})
+	return err
 }
 
 func checkRID(rid string) error {
@@ -151,18 +147,4 @@ func sendRequest(url string, method string, body []byte) (string, error) {
 	}
 
 	return string(resBody), nil
-}
-
-func sendUpdateRequest(url string, rid string, update string) (string, error) {
-	um := updateMessage{
-		RID:    rid,
-		Update: update,
-	}
-
-	body, err := json.Marshal(um)
-	if err != nil {
-		return "", err
-	}
-
-	return sendRequest(url, http.MethodPut, []byte(body))
 }
