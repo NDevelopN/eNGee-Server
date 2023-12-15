@@ -6,16 +6,15 @@ import (
 	"io"
 	"log"
 	"net/http"
-	"strings"
 
 	"github.com/gin-gonic/gin"
-	"github.com/google/uuid"
 
 	gameClient "Engee-Server/gameClient"
 	registry "Engee-Server/gameRegistry"
 	"Engee-Server/lobby"
 	"Engee-Server/room"
 	"Engee-Server/user"
+	"Engee-Server/utils"
 )
 
 func CORSMiddleWare() gin.HandlerFunc {
@@ -114,7 +113,7 @@ func getRooms(c *gin.Context) {
 
 func getRoomUsers(c *gin.Context) {
 	_, w := processMessage(c)
-	ids := getRequestIDs(c)
+	ids := utils.GetRequestIDs(c.Request)
 
 	users, err := lobby.GetUsersInRoom(ids[0])
 
@@ -136,7 +135,7 @@ func getRoomUsers(c *gin.Context) {
 
 func getRoomURL(c *gin.Context) {
 	_, w := processMessage(c)
-	ids := getRequestIDs(c)
+	ids := utils.GetRequestIDs(c.Request)
 
 	url, err := room.GetRoomURL(ids[0])
 	if err != nil {
@@ -165,7 +164,7 @@ func getGameTypes(c *gin.Context) {
 
 func updateUserName(c *gin.Context) {
 	reqBody, w := processMessage(c)
-	ids := getRequestIDs(c)
+	ids := utils.GetRequestIDs(c.Request)
 	err := user.UpdateUserName(ids[0], string(reqBody))
 
 	if err != nil {
@@ -177,7 +176,7 @@ func updateUserName(c *gin.Context) {
 
 func userJoinRoom(c *gin.Context) {
 	reqBody, w := processMessage(c)
-	ids := getRequestIDs(c)
+	ids := utils.GetRequestIDs(c.Request)
 	err := lobby.JoinUserToRoom(ids[0], string(reqBody))
 
 	if err != nil {
@@ -189,7 +188,7 @@ func userJoinRoom(c *gin.Context) {
 
 func userLeaveRoom(c *gin.Context) {
 	reqBody, w := processMessage(c)
-	ids := getRequestIDs(c)
+	ids := utils.GetRequestIDs(c.Request)
 	err := lobby.RemoveUserFromRoom(ids[0], string(reqBody))
 
 	if err != nil {
@@ -200,7 +199,7 @@ func userLeaveRoom(c *gin.Context) {
 
 func updateRoomName(c *gin.Context) {
 	reqBody, w := processMessage(c)
-	ids := getRequestIDs(c)
+	ids := utils.GetRequestIDs(c.Request)
 	err := room.UpdateRoomName(ids[0], string(reqBody))
 
 	if err != nil {
@@ -212,7 +211,7 @@ func updateRoomName(c *gin.Context) {
 
 func updateRoomStatus(c *gin.Context) {
 	reqBody, w := processMessage(c)
-	ids := getRequestIDs(c)
+	ids := utils.GetRequestIDs(c.Request)
 	err := room.UpdateRoomStatus(ids[0], string(reqBody))
 
 	if err != nil {
@@ -224,7 +223,7 @@ func updateRoomStatus(c *gin.Context) {
 
 func updateRoomType(c *gin.Context) {
 	reqBody, w := processMessage(c)
-	ids := getRequestIDs(c)
+	ids := utils.GetRequestIDs(c.Request)
 	err := room.UpdateRoomType(ids[0], string(reqBody))
 
 	if err != nil {
@@ -236,7 +235,7 @@ func updateRoomType(c *gin.Context) {
 
 func updateRoomRules(c *gin.Context) {
 	reqBody, w := processMessage(c)
-	ids := getRequestIDs(c)
+	ids := utils.GetRequestIDs(c.Request)
 	err := gameClient.SetGameRules(ids[0], string(reqBody))
 
 	if err != nil {
@@ -248,7 +247,7 @@ func updateRoomRules(c *gin.Context) {
 
 func initRoomGame(c *gin.Context) {
 	_, w := processMessage(c)
-	ids := getRequestIDs(c)
+	ids := utils.GetRequestIDs(c.Request)
 	err := room.CreateRoomInstance(ids[0])
 
 	if err != nil {
@@ -260,7 +259,7 @@ func initRoomGame(c *gin.Context) {
 
 func startRoomGame(c *gin.Context) {
 	_, w := processMessage(c)
-	ids := getRequestIDs(c)
+	ids := utils.GetRequestIDs(c.Request)
 	err := gameClient.StartGame(ids[0])
 
 	if err != nil {
@@ -272,7 +271,7 @@ func startRoomGame(c *gin.Context) {
 
 func endRoomGame(c *gin.Context) {
 	reqBody, w := processMessage(c)
-	ids := getRequestIDs(c)
+	ids := utils.GetRequestIDs(c.Request)
 	err := user.UpdateUserName(ids[0], string(reqBody))
 
 	if err != nil {
@@ -284,8 +283,7 @@ func endRoomGame(c *gin.Context) {
 
 func deleteUser(c *gin.Context) {
 	_, w := processMessage(c)
-	ids := getRequestIDs(c)
-
+	ids := utils.GetRequestIDs(c.Request)
 	err := user.DeleteUser(ids[0])
 	if err != nil {
 		http.Error(w, fmt.Sprintf("Failed to delete user: %v", err), http.StatusInternalServerError)
@@ -296,7 +294,7 @@ func deleteUser(c *gin.Context) {
 
 func deleteRoom(c *gin.Context) {
 	_, w := processMessage(c)
-	ids := getRequestIDs(c)
+	ids := utils.GetRequestIDs(c.Request)
 
 	err := room.DeleteRoom(ids[0])
 	if err != nil {
@@ -329,22 +327,4 @@ func sendReply(w http.ResponseWriter, msg string, code int) error {
 	}
 
 	return nil
-
-}
-
-func getRequestIDs(c *gin.Context) []string {
-	request := c.Request
-
-	splitPath := strings.Split(request.URL.Path, "/")
-
-	ids := make([]string, 0)
-
-	for _, pathPart := range splitPath {
-		_, err := uuid.Parse(pathPart)
-		if err == nil {
-			ids = append(ids, pathPart)
-		}
-	}
-
-	return ids
 }
