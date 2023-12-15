@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
-	"log"
 	"net/http"
 )
 
@@ -27,14 +26,13 @@ func CreateGame(rid string, url string) error {
 		return err
 	}
 
-	prev, found := gameURLs[rid]
+	_, found := gameURLs[rid]
 	if found {
 		return fmt.Errorf("game already exists for room %s", rid)
 	}
 
-	log.Printf("Previous info: %v ", prev)
-
 	_, err = sendRequest(url+"/games", http.MethodPost, []byte(rid))
+
 	if err != nil {
 		return err
 	}
