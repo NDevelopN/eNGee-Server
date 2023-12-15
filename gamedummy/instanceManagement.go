@@ -8,19 +8,19 @@ func PrepareInstancing() {
 	instances = make(map[string]GameDummy)
 }
 
-func CreateNewInstance(rid string) (string, error) {
+func CreateNewInstance(rid string) error {
 	if rid == "" {
-		return "", fmt.Errorf("empty RID provided")
+		return fmt.Errorf("empty RID provided")
 	}
 
 	_, found := instances[rid]
 	if found {
-		return "", fmt.Errorf("game already exists for room %s", rid)
+		return fmt.Errorf("game already exists for room %s", rid)
 	}
 
 	instances[rid] = CreateDefaultGame()
 
-	return instances[rid].Address, nil
+	return nil
 }
 
 func DeleteInstance(rid string) error {

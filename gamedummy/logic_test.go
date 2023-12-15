@@ -5,9 +5,8 @@ import (
 )
 
 var defaultGame = GameDummy{
-	Address: dummyAddress,
-	Rules:   dummyRules,
-	Status:  NEW,
+	Rules:  dummyRules,
+	Status: NEW,
 }
 
 var emptyGame = GameDummy{}

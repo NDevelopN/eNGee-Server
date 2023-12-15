@@ -2,7 +2,6 @@ package gamedummy
 
 import "fmt"
 
-const dummyAddress = "http://localhost:8099"
 const dummyRules = "Rules"
 
 const (
@@ -14,16 +13,14 @@ const (
 )
 
 type GameDummy struct {
-	Address string
-	Rules   string
-	Status  int
+	Rules  string
+	Status int
 }
 
 func CreateDefaultGame() GameDummy {
 	newDummy := GameDummy{
-		Address: dummyAddress,
-		Rules:   dummyRules,
-		Status:  NEW,
+		Rules:  dummyRules,
+		Status: NEW,
 	}
 
 	return newDummy
@@ -88,10 +85,6 @@ func (dummy GameDummy) EndGame() error {
 }
 
 func checkValidGame(dummy GameDummy, status []int) error {
-	if dummy.Address == "" {
-		return fmt.Errorf("address is not set")
-	}
-
 	if dummy.Rules == "" {
 		return fmt.Errorf("rules are not set")
 	}

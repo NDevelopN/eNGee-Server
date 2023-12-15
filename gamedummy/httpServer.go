@@ -46,14 +46,14 @@ func Serve(port string) {
 func postGame(c *gin.Context) {
 	reqBody, w := processMessage(c)
 
-	pURL, err := CreateNewInstance(string(reqBody))
+	err := CreateNewInstance(string(reqBody))
 	if err != nil {
 		http.Error(w, fmt.Sprintf("Failed to create game: %v", err), http.StatusInternalServerError)
 		log.Printf("[Error] Creating game: %v", err)
 		return
 	}
 
-	err = sendReply(w, pURL, 200)
+	err = sendReply(w, "", 200)
 	if err != nil {
 		log.Printf("[Error] Replying after creating game: %v", err)
 		return
