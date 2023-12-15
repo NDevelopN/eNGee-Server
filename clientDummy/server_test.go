@@ -3,7 +3,6 @@ package clientdummy
 import (
 	gameclient "Engee-Server/gameClient"
 	registry "Engee-Server/gameRegistry"
-	"Engee-Server/gamedummy"
 	"Engee-Server/lobby"
 	"Engee-Server/room"
 	"Engee-Server/server"
@@ -360,7 +359,6 @@ func sendRequest(url string, method string, body []byte) (string, error) {
 
 func setupClientSuite() {
 	go server.Serve(testMainPort)
-	go gamedummy.Start(testConPort)
 
 	time.Sleep(200 * time.Millisecond)
 

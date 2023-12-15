@@ -3,9 +3,6 @@ package gameclient
 import (
 	"os"
 	"testing"
-	"time"
-
-	"Engee-Server/gamedummy"
 
 	"github.com/google/uuid"
 )
@@ -283,10 +280,7 @@ func TestResetGameInvalidRID(t *testing.T) {
 }
 
 func setupGameSuite() {
-	go gamedummy.Start(testPort)
-	go gamedummy.Start(altPort)
 
-	time.Sleep(200 * time.Millisecond)
 }
 
 func setupGameTest(t *testing.T) {

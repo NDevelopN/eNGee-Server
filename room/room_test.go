@@ -7,8 +7,6 @@ import (
 	"testing"
 	"time"
 
-	"Engee-Server/gamedummy"
-
 	"github.com/google/uuid"
 )
 
@@ -371,9 +369,6 @@ func setupActiveRoomTest(t *testing.T) (string, Room) {
 }
 
 func setupRoomSuite() {
-	go gamedummy.Start(testConPort)
-	go gamedummy.Start(altConPort)
-
 	reg.RegisterGameType(testRoomType, testConURL)
 	reg.RegisterGameType(altRoomType, altConURL)
 
