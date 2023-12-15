@@ -26,33 +26,33 @@ func CreateDefaultGame() GameDummy {
 	return newDummy
 }
 
-func (dummy GameDummy) SetRules(rules string) (GameDummy, error) {
+func (dummy *GameDummy) SetRules(rules string) error {
 	err := checkValidGame(dummy, []int{NEW, RESET})
 	if err != nil {
-		return dummy, err
+		return err
 	}
 
 	dummy.Rules = rules
 
-	return dummy, nil
+	return nil
 
 }
 
-func (dummy GameDummy) StartGame() (GameDummy, error) {
+func (dummy *GameDummy) StartGame() error {
 	err := checkValidGame(dummy, []int{NEW, RESET})
 	if err != nil {
-		return dummy, err
+		return err
 	}
 
 	dummy.Status = ACTIVE
 
-	return dummy, nil
+	return nil
 }
 
-func (dummy GameDummy) PauseGame() (GameDummy, error) {
+func (dummy *GameDummy) PauseGame() error {
 	err := checkValidGame(dummy, []int{ACTIVE, PAUSED})
 	if err != nil {
-		return dummy, err
+		return err
 	}
 
 	if dummy.Status == ACTIVE {
@@ -61,21 +61,21 @@ func (dummy GameDummy) PauseGame() (GameDummy, error) {
 		dummy.Status = ACTIVE
 	}
 
-	return dummy, nil
+	return nil
 }
 
-func (dummy GameDummy) ResetGame() (GameDummy, error) {
+func (dummy *GameDummy) ResetGame() error {
 	err := checkValidGame(dummy, []int{ACTIVE, PAUSED})
 	if err != nil {
-		return dummy, err
+		return err
 	}
 
 	dummy.Status = RESET
 
-	return dummy, nil
+	return nil
 }
 
-func (dummy GameDummy) EndGame() error {
+func (dummy *GameDummy) EndGame() error {
 	err := checkValidGame(dummy, []int{})
 	if err != nil {
 		return err
@@ -84,7 +84,7 @@ func (dummy GameDummy) EndGame() error {
 	return nil
 }
 
-func checkValidGame(dummy GameDummy, status []int) error {
+func checkValidGame(dummy *GameDummy, status []int) error {
 	if dummy.Rules == "" {
 		return fmt.Errorf("rules are not set")
 	}

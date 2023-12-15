@@ -45,7 +45,7 @@ func StartInstance(rid string) error {
 		return err
 	}
 
-	instance, err = instance.StartGame()
+	err = instance.StartGame()
 	if err != nil {
 		return err
 	}
@@ -61,7 +61,7 @@ func SetInstanceRules(rid string, rules string) error {
 		return err
 	}
 
-	instance, err = instance.SetRules(rules)
+	err = instance.SetRules(rules)
 	if err != nil {
 		return err
 	}
@@ -76,7 +76,7 @@ func PauseInstance(rid string) error {
 		return err
 	}
 
-	instance, err = instance.PauseGame()
+	err = instance.PauseGame()
 	if err != nil {
 		return err
 	}
@@ -92,7 +92,7 @@ func ResetInstance(rid string) error {
 		return err
 	}
 
-	instance, err = instance.ResetGame()
+	err = instance.ResetGame()
 	if err != nil {
 		return err
 	}

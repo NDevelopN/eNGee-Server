@@ -19,42 +19,50 @@ func TestCreateDefaultGame(t *testing.T) {
 }
 
 func TestStartGame(t *testing.T) {
+	testGame := defaultGame
+
 	expected := defaultGame
 	expected.Status = ACTIVE
 
-	startedGame, err := defaultGame.StartGame()
-	if startedGame != expected || err != nil {
-		t.Fatalf(`TestStartGame(Valid) = %v, %v, want %v, nil`, startedGame, err, expected)
+	err := testGame.StartGame()
+	if testGame != expected || err != nil {
+		t.Fatalf(`TestStartGame(Valid) = %v, %v, want %v, nil`, testGame, err, expected)
 	}
 }
 
 func TestStartGameEmptyGame(t *testing.T) {
-	startedGame, err := emptyGame.StartGame()
-	if startedGame != emptyGame || err == nil {
-		t.Fatalf(`TestStartGame(EmptyGame) = %v, %v, want %v, err`, startedGame, err, emptyGame)
+	testGame := emptyGame
+	expected := emptyGame
+
+	err := testGame.StartGame()
+	if testGame != expected || err == nil {
+		t.Fatalf(`TestStartGame(EmptyGame) = %v, %v, want %v, err`, testGame, err, expected)
 	}
 }
 
 func TestStartGameInvalidStatus(t *testing.T) {
 	testGame := defaultGame
-	testGame.Status = ACTIVE
+	expected := defaultGame
 
-	startedGame, err := testGame.StartGame()
-	if startedGame != testGame || err == nil {
-		t.Fatalf(`TestStartGame(InvalidStatus) = %v, %v, want %v, err`, startedGame, err, testGame)
+	testGame.Status = ACTIVE
+	expected.Status = ACTIVE
+
+	err := testGame.StartGame()
+	if testGame != expected || err == nil {
+		t.Fatalf(`TestStartGame(InvalidStatus) = %v, %v, want %v, err`, testGame, err, expected)
 	}
 }
 
 func TestStartGameRESET(t *testing.T) {
 	testGame := defaultGame
-	testGame.Status = RESET
-
 	expected := defaultGame
+
+	testGame.Status = RESET
 	expected.Status = ACTIVE
 
-	startedGame, err := testGame.StartGame()
-	if startedGame != expected || err != nil {
-		t.Fatalf(`TestStartGame(RESET) = %v, %v, want %v, nil`, startedGame, err, expected)
+	err := testGame.StartGame()
+	if testGame != expected || err != nil {
+		t.Fatalf(`TestStartGame(RESET) = %v, %v, want %v, nil`, testGame, err, expected)
 	}
 }
 
@@ -64,36 +72,42 @@ func TestPauseGame(t *testing.T) {
 	expected := testGame
 	expected.Status = PAUSED
 
-	pausedGame, err := testGame.PauseGame()
-	if pausedGame != expected || err != nil {
-		t.Fatalf(`TestPauseGame(Valid) = %v, %v, want %v, nil`, pausedGame, err, expected)
+	err := testGame.PauseGame()
+	if testGame != expected || err != nil {
+		t.Fatalf(`TestPauseGame(Valid) = %v, %v, want %v, nil`, testGame, err, expected)
 	}
 }
 
 func TestPauseGameEmptyGame(t *testing.T) {
-	pausedGame, err := emptyGame.PauseGame()
-	if pausedGame != emptyGame || err == nil {
-		t.Fatalf(`TestPauseGame(EmptyGame) = %v, %v, want %v, err`, pausedGame, err, emptyGame)
+	testGame := emptyGame
+	expected := emptyGame
+
+	err := testGame.PauseGame()
+	if testGame != expected || err == nil {
+		t.Fatalf(`TestPauseGame(EmptyGame) = %v, %v, want %v, err`, testGame, err, expected)
 	}
 }
 
 func TestPauseGameInvalidStatus(t *testing.T) {
-	pausedGame, err := defaultGame.PauseGame()
-	if pausedGame != defaultGame || err == nil {
-		t.Fatalf(`TestPauseGame(InvalidStatus) = %v, %v, want %v, err`, pausedGame, err, defaultGame)
+	testGame := defaultGame
+	expected := defaultGame
+
+	err := testGame.PauseGame()
+	if testGame != expected || err == nil {
+		t.Fatalf(`TestPauseGame(InvalidStatus) = %v, %v, want %v, err`, testGame, err, expected)
 	}
 }
 
 func TestPauseGamePAUSED(t *testing.T) {
 	testGame := setUpTestGame()
-	testGame, _ = testGame.PauseGame()
-
 	expected := testGame
+
+	testGame.Status = PAUSED
 	expected.Status = ACTIVE
 
-	pausedGame, err := testGame.PauseGame()
-	if pausedGame != expected || err != nil {
-		t.Fatalf(`TestPauseGame(PAUSED) = %v, %v, want %v, nil`, pausedGame, err, expected)
+	err := testGame.PauseGame()
+	if testGame != expected || err != nil {
+		t.Fatalf(`TestPauseGame(PAUSED) = %v, %v, want %v, nil`, testGame, err, expected)
 	}
 }
 
@@ -103,36 +117,42 @@ func TestResetGame(t *testing.T) {
 	expected := testGame
 	expected.Status = RESET
 
-	resetGame, err := testGame.ResetGame()
-	if resetGame != expected || err != nil {
-		t.Fatalf(`TestResetGame(Valid) = %v, %v, want %v, nil`, resetGame, err, expected)
+	err := testGame.ResetGame()
+	if testGame != expected || err != nil {
+		t.Fatalf(`TestResetGame(Valid) = %v, %v, want %v, nil`, testGame, err, expected)
 	}
 }
 
 func TestResetGameEmptyGame(t *testing.T) {
-	resetGame, err := emptyGame.ResetGame()
-	if resetGame != emptyGame || err == nil {
-		t.Fatalf(`TestResetGame(EmptyGame) = %v, %v, want %v, err`, resetGame, err, emptyGame)
+	testGame := emptyGame
+	expected := emptyGame
+
+	err := testGame.ResetGame()
+	if testGame != expected || err == nil {
+		t.Fatalf(`TestResetGame(EmptyGame) = %v, %v, want %v, err`, testGame, err, emptyGame)
 	}
 }
 
 func TestResetGameInvalidStatus(t *testing.T) {
-	resetGame, err := defaultGame.ResetGame()
-	if resetGame != defaultGame || err == nil {
-		t.Fatalf(`TestResetGame(InvalidStatus) = %v, %v, want %v, err`, resetGame, err, defaultGame)
+	testGame := defaultGame
+	expected := defaultGame
+
+	err := testGame.ResetGame()
+	if testGame != expected || err == nil {
+		t.Fatalf(`TestResetGame(InvalidStatus) = %v, %v, want %v, err`, testGame, err, expected)
 	}
 }
 
 func TestResetGamePAUSED(t *testing.T) {
 	testGame := setUpTestGame()
-	testGame, _ = testGame.PauseGame()
-
 	expected := testGame
+
+	testGame.Status = PAUSED
 	expected.Status = RESET
 
-	resetGame, err := testGame.ResetGame()
-	if resetGame != expected || err != nil {
-		t.Fatalf(`TestResetGame(PAUSED) = %v, %v, want %v, nil`, resetGame, err, expected)
+	err := testGame.ResetGame()
+	if testGame != expected || err != nil {
+		t.Fatalf(`TestResetGame(PAUSED) = %v, %v, want %v, nil`, testGame, err, expected)
 	}
 }
 
@@ -146,7 +166,9 @@ func TestEndGame(t *testing.T) {
 }
 
 func TestEndGameEmptyGame(t *testing.T) {
-	err := emptyGame.EndGame()
+	testGame := emptyGame
+
+	err := testGame.EndGame()
 	if err == nil {
 		t.Fatalf(`TestEndGame(EmptyGame) = %v, want err`, err)
 	}
@@ -154,7 +176,7 @@ func TestEndGameEmptyGame(t *testing.T) {
 
 func TestEndGamePAUSED(t *testing.T) {
 	testGame := setUpTestGame()
-	testGame, _ = testGame.PauseGame()
+	testGame.Status = PAUSED
 
 	err := testGame.EndGame()
 	if err != nil {
@@ -163,6 +185,8 @@ func TestEndGamePAUSED(t *testing.T) {
 }
 
 func setUpTestGame() GameDummy {
-	testGame, _ := defaultGame.StartGame()
+	testGame := defaultGame
+	testGame.StartGame()
+
 	return testGame
 }
