@@ -34,12 +34,19 @@ func RemoveUserFromRoom(uid string, rid string) error {
 		return err
 	}
 
-	err = fmt.Errorf("room does not contain user")
+	if !checkRoomLobbyExists(rid) {
+		return fmt.Errorf("lobby for room does not exist")
+	}
 
-	if checkRoomLobbyExists(rid) {
-		if checkRoomContainsUser(uid, rid) {
-			lobbies[rid], err = utils.RemoveElementFromSliceOrdered(lobbies[rid], uid)
-		}
+	if !checkRoomContainsUser(uid, rid) {
+		return fmt.Errorf("room does not contain user")
+	}
+
+	lobbies[rid], err = utils.RemoveElementFromSliceOrdered(lobbies[rid], uid)
+
+	if len(lobbies[rid]) == 0 {
+		room.DeleteRoom(rid)
+		delete(lobbies, rid)
 	}
 
 	return err
@@ -49,6 +56,10 @@ func GetUsersInRoom(rid string) ([]user.User, error) {
 	_, err := room.GetRoom(rid)
 	if err != nil {
 		return nil, err
+	}
+
+	if !checkRoomLobbyExists(rid) {
+		return nil, fmt.Errorf("lobby for room does not exist")
 	}
 
 	var users []user.User
@@ -72,6 +83,10 @@ func GetRoomUserCount(rid string) (int, error) {
 	_, err := room.GetRoom(rid)
 	if err != nil {
 		return 0, err
+	}
+
+	if !checkRoomLobbyExists(rid) {
+		return 0, fmt.Errorf("lobby for room does not exist")
 	}
 
 	return len(lobbies[rid]), nil

@@ -193,8 +193,8 @@ func TestGetRoomUserCountAfterDelete(t *testing.T) {
 	RemoveUserFromRoom(uid, rid)
 
 	count, err := GetRoomUserCount(rid)
-	if count != 0 || err != nil {
-		t.Fatalf(`TestGetRoomUserCount(AfterUserDelete) = %d, %v, want 0, nil`, count, err)
+	if count != 0 || err == nil {
+		t.Fatalf(`TestGetRoomUserCount(AfterUserDelete) = %d, %v, want 0, err`, count, err)
 	}
 }
 
