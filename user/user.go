@@ -8,13 +8,13 @@ import (
 	"github.com/google/uuid"
 )
 
-type user struct {
+type User struct {
 	UID    string
 	Name   string
 	Status string
 }
 
-var users = make(map[string]user)
+var users = make(map[string]User)
 
 func CreateUser(name string) (string, error) {
 	err := utils.ValidateInputRefuseEmpty(name, nil)
@@ -22,7 +22,7 @@ func CreateUser(name string) (string, error) {
 		return "", err
 	}
 
-	var newUser user
+	var newUser User
 	newUser.UID = uuid.NewString()
 	newUser.Name = name
 	newUser.Status = "New"
@@ -31,7 +31,7 @@ func CreateUser(name string) (string, error) {
 	return newUser.UID, nil
 }
 
-func GetUser(uid string) (user, error) {
+func GetUser(uid string) (User, error) {
 	return getUserByID(uid)
 }
 
@@ -80,7 +80,7 @@ func DeleteUser(uid string) error {
 	return nil
 }
 
-func getUserByID(uid string) (user, error) {
+func getUserByID(uid string) (User, error) {
 	var err error
 
 	user, found := users[uid]

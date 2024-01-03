@@ -6,7 +6,7 @@ import (
 	"github.com/google/uuid"
 )
 
-var testUser = user{
+var testUser = User{
 	UID:    "",
 	Name:   testUserName,
 	Status: "New",
@@ -230,7 +230,7 @@ func TestDeleteDouble(t *testing.T) {
 	}
 }
 
-func setupUserTest(t *testing.T) (string, user) {
+func setupUserTest(t *testing.T) (string, User) {
 	id, _ := CreateUser(testUserName)
 
 	tuInstance := testUser
@@ -241,7 +241,7 @@ func setupUserTest(t *testing.T) (string, user) {
 	return id, tuInstance
 }
 
-func checkExpectedUserData(t *testing.T, id string, expected user) {
+func checkExpectedUserData(t *testing.T, id string, expected User) {
 	user, err := GetUser(id)
 	if user != expected || err != nil {
 		t.Fatalf(`GetUser(UpdatedUser) = %v, %v, want %v, nil`, user, err, expected)
@@ -256,5 +256,5 @@ func confirmUserNotExist(t *testing.T, id string) {
 }
 
 func cleanAfterTest() {
-	users = make(map[string]user)
+	users = make(map[string]User)
 }
