@@ -10,7 +10,7 @@ import (
 
 var gameURLs = make(map[string]string)
 
-func CreateGame(rid string, url string) error {
+func CreateGameInstance(rid string, url string) error {
 	if rid == "" {
 		return fmt.Errorf("empty RID provided")
 	}

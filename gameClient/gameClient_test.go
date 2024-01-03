@@ -28,7 +28,7 @@ func TestMain(m *testing.M) {
 }
 
 func TestCreateGame(t *testing.T) {
-	err := CreateGame(testRID, testURL)
+	err := CreateGameInstance(testRID, testURL)
 	if err != nil {
 		t.Fatalf(`TestCreateGame(Valid) = %v, want nil`, err)
 	}
@@ -37,8 +37,8 @@ func TestCreateGame(t *testing.T) {
 }
 
 func TestCreateGameDoubleSameURL(t *testing.T) {
-	CreateGame(testRID, testURL)
-	err := CreateGame(testRID, testURL)
+	CreateGameInstance(testRID, testURL)
+	err := CreateGameInstance(testRID, testURL)
 	if err == nil {
 		t.Fatalf(`TestCreateGame(Double Same) = %v, want err`, err)
 	}
@@ -47,8 +47,8 @@ func TestCreateGameDoubleSameURL(t *testing.T) {
 }
 
 func TestCreateGameDoubleUniqueURL(t *testing.T) {
-	CreateGame(testRID, testURL)
-	err := CreateGame(testRID, altURL)
+	CreateGameInstance(testRID, testURL)
+	err := CreateGameInstance(testRID, altURL)
 	if err == nil {
 		t.Fatalf(`TestCreateGame(Double Unique) = %v, want err`, err)
 	}
@@ -57,8 +57,8 @@ func TestCreateGameDoubleUniqueURL(t *testing.T) {
 }
 
 func TestCreateGameMultiSameURL(t *testing.T) {
-	CreateGame(testRID, testURL)
-	err := CreateGame(altRID, testURL)
+	CreateGameInstance(testRID, testURL)
+	err := CreateGameInstance(altRID, testURL)
 	if err != nil {
 		t.Fatalf(`TestCreateGame(Same URL) = %v, want nil`, err)
 	}
@@ -67,8 +67,8 @@ func TestCreateGameMultiSameURL(t *testing.T) {
 }
 
 func TestCreateGameMultiUniqueURL(t *testing.T) {
-	CreateGame(testRID, testURL)
-	err := CreateGame(altRID, altURL)
+	CreateGameInstance(testRID, testURL)
+	err := CreateGameInstance(altRID, altURL)
 	if err != nil {
 		t.Fatalf(`TestCreateGame(Unique URL) = %v, want nil`, err)
 	}
@@ -77,7 +77,7 @@ func TestCreateGameMultiUniqueURL(t *testing.T) {
 }
 
 func TestCreateGameEmptyRID(t *testing.T) {
-	err := CreateGame("", testURL)
+	err := CreateGameInstance("", testURL)
 	if err == nil {
 		t.Fatalf(`TestCreateGame(Empty RID) %v, want err`, err)
 	}
@@ -86,7 +86,7 @@ func TestCreateGameEmptyRID(t *testing.T) {
 }
 
 func TestCreateGameEmptyURL(t *testing.T) {
-	err := CreateGame(testRID, "")
+	err := CreateGameInstance(testRID, "")
 	if err == nil {
 		t.Fatalf(`TestCreateGame(Empty URL) %v, want err`, err)
 	}
@@ -95,7 +95,7 @@ func TestCreateGameEmptyURL(t *testing.T) {
 }
 
 func TestCreateGameInvalidURL(t *testing.T) {
-	err := CreateGame(testRID, badURL)
+	err := CreateGameInstance(testRID, badURL)
 	if err == nil {
 		t.Fatalf(`TestCreateGame(Valid) %v, want err`, err)
 	}
@@ -285,8 +285,8 @@ func setupGameSuite() {
 
 func setupGameTest(t *testing.T) {
 
-	CreateGame(testRID, testURL)
-	CreateGame(altRID, altURL)
+	CreateGameInstance(testRID, testURL)
+	CreateGameInstance(altRID, altURL)
 
 	t.Cleanup(cleanUpAfterTest)
 }

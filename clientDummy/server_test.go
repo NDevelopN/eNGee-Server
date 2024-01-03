@@ -393,7 +393,7 @@ func setupReadyRoom(t *testing.T) string {
 func setupActiveRoom(t *testing.T) string {
 	rid := setupReadyRoom(t)
 
-	gameclient.CreateGame(rid, testConURL)
+	gameclient.CreateGameInstance(rid, testConURL)
 
 	return rid
 }

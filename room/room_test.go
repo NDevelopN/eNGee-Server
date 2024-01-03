@@ -263,45 +263,45 @@ func TestUpdateRoomTypeInvalidID(t *testing.T) {
 	checkExpectedRoomData(t, id, trInstance)
 }
 
-func TestCreateRoomInstance(t *testing.T) {
+func TestInitializeRoomGame(t *testing.T) {
 	id, _ := setupRoomTest(t)
 	UpdateRoomType(id, testRoomType)
 
-	err := CreateRoomInstance(id)
+	err := InitializeRoomGame(id)
 	if err != nil {
 		t.Fatalf(`CreateRoomGameInstance(Valid) = %v, want nil`, err)
 	}
 }
 
-func TestCreateRoomInstanceDouble(t *testing.T) {
+func TestInitializeRoomGameDouble(t *testing.T) {
 	id, _ := setupRoomTest(t)
 	UpdateRoomType(id, testRoomType)
 
-	CreateRoomInstance(id)
-	err := CreateRoomInstance(id)
+	InitializeRoomGame(id)
+	err := InitializeRoomGame(id)
 	if err == nil {
 		t.Fatalf(`CreateRoomGameInstance(Double) = %v, want err`, err)
 	}
 }
-func TestCreateRoomInstanceInvalidRID(t *testing.T) {
+func TestInitializeRoomGameInvalidRID(t *testing.T) {
 	id, _ := setupRoomTest(t)
 	UpdateRoomType(id, testRoomType)
 
-	err := CreateRoomInstance(randomID)
+	err := InitializeRoomGame(randomID)
 	if err == nil {
 		t.Fatalf(`CreateRoomGameInstance(Invalid RID) = %v, want err`, err)
 	}
 }
-func TestCreateRoomInstanceTypeNotSet(t *testing.T) {
+func TestInitializeRoomGameTypeNotSet(t *testing.T) {
 	id, _ := setupRoomTest(t)
 
-	err := CreateRoomInstance(id)
+	err := InitializeRoomGame(id)
 	if err == nil {
 		t.Fatalf(`CreateRoomGameInstance(Room Type Not Set) = %v, want err`, err)
 	}
 }
 
-func TestCreateRoomInstanceDeletedRoom(t *testing.T) {
+func TestInitializeRoomGameDeletedRoom(t *testing.T) {
 	id, _ := setupRoomTest(t)
 	UpdateRoomType(id, testRoomType)
 
@@ -309,7 +309,7 @@ func TestCreateRoomInstanceDeletedRoom(t *testing.T) {
 	if err != nil {
 		t.Fatalf(`Failed to delete: %v`, err)
 	}
-	err = CreateRoomInstance(id)
+	err = InitializeRoomGame(id)
 	if err == nil {
 		t.Fatalf(`CreateRoomGameInstance(Deleted Room) = %v, want err`, err)
 	}
@@ -387,7 +387,7 @@ func setupActiveRoomTest(t *testing.T) (string, Room) {
 
 	trInstance, _ := GetRoom(id)
 
-	gameclient.CreateGame(id, trInstance.Addr)
+	gameclient.CreateGameInstance(id, trInstance.Addr)
 
 	return id, trInstance
 }

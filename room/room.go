@@ -128,13 +128,13 @@ func UpdateRoomType(rid string, rType string) error {
 	}
 }
 
-func CreateRoomInstance(rid string) error {
+func InitializeRoomGame(rid string) error {
 	room, err := getRoomByID(rid)
 	if err != nil {
 		return err
 	}
 
-	err = gameclient.CreateGame(rid, room.Addr)
+	err = gameclient.CreateGameInstance(rid, room.Addr)
 	if err != nil {
 		room.Status = "Created"
 		rooms[rid] = room
