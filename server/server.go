@@ -57,7 +57,6 @@ func Serve(port string) {
 	router.PUT("/rooms/:rid/rules", updateRoomRules)
 
 	router.PUT("/rooms/:rid/create", initRoomGame)
-	router.PUT("/rooms/:rid/start", startRoomGame)
 	router.PUT("/rooms/:rid/end", endRoomGame)
 
 	router.DELETE("/users/:uid", deleteUser)
@@ -76,7 +75,10 @@ func postUser(c *gin.Context) {
 		return
 	}
 
-	sendReply(w, uid, http.StatusAccepted)
+	err = sendSimpleReply(w, uid, http.StatusAccepted)
+	if err != nil {
+		log.Printf("[Error] Sending reply: %v", err)
+	}
 }
 
 func postRoom(c *gin.Context) {
@@ -89,7 +91,10 @@ func postRoom(c *gin.Context) {
 		return
 	}
 
-	sendReply(w, rid, http.StatusAccepted)
+	err = sendSimpleReply(w, rid, http.StatusAccepted)
+	if err != nil {
+		log.Printf("[Error] Sending reply: %v", err)
+	}
 }
 
 func getRooms(c *gin.Context) {
@@ -109,7 +114,10 @@ func getRooms(c *gin.Context) {
 		return
 	}
 
-	sendReply(w, string(roomsJSON), http.StatusOK)
+	err = sendReply(w, roomsJSON, http.StatusAccepted)
+	if err != nil {
+		log.Printf("[Error] Sending reply: %v", err)
+	}
 }
 
 func getRoomUsers(c *gin.Context) {
@@ -131,7 +139,10 @@ func getRoomUsers(c *gin.Context) {
 		return
 	}
 
-	sendReply(w, string(usersJSON), http.StatusOK)
+	err = sendReply(w, usersJSON, http.StatusOK)
+	if err != nil {
+		log.Printf("[Error] Sending reply: %v", err)
+	}
 }
 
 func getRoomURL(c *gin.Context) {
@@ -145,33 +156,40 @@ func getRoomURL(c *gin.Context) {
 		return
 	}
 
-	sendReply(w, url, http.StatusOK)
+	err = sendSimpleReply(w, url, http.StatusOK)
+	if err != nil {
+		log.Printf("[Error] Sending reply: %v", err)
+		return
+	}
 }
 
 func getGameModes(c *gin.Context) {
 	_, w := processMessage(c)
 
-	gTypes := registry.GetGameTypes()
+	gameModes := registry.GetGameTypes()
 
-	gTypesJSON, err := json.Marshal(gTypes)
+	gameModesJSON, err := json.Marshal(gameModes)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("Failed to package game types: %v", err), http.StatusInternalServerError)
 		log.Printf("[Error] Marshalling game types: %v", err)
 		return
 	}
 
-	sendReply(w, string(gTypesJSON), http.StatusOK)
+	err = sendReply(w, gameModesJSON, http.StatusOK)
+	if err != nil {
+		log.Printf("[Error] Sending reply: %v", err)
+	}
 }
 
 func postGameMode(c *gin.Context) {
 	reqBody, w := processMessage(c)
 
-	type stringpair struct {
+	type stringPair struct {
 		First  string `json:"first"`
 		Second string `json:"second"`
 	}
 
-	var gameMode stringpair
+	var gameMode stringPair
 	err := json.Unmarshal(reqBody, &gameMode)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("Failed to unmarshal game mode: %v", err), http.StatusInternalServerError)
@@ -186,7 +204,10 @@ func postGameMode(c *gin.Context) {
 		return
 	}
 
-	sendReply(w, "Game mode updated", http.StatusOK)
+	err = sendAccept(w)
+	if err != nil {
+		log.Printf("[Error] Sending reply: %v", err)
+	}
 }
 
 func updateUserName(c *gin.Context) {
@@ -199,6 +220,11 @@ func updateUserName(c *gin.Context) {
 		log.Printf("[Error] Updating user name: %v", err)
 		return
 	}
+
+	err = sendAccept(w)
+	if err != nil {
+		log.Printf("[Error] Sending reply: %v", err)
+	}
 }
 
 func userJoinRoom(c *gin.Context) {
@@ -207,9 +233,14 @@ func userJoinRoom(c *gin.Context) {
 	err := lobby.JoinUserToRoom(ids[0], string(reqBody))
 
 	if err != nil {
-		http.Error(w, fmt.Sprintf("Failed to add uer to room: %v", err), http.StatusInternalServerError)
+		http.Error(w, fmt.Sprintf("Failed to add user to room: %v", err), http.StatusInternalServerError)
 		log.Printf("[Error] Adding user to room: %v", err)
 		return
+	}
+
+	err = sendAccept(w)
+	if err != nil {
+		log.Printf("[Error] Sending reply: %v", err)
 	}
 }
 
@@ -221,6 +252,11 @@ func userLeaveRoom(c *gin.Context) {
 	if err != nil {
 		http.Error(w, fmt.Sprintf("Failed to remove user from room: %v", err), http.StatusInternalServerError)
 		log.Printf("[Error] Removign user from room")
+	}
+
+	err = sendAccept(w)
+	if err != nil {
+		log.Printf("[Error] Sending reply: %v", err)
 	}
 }
 
@@ -234,6 +270,11 @@ func updateRoomName(c *gin.Context) {
 		log.Printf("[Error] Updating room name: %v", err)
 		return
 	}
+
+	err = sendAccept(w)
+	if err != nil {
+		log.Printf("[Error] Sending reply: %v", err)
+	}
 }
 
 func updateRoomStatus(c *gin.Context) {
@@ -245,6 +286,11 @@ func updateRoomStatus(c *gin.Context) {
 		http.Error(w, fmt.Sprintf("Failed to update room status: %v", err), http.StatusInternalServerError)
 		log.Printf("[Error] Updating room status: %v", err)
 		return
+	}
+
+	err = sendAccept(w)
+	if err != nil {
+		log.Printf("[Error] Sending reply: %v", err)
 	}
 }
 
@@ -258,6 +304,11 @@ func updateRoomType(c *gin.Context) {
 		log.Printf("[Error] Updating room type: %v", err)
 		return
 	}
+
+	err = sendAccept(w)
+	if err != nil {
+		log.Printf("[Error] Sending reply: %v", err)
+	}
 }
 
 func updateRoomRules(c *gin.Context) {
@@ -269,6 +320,11 @@ func updateRoomRules(c *gin.Context) {
 		http.Error(w, fmt.Sprintf("Failed to update room rules: %v", err), http.StatusInternalServerError)
 		log.Printf("[Error] Updating room rules: %v", err)
 		return
+	}
+
+	err = sendAccept(w)
+	if err != nil {
+		log.Printf("[Error] Sending reply: %v", err)
 	}
 }
 
@@ -282,17 +338,10 @@ func initRoomGame(c *gin.Context) {
 		log.Printf("[Error] Updating user name: %v", err)
 		return
 	}
-}
 
-func startRoomGame(c *gin.Context) {
-	_, w := processMessage(c)
-	ids := utils.GetRequestIDs(c.Request)
-	err := gameClient.StartGame(ids[0])
-
+	err = sendAccept(w)
 	if err != nil {
-		http.Error(w, fmt.Sprintf("Failed to update user name: %v", err), http.StatusInternalServerError)
-		log.Printf("[Error] Updating user name: %v", err)
-		return
+		log.Printf("[Error] Sending reply: %v", err)
 	}
 }
 
@@ -306,6 +355,11 @@ func endRoomGame(c *gin.Context) {
 		log.Printf("[Error] Updating user name: %v", err)
 		return
 	}
+
+	err = sendAccept(w)
+	if err != nil {
+		log.Printf("[Error] Sending reply: %v", err)
+	}
 }
 
 func deleteUser(c *gin.Context) {
@@ -316,6 +370,11 @@ func deleteUser(c *gin.Context) {
 		http.Error(w, fmt.Sprintf("Failed to delete user: %v", err), http.StatusInternalServerError)
 		log.Printf("[Error] Deleting user: %v", err)
 		return
+	}
+
+	err = sendAccept(w)
+	if err != nil {
+		log.Printf("[Error] Sending reply: %v", err)
 	}
 }
 
@@ -328,6 +387,11 @@ func deleteRoom(c *gin.Context) {
 		http.Error(w, fmt.Sprintf("Failed to delete room: %v", err), http.StatusInternalServerError)
 		log.Printf("[Error] Deleting room: %v", err)
 		return
+	}
+
+	err = sendAccept(w)
+	if err != nil {
+		log.Printf("[Error] Sending reply: %v", err)
 	}
 }
 
@@ -345,13 +409,26 @@ func processMessage(c *gin.Context) ([]byte, http.ResponseWriter) {
 	return reqBody, w
 }
 
-func sendReply(w http.ResponseWriter, msg string, code int) error {
+func sendReply(w http.ResponseWriter, msg []byte, code int) error {
 	w.WriteHeader(code)
-	_, err := w.Write([]byte(msg))
+	_, err := w.Write(msg)
 	if err != nil {
 		http.Error(w, "Could not write response", http.StatusInternalServerError)
 		return fmt.Errorf("could not write response: %v", err)
 	}
 
 	return nil
+}
+
+func sendSimpleReply(w http.ResponseWriter, msg string, code int) error {
+	msgJSON, err := json.Marshal(msg)
+	if err != nil {
+		return err
+	}
+
+	return sendReply(w, msgJSON, code)
+}
+
+func sendAccept(w http.ResponseWriter) error {
+	return sendReply(w, []byte{}, http.StatusAccepted)
 }
