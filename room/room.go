@@ -3,6 +3,7 @@ package room
 import (
 	gameclient "Engee-Server/gameClient"
 	"Engee-Server/utils"
+	"encoding/json"
 	"fmt"
 
 	registry "Engee-Server/gameRegistry"
@@ -20,19 +21,23 @@ type Room struct {
 
 var rooms = make(map[string]Room)
 
-func CreateRoom(name string) (string, error) {
-	err := utils.ValidateInputRefuseEmpty(name, nil)
+func CreateRoom(roomInfo []byte) (string, error) {
+	var newRoom Room
+	err := json.Unmarshal(roomInfo, &newRoom)
+	if err != nil {
+		return "", err
+	}
+
+	err = utils.ValidateInputRefuseEmpty(newRoom.Name, nil)
 	if err != nil {
 		return "", err
 	}
 
 	id := uuid.NewString()
-	newRoom := Room{
-		RID:    id,
-		Name:   name,
-		Type:   "None",
-		Status: "New",
-	}
+
+	newRoom.RID = id
+	newRoom.Status = "New"
+	newRoom.Addr = ""
 
 	rooms[id] = newRoom
 

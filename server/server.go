@@ -80,7 +80,7 @@ func postUser(c *gin.Context) {
 
 func postRoom(c *gin.Context) {
 	reqBody, w := processMessage(c)
-	rid, err := room.CreateRoom(string(reqBody))
+	rid, err := room.CreateRoom(reqBody)
 
 	if err != nil {
 		http.Error(w, fmt.Sprintf("Failed to create room: %v", err), http.StatusInternalServerError)

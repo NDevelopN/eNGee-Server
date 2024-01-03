@@ -3,6 +3,7 @@ package lobby
 import (
 	"Engee-Server/room"
 	"Engee-Server/user"
+	"encoding/json"
 	"testing"
 
 	"github.com/google/uuid"
@@ -11,7 +12,13 @@ import (
 var randomID = uuid.NewString()
 
 const testRoomName = "Test Room"
+
 const testUserName = "Test User"
+
+var testRoom, _ = json.Marshal(room.Room{
+	Name: testRoomName,
+	Type: "None",
+})
 
 const moreUserCount = 3
 
@@ -250,7 +257,8 @@ func setupLobbyTest(t *testing.T) (string, string) {
 
 func createUserAndRoom(t *testing.T) (string, string) {
 	uid, _ := user.CreateUser(testUserName)
-	rid, _ := room.CreateRoom(testRoomName)
+
+	rid, _ := room.CreateRoom(testRoom)
 
 	t.Cleanup(func() {
 		user.DeleteUser(uid)

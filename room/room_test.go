@@ -3,6 +3,7 @@ package room
 import (
 	gameclient "Engee-Server/gameClient"
 	reg "Engee-Server/gameRegistry"
+	"encoding/json"
 	"os"
 	"testing"
 	"time"
@@ -12,8 +13,8 @@ import (
 
 var randomID = uuid.NewString()
 
-const testRoomName = "Test Room"
-const newRoomName = "New Room"
+const testRoomName = "Test-Room"
+const altRoomName = "Alt-Room"
 
 const updatedRoomStatus = "Updated"
 
@@ -33,6 +34,8 @@ var testRoom = Room{
 	Addr:   "",
 }
 
+var testRoomJSON, _ = json.Marshal(testRoom)
+
 func TestMain(m *testing.M) {
 	setupRoomSuite()
 	code := m.Run()
@@ -41,7 +44,7 @@ func TestMain(m *testing.M) {
 }
 
 func TestCreateRoom(t *testing.T) {
-	id, err := CreateRoom(testRoomName)
+	id, err := CreateRoom(testRoomJSON)
 	if id == "" || err != nil {
 		t.Fatalf(`CreateRoom(Valid) = %q, %v, want "uuid", nil`, id, err)
 	}
@@ -50,9 +53,9 @@ func TestCreateRoom(t *testing.T) {
 }
 
 func TestCreateUniqueNameRooms(t *testing.T) {
-	CreateRoom(testRoomName)
+	CreateRoom(testRoomJSON)
 
-	id, err := CreateRoom(newRoomName)
+	id, err := CreateRoom(testRoomJSON)
 
 	if id == "" || err != nil {
 		t.Fatalf(`CreateRoom(Unique Name) = %q, %v, want "uuid", nil`, id, err)
@@ -62,8 +65,8 @@ func TestCreateUniqueNameRooms(t *testing.T) {
 }
 
 func TestCreateSameNameRooms(t *testing.T) {
-	CreateRoom(testRoomName)
-	id, err := CreateRoom(testRoomName)
+	CreateRoom(testRoomJSON)
+	id, err := CreateRoom(testRoomJSON)
 	if id == "" || err != nil {
 		t.Fatalf(`CreateRoom(Same Name) = %q, %v, want "uuid", nil`, id, err)
 	}
@@ -72,7 +75,13 @@ func TestCreateSameNameRooms(t *testing.T) {
 }
 
 func TestCreateRoomNoName(t *testing.T) {
-	id, err := CreateRoom("")
+	namelessRoom, _ := json.Marshal(Room{
+		Name: "",
+		Type: "None",
+	})
+
+	id, err := CreateRoom(namelessRoom)
+
 	if id != "" || err == nil {
 		t.Fatalf(`CreateRoom(EmptyName) = %q, %v, want "", nil`, id, err)
 	}
@@ -107,7 +116,7 @@ func TestGetRoomInvalidID(t *testing.T) {
 
 func TestGetRooms(t *testing.T) {
 	fID, fRoom := setupRoomTest(t)
-	sID, sRoom := setupAddRoomTest()
+	sID, sRoom := setupAltRoomTest()
 	expected := map[string]Room{fID: fRoom, sID: sRoom}
 
 	rooms, err := GetRooms()
@@ -132,9 +141,9 @@ func TestGetRoomsEmpty(t *testing.T) {
 func TestUpdateRoomName(t *testing.T) {
 	id, trInstance := setupRoomTest(t)
 
-	trInstance.Name = newRoomName
+	trInstance.Name = altRoomName
 
-	err := UpdateRoomName(id, newRoomName)
+	err := UpdateRoomName(id, altRoomName)
 	if err != nil {
 		t.Fatalf(`UpdateRoomName(Valid) = %v, want nil`, err)
 	}
@@ -167,7 +176,7 @@ func TestUpdateRoomNameNoChange(t *testing.T) {
 func TestUpdateRoomNameEmptyID(t *testing.T) {
 	id, trInstance := setupRoomTest(t)
 
-	err := UpdateRoomName("", newRoomName)
+	err := UpdateRoomName("", altRoomName)
 	if err == nil {
 		t.Fatalf(`UpdateRoomName(EmptyID) = %v, want err`, err)
 	}
@@ -190,7 +199,7 @@ func TestUpdateRoomStatus(t *testing.T) {
 func TestUpdateRoomStatusEmptyID(t *testing.T) {
 	id, trInstance := setupRoomTest(t)
 
-	err := UpdateRoomName("", newRoomName)
+	err := UpdateRoomName("", altRoomName)
 	if err == nil {
 		t.Fatalf(`UpdateRoomStatus(EmptyID) = %v, want err`, err)
 	}
@@ -225,7 +234,7 @@ func TestUpdateRoomType(t *testing.T) {
 func TestUpdateRoomTypeEmptyID(t *testing.T) {
 	id, trInstance := setupRoomTest(t)
 
-	err := UpdateRoomName("", newRoomName)
+	err := UpdateRoomName("", altRoomName)
 	if err == nil {
 		t.Fatalf(`UpdateRoomType(EmptyID) = %v, want err`, err)
 	}
@@ -336,7 +345,7 @@ func TestDeleteDouble(t *testing.T) {
 }
 
 func setupRoomTest(t *testing.T) (string, Room) {
-	id, _ := CreateRoom(testRoomName)
+	id, _ := CreateRoom(testRoomJSON)
 
 	trInstance := testRoom
 	trInstance.RID = id
@@ -346,11 +355,16 @@ func setupRoomTest(t *testing.T) (string, Room) {
 	return id, trInstance
 }
 
-func setupAddRoomTest() (string, Room) {
-	id, _ := CreateRoom(newRoomName)
+func setupAltRoomTest() (string, Room) {
+	alternateRoomJSON, _ := json.Marshal(Room{
+		Name: altRoomName,
+		Type: "None",
+	})
+
+	id, _ := CreateRoom(alternateRoomJSON)
 
 	trInstance := testRoom
-	trInstance.Name = newRoomName
+	trInstance.Name = altRoomName
 	trInstance.RID = id
 
 	return id, trInstance
