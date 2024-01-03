@@ -115,9 +115,9 @@ func TestGetMultiUsersInRoom(t *testing.T) {
 		t.Fatalf(`TestGetUsersInRoom(Multi) = %v, %v, want %v, nil`, users, err, expected)
 	}
 
-	for i, userID := range users {
-		if userID != expected[i] {
-			t.Fatalf(`TestGetUsersInRoom(Mult) = %q, want %q`, userID, expected[i])
+	for i, user := range users {
+		if user.UID != expected[i] {
+			t.Fatalf(`TestGetUsersInRoom(Mult) = %q, want %q`, user.UID, expected[i])
 		}
 	}
 }

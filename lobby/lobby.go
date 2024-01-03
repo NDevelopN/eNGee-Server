@@ -45,17 +45,27 @@ func RemoveUserFromRoom(uid string, rid string) error {
 	return err
 }
 
-func GetUsersInRoom(rid string) ([]string, error) {
+func GetUsersInRoom(rid string) ([]user.User, error) {
 	_, err := room.GetRoom(rid)
 	if err != nil {
 		return nil, err
 	}
 
-	if checkRoomLobbyExists(rid) && len(lobbies[rid]) > 0 {
-		return lobbies[rid], nil
+	var users []user.User
+	for _, uid := range lobbies[rid] {
+		user, err := user.GetUser(uid)
+		if err != nil {
+			return nil, err
+		}
+
+		users = append(users, user)
 	}
 
-	return nil, fmt.Errorf("no users in this room")
+	if len(users) == 0 {
+		err = fmt.Errorf("no users in room")
+	}
+
+	return users, err
 }
 
 func GetRoomUserCount(rid string) (int, error) {
