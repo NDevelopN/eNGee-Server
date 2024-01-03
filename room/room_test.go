@@ -115,19 +115,29 @@ func TestGetRoomInvalidID(t *testing.T) {
 }
 
 func TestGetRooms(t *testing.T) {
-	fID, fRoom := setupRoomTest(t)
-	sID, sRoom := setupAltRoomTest()
-	expected := map[string]Room{fID: fRoom, sID: sRoom}
+	_, fRoom := setupRoomTest(t)
+	_, sRoom := setupAltRoomTest()
+	expected := []Room{fRoom, sRoom}
 
 	rooms, err := GetRooms()
 	if len(rooms) != 2 || err != nil {
 		t.Fatalf(`GetRooms(Valid) = %v, %v, want %v, nil`, rooms, err, expected)
 	}
 
-	for id, r := range rooms {
-		if r != expected[id] {
-			t.Fatalf(`GetRooms(Valid) = %v, want %v`, r, expected[id])
+	unmatched := len(expected)
+
+	if len(rooms) == unmatched {
+		for _, r := range rooms {
+			for _, e := range expected {
+				if r == e {
+					unmatched--
+				}
+			}
 		}
+	}
+
+	if unmatched != 0 {
+		t.Fatalf(`GetRooms(Valid) = %v, want %v`, rooms, expected)
 	}
 }
 

@@ -9,6 +9,7 @@ import (
 	registry "Engee-Server/gameRegistry"
 
 	"github.com/google/uuid"
+	"golang.org/x/exp/maps"
 )
 
 type Room struct {
@@ -48,13 +49,14 @@ func GetRoom(rid string) (Room, error) {
 	return getRoomByID(rid)
 }
 
-func GetRooms() (map[string]Room, error) {
+func GetRooms() ([]Room, error) {
 	var err error = nil
+
 	if len(rooms) == 0 {
 		err = fmt.Errorf("no rooms to return")
 	}
 
-	return rooms, err
+	return maps.Values(rooms), err
 }
 
 func GetRoomURL(rid string) (string, error) {
