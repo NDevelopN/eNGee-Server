@@ -41,7 +41,7 @@ func Serve(port string) {
 	router.POST("/rooms", postRoom)
 
 	router.GET("/rooms", getRooms)
-	router.GET("/rooms/:rid", getRoomUsers)
+	router.GET("/rooms/:rid/users", getRoomUsers)
 	router.GET("/rooms/:rid/url", getRoomURL)
 
 	router.GET("/gameModes", getGameModes)
@@ -75,7 +75,7 @@ func postUser(c *gin.Context) {
 		return
 	}
 
-	err = sendSimpleReply(w, uid, http.StatusAccepted)
+	err = sendSimpleReply(w, uid, http.StatusOK)
 	if err != nil {
 		log.Printf("[Error] Sending reply: %v", err)
 	}
@@ -91,7 +91,7 @@ func postRoom(c *gin.Context) {
 		return
 	}
 
-	err = sendSimpleReply(w, rid, http.StatusAccepted)
+	err = sendSimpleReply(w, rid, http.StatusOK)
 	if err != nil {
 		log.Printf("[Error] Sending reply: %v", err)
 	}
@@ -114,7 +114,7 @@ func getRooms(c *gin.Context) {
 		return
 	}
 
-	err = sendReply(w, roomsJSON, http.StatusAccepted)
+	err = sendReply(w, roomsJSON, http.StatusOK)
 	if err != nil {
 		log.Printf("[Error] Sending reply: %v", err)
 	}
