@@ -59,14 +59,8 @@ func GetRoom(rid string) (Room, error) {
 	return getRoomByID(rid)
 }
 
-func GetRooms() ([]Room, error) {
-	var err error = nil
-
-	if len(rooms) == 0 {
-		err = fmt.Errorf("no rooms to return")
-	}
-
-	return maps.Values(rooms), err
+func GetRooms() []Room {
+	return maps.Values(rooms)
 }
 
 func GetRoomURL(rid string) (string, error) {

@@ -99,13 +99,7 @@ func postRoom(c *gin.Context) {
 
 func getRooms(c *gin.Context) {
 	_, w := processMessage(c)
-	rooms, err := room.GetRooms()
-
-	if err != nil {
-		http.Error(w, fmt.Sprintf("Failed to get rooms: %v", err), http.StatusInternalServerError)
-		log.Printf("[Error] Getting rooms: %v", err)
-		return
-	}
+	rooms := room.GetRooms()
 
 	roomsJSON, err := json.Marshal(rooms)
 	if err != nil {
