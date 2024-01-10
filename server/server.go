@@ -252,7 +252,7 @@ func userLeaveRoom(c *gin.Context) {
 
 	if err != nil {
 		http.Error(w, fmt.Sprintf("Failed to remove user from room: %v", err), http.StatusInternalServerError)
-		log.Printf("[Error] Removign user from room")
+		log.Printf("[Error] Removing user from room: %v", err)
 		return
 	}
 
