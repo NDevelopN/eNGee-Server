@@ -253,6 +253,7 @@ func userLeaveRoom(c *gin.Context) {
 	if err != nil {
 		http.Error(w, fmt.Sprintf("Failed to remove user from room: %v", err), http.StatusInternalServerError)
 		log.Printf("[Error] Removign user from room")
+		return
 	}
 
 	err = sendAccept(w)
@@ -275,6 +276,7 @@ func updateRoomName(c *gin.Context) {
 	err = sendAccept(w)
 	if err != nil {
 		log.Printf("[Error] Sending reply: %v", err)
+		return
 	}
 }
 
@@ -292,6 +294,7 @@ func updateRoomStatus(c *gin.Context) {
 	err = sendAccept(w)
 	if err != nil {
 		log.Printf("[Error] Sending reply: %v", err)
+		return
 	}
 }
 
@@ -309,6 +312,7 @@ func updateRoomType(c *gin.Context) {
 	err = sendAccept(w)
 	if err != nil {
 		log.Printf("[Error] Sending reply: %v", err)
+		return
 	}
 }
 
@@ -326,6 +330,7 @@ func updateRoomRules(c *gin.Context) {
 	err = sendAccept(w)
 	if err != nil {
 		log.Printf("[Error] Sending reply: %v", err)
+		return
 	}
 }
 
@@ -343,6 +348,7 @@ func initRoomGame(c *gin.Context) {
 	err = sendAccept(w)
 	if err != nil {
 		log.Printf("[Error] Sending reply: %v", err)
+		return
 	}
 }
 
@@ -360,6 +366,7 @@ func endRoomGame(c *gin.Context) {
 	err = sendAccept(w)
 	if err != nil {
 		log.Printf("[Error] Sending reply: %v", err)
+		return
 	}
 }
 
@@ -376,7 +383,9 @@ func deleteUser(c *gin.Context) {
 	err = sendAccept(w)
 	if err != nil {
 		log.Printf("[Error] Sending reply: %v", err)
+		return
 	}
+
 }
 
 func deleteRoom(c *gin.Context) {
@@ -393,6 +402,7 @@ func deleteRoom(c *gin.Context) {
 	err = sendAccept(w)
 	if err != nil {
 		log.Printf("[Error] Sending reply: %v", err)
+		return
 	}
 }
 
