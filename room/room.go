@@ -37,8 +37,18 @@ func CreateRoom(roomInfo []byte) (string, error) {
 	id := uuid.NewString()
 
 	newRoom.RID = id
-	newRoom.Status = "New"
-	newRoom.Addr = ""
+
+	newRoom.Addr, err = registry.GetGameURL(newRoom.Type)
+	if err != nil {
+		return "", err
+	}
+
+	err = gameclient.CreateGameInstance(id, "http://"+newRoom.Addr)
+	if err != nil {
+		return "", err
+	}
+
+	newRoom.Status = "Created"
 
 	rooms[id] = newRoom
 
@@ -134,7 +144,7 @@ func InitializeRoomGame(rid string) error {
 		return err
 	}
 
-	err = gameclient.CreateGameInstance(rid, room.Addr)
+	err = gameclient.CreateGameInstance(rid, "http://"+room.Addr)
 	if err != nil {
 		room.Status = "Created"
 		rooms[rid] = room
