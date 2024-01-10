@@ -42,7 +42,7 @@ func Serve(port string) {
 
 	router.GET("/rooms", getRooms)
 	router.GET("/rooms/:rid/users", getRoomUsers)
-	router.GET("/rooms/:rid/url", getRoomURL)
+	router.GET("/rooms/:rid", getRoomInfo)
 
 	router.GET("/gameModes", getGameModes)
 	router.POST("/gameModes", postGameMode)
@@ -145,18 +145,25 @@ func getRoomUsers(c *gin.Context) {
 	}
 }
 
-func getRoomURL(c *gin.Context) {
+func getRoomInfo(c *gin.Context) {
 	_, w := processMessage(c)
 	ids := utils.GetRequestIDs(c.Request)
 
-	url, err := room.GetRoomURL(ids[0])
+	roomInfo, err := room.GetRoom(ids[0])
 	if err != nil {
 		http.Error(w, fmt.Sprintf("Failed to get room URL: %v", err), http.StatusInternalServerError)
 		log.Printf("[Error] Getting room URL: %v", err)
 		return
 	}
 
-	err = sendSimpleReply(w, url, http.StatusOK)
+	rInfo, err := json.Marshal(roomInfo)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Failed to package room info: %v", err), http.StatusInternalServerError)
+		log.Printf("[Error] Marshaling room info: %v", err)
+		return
+	}
+
+	err = sendReply(w, rInfo, http.StatusOK)
 	if err != nil {
 		log.Printf("[Error] Sending reply: %v", err)
 		return
