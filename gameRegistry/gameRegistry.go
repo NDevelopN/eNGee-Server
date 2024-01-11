@@ -7,9 +7,9 @@ import (
 
 var urlRegistry = make(map[string]string)
 
-func RegisterGameType(name string, url string) error {
+func RegisterGameMode(name string, url string) error {
 	if name == "" {
-		return fmt.Errorf("game type name is empty string")
+		return fmt.Errorf("game mode name is empty string")
 	}
 
 	err := utils.ValidateURL(url)
@@ -19,7 +19,7 @@ func RegisterGameType(name string, url string) error {
 
 	_, found := urlRegistry[name]
 	if found {
-		return fmt.Errorf("a gametype with that name already exists")
+		return fmt.Errorf("a game mode with that name already exists")
 	}
 
 	urlRegistry[name] = url
@@ -29,7 +29,7 @@ func RegisterGameType(name string, url string) error {
 func RemoveGameType(name string) error {
 	_, found := urlRegistry[name]
 	if !found {
-		return fmt.Errorf("no matching gametype found")
+		return fmt.Errorf("no matching game mode found")
 	}
 
 	delete(urlRegistry, name)
@@ -49,7 +49,7 @@ func GetGameTypes() []string {
 func GetGameURL(name string) (string, error) {
 	url, found := urlRegistry[name]
 	if !found {
-		return "", fmt.Errorf("no matching gametype found")
+		return "", fmt.Errorf("no matching game mode found")
 	}
 
 	return url, nil

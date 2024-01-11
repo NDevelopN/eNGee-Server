@@ -13,11 +13,11 @@ import (
 )
 
 type Room struct {
-	RID    string `json:"rid"`
-	Name   string `json:"name"`
-	Type   string `json:"type"`
-	Status string `json:"status"`
-	Addr   string `json:"addr"`
+	RID      string `json:"rid"`
+	Name     string `json:"name"`
+	GameMode string `json:"gamemode"`
+	Status   string `json:"status"`
+	Addr     string `json:"addr"`
 }
 
 var rooms = make(map[string]Room)
@@ -38,7 +38,7 @@ func CreateRoom(roomInfo []byte) (string, error) {
 
 	newRoom.RID = id
 
-	newRoom.Addr, err = registry.GetGameURL(newRoom.Type)
+	newRoom.Addr, err = registry.GetGameURL(newRoom.GameMode)
 	if err != nil {
 		return "", err
 	}
@@ -110,8 +110,8 @@ func UpdateRoomStatus(rid string, status string) error {
 	return nil
 }
 
-func UpdateRoomType(rid string, rType string) error {
-	err := utils.ValidateInputRefuseEmpty(rType, nil)
+func UpdateRoomGameMode(rid string, roomGameMode string) error {
+	err := utils.ValidateInputRefuseEmpty(roomGameMode, nil)
 	if err != nil {
 		return err
 	}
@@ -121,9 +121,9 @@ func UpdateRoomType(rid string, rType string) error {
 		return err
 	}
 
-	room.Type = rType
+	room.GameMode = roomGameMode
 
-	room.Addr, err = registry.GetGameURL(rType)
+	room.Addr, err = registry.GetGameURL(roomGameMode)
 	if err == nil {
 		rooms[rid] = room
 		return nil

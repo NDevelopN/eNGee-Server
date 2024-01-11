@@ -53,7 +53,7 @@ func Serve(port string) {
 
 	router.PUT("/rooms/:rid/name", updateRoomName)
 	router.PUT("/rooms/:rid/status", updateRoomStatus)
-	router.PUT("/rooms/:rid/type", updateRoomType)
+	router.PUT("/rooms/:rid/mode", updateRoomGameMode)
 	router.PUT("/rooms/:rid/rules", updateRoomRules)
 
 	router.PUT("/rooms/:rid/create", initRoomGame)
@@ -171,8 +171,8 @@ func getGameModes(c *gin.Context) {
 
 	gameModesJSON, err := json.Marshal(gameModes)
 	if err != nil {
-		http.Error(w, fmt.Sprintf("Failed to package game types: %v", err), http.StatusInternalServerError)
-		log.Printf("[Error] Marshalling game types: %v", err)
+		http.Error(w, fmt.Sprintf("Failed to package game modes: %v", err), http.StatusInternalServerError)
+		log.Printf("[Error] Marshalling game modes: %v", err)
 		return
 	}
 
@@ -198,7 +198,7 @@ func postGameMode(c *gin.Context) {
 		return
 	}
 
-	err = registry.RegisterGameType(gameMode.First, gameMode.Second)
+	err = registry.RegisterGameMode(gameMode.First, gameMode.Second)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("Failed to update game mode: %v", err), http.StatusInternalServerError)
 		log.Printf("[Error] Updating game mode: %v", err)
@@ -298,14 +298,14 @@ func updateRoomStatus(c *gin.Context) {
 	}
 }
 
-func updateRoomType(c *gin.Context) {
+func updateRoomGameMode(c *gin.Context) {
 	reqBody, w := processMessage(c)
 	ids := utils.GetRequestIDs(c.Request)
-	err := room.UpdateRoomType(ids[0], string(reqBody))
+	err := room.UpdateRoomGameMode(ids[0], string(reqBody))
 
 	if err != nil {
-		http.Error(w, fmt.Sprintf("Failed to update room type: %v", err), http.StatusInternalServerError)
-		log.Printf("[Error] Updating room type: %v", err)
+		http.Error(w, fmt.Sprintf("Failed to update room game mode: %v", err), http.StatusInternalServerError)
+		log.Printf("[Error] Updating room game mode: %v", err)
 		return
 	}
 
