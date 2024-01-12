@@ -9,9 +9,9 @@ import (
 )
 
 type User struct {
-	UID    string
-	Name   string
-	Status string
+	UID    string `json:"uid"`
+	Name   string `json:"name"`
+	Status string `json:"status"`
 }
 
 var users = make(map[string]User)
