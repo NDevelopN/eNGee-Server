@@ -1,9 +1,14 @@
 package lobby
 
 import (
+	reg "Engee-Server/gameRegistry"
 	"Engee-Server/room"
+	"Engee-Server/testDummy"
 	"Engee-Server/user"
+	"time"
+
 	"encoding/json"
+	"os"
 	"testing"
 
 	"github.com/google/uuid"
@@ -12,15 +17,27 @@ import (
 var randomID = uuid.NewString()
 
 const testRoomName = "Test Room"
-
+const testConPort = "8091"
+const testConURL = "localhost:" + testConPort
+const testGameMode = "Test"
 const testUserName = "Test User"
 
 var testRoom, _ = json.Marshal(room.Room{
+	RID:      "",
 	Name:     testRoomName,
-	GameMode: "None",
+	GameMode: testGameMode,
+	Status:   "New",
+	Addr:     "",
 })
 
 const moreUserCount = 3
+
+func TestMain(m *testing.M) {
+	setupLobbySuite()
+	code := m.Run()
+	cleanUpLobbySuite()
+	os.Exit(code)
+}
 
 func TestJoinUserToRoom(t *testing.T) {
 	uid, rid := createUserAndRoom(t)
@@ -256,9 +273,15 @@ func setupLobbyTest(t *testing.T) (string, string) {
 }
 
 func createUserAndRoom(t *testing.T) (string, string) {
-	uid, _ := user.CreateUser(testUserName)
+	uid, err := user.CreateUser(testUserName)
+	if err != nil {
+		t.Fatalf("Could not create user: %v", err)
+	}
 
-	rid, _ := room.CreateRoom(testRoom)
+	rid, err := room.CreateRoom(testRoom)
+	if err != nil {
+		t.Fatalf("Could not create room: %v", err)
+	}
 
 	t.Cleanup(func() {
 		user.DeleteUser(uid)
@@ -285,4 +308,16 @@ func addMoreUsersToLobby(t *testing.T, rid string) []string {
 	})
 
 	return users
+}
+
+func setupLobbySuite() {
+	go testDummy.Serve(testConPort)
+
+	reg.RegisterGameMode(testGameMode, testConURL)
+
+	time.Sleep(200 * time.Millisecond)
+}
+
+func cleanUpLobbySuite() {
+
 }
