@@ -3,7 +3,9 @@ package room
 import (
 	gameclient "Engee-Server/gameClient"
 	reg "Engee-Server/gameRegistry"
+	"Engee-Server/testDummy"
 	"encoding/json"
+	"log"
 	"os"
 	"testing"
 	"time"
@@ -18,23 +20,33 @@ const altRoomName = "Alt-Room"
 
 const updatedRoomStatus = "Updated"
 
-const testRoomType = "Test"
-const altRoomType = "Alt"
+const testGameMode = "Test"
+const altGameMode = "Alt"
 
 const testConPort = "8091"
 const altConPort = "8092"
-const testConURL = "http://localhost:" + testConPort
-const altConURL = "http://localhost:" + altConPort
+const testConURL = "localhost:" + testConPort
+const altConURL = "localhost:" + altConPort
 
 var testRoom = Room{
-	RID:    "",
-	Name:   testRoomName,
-	Type:   "None",
-	Status: "New",
-	Addr:   "",
+	RID:      "",
+	Name:     testRoomName,
+	GameMode: testGameMode,
+	Status:   "New",
+	Addr:     "",
 }
 
 var testRoomJSON, _ = json.Marshal(testRoom)
+
+var altRoom = Room{
+	RID:      "",
+	Name:     altRoomName,
+	GameMode: altGameMode,
+	Status:   "New",
+	Addr:     "",
+}
+
+var altRoomJSON, _ = json.Marshal(altRoom)
 
 func TestMain(m *testing.M) {
 	setupRoomSuite()
@@ -76,8 +88,8 @@ func TestCreateSameNameRooms(t *testing.T) {
 
 func TestCreateRoomNoName(t *testing.T) {
 	namelessRoom, _ := json.Marshal(Room{
-		Name: "",
-		Type: "None",
+		Name:     "",
+		GameMode: "None",
 	})
 
 	id, err := CreateRoom(namelessRoom)
@@ -91,6 +103,9 @@ func TestCreateRoomNoName(t *testing.T) {
 
 func TestGetRoom(t *testing.T) {
 	id, trInstance := setupRoomTest(t)
+
+	trInstance.Status = "Created"
+	trInstance.Addr = testConURL
 
 	room, err := GetRoom(id)
 	if room != trInstance || err != nil {
@@ -116,20 +131,29 @@ func TestGetRoomInvalidID(t *testing.T) {
 
 func TestGetRooms(t *testing.T) {
 	_, fRoom := setupRoomTest(t)
+	fRoom.Status = "Created"
+	fRoom.Addr = testConURL
+
 	_, sRoom := setupAltRoomTest()
+	sRoom.Status = "Created"
+	sRoom.Addr = altConURL
+
 	expected := []Room{fRoom, sRoom}
 
-	rooms, err := GetRooms()
-	if len(rooms) != 2 || err != nil {
-		t.Fatalf(`GetRooms(Valid) = %v, %v, want %v, nil`, rooms, err, expected)
+	rooms := GetRooms()
+	if len(rooms) != 2 {
+		t.Fatalf(`GetRooms(Valid) = %v, want %v`, rooms, expected)
 	}
 
 	unmatched := len(expected)
 
 	if len(rooms) == unmatched {
 		for _, r := range rooms {
+			log.Printf("R: %s", r.RID)
 			for _, e := range expected {
+				log.Printf("E: %s", e.RID)
 				if r == e {
+					log.Printf("Matching %s", r.RID)
 					unmatched--
 				}
 			}
@@ -142,9 +166,9 @@ func TestGetRooms(t *testing.T) {
 }
 
 func TestGetRoomsEmpty(t *testing.T) {
-	rooms, err := GetRooms()
-	if len(rooms) != 0 || err == nil {
-		t.Fatalf(`GetRooms(Empty) = %v, %v, want [], err`, rooms, err)
+	rooms := GetRooms()
+	if len(rooms) != 0 {
+		t.Fatalf(`GetRooms(Empty) = %v, want []`, rooms)
 	}
 }
 
@@ -152,6 +176,8 @@ func TestUpdateRoomName(t *testing.T) {
 	id, trInstance := setupRoomTest(t)
 
 	trInstance.Name = altRoomName
+	trInstance.Status = "Created"
+	trInstance.Addr = testConURL
 
 	err := UpdateRoomName(id, altRoomName)
 	if err != nil {
@@ -164,6 +190,9 @@ func TestUpdateRoomName(t *testing.T) {
 func TestUpdateRoomNameEmptyName(t *testing.T) {
 	id, trInstance := setupRoomTest(t)
 
+	trInstance.Status = "Created"
+	trInstance.Addr = testConURL
+
 	err := UpdateRoomName(id, "")
 	if err == nil {
 		t.Fatalf(`UpdateRoomName(EmptyName) = %v, want err`, err)
@@ -174,6 +203,9 @@ func TestUpdateRoomNameEmptyName(t *testing.T) {
 
 func TestUpdateRoomNameNoChange(t *testing.T) {
 	id, trInstance := setupRoomTest(t)
+
+	trInstance.Status = "Created"
+	trInstance.Addr = testConURL
 
 	err := UpdateRoomName(id, testRoomName)
 	if err != nil {
@@ -186,6 +218,9 @@ func TestUpdateRoomNameNoChange(t *testing.T) {
 func TestUpdateRoomNameEmptyID(t *testing.T) {
 	id, trInstance := setupRoomTest(t)
 
+	trInstance.Status = "Created"
+	trInstance.Addr = testConURL
+
 	err := UpdateRoomName("", altRoomName)
 	if err == nil {
 		t.Fatalf(`UpdateRoomName(EmptyID) = %v, want err`, err)
@@ -196,7 +231,9 @@ func TestUpdateRoomNameEmptyID(t *testing.T) {
 
 func TestUpdateRoomStatus(t *testing.T) {
 	id, trInstance := setupRoomTest(t)
+
 	trInstance.Status = updatedRoomStatus
+	trInstance.Addr = testConURL
 
 	err := UpdateRoomStatus(id, updatedRoomStatus)
 	if err != nil {
@@ -209,6 +246,9 @@ func TestUpdateRoomStatus(t *testing.T) {
 func TestUpdateRoomStatusEmptyID(t *testing.T) {
 	id, trInstance := setupRoomTest(t)
 
+	trInstance.Status = "Created"
+	trInstance.Addr = testConURL
+
 	err := UpdateRoomName("", altRoomName)
 	if err == nil {
 		t.Fatalf(`UpdateRoomStatus(EmptyID) = %v, want err`, err)
@@ -220,6 +260,9 @@ func TestUpdateRoomStatusEmptyID(t *testing.T) {
 func TestUpdateRoomStatusInvalidID(t *testing.T) {
 	id, trInstance := setupRoomTest(t)
 
+	trInstance.Status = "Created"
+	trInstance.Addr = testConURL
+
 	err := UpdateRoomStatus(randomID, updatedRoomStatus)
 	if err == nil {
 		t.Fatalf(`UpdateRoomStatus(InvalidID) = %v, want err`, err)
@@ -228,44 +271,54 @@ func TestUpdateRoomStatusInvalidID(t *testing.T) {
 	checkExpectedRoomData(t, id, trInstance)
 }
 
-func TestUpdateRoomType(t *testing.T) {
+func TestUpdateRoomGameMode(t *testing.T) {
 	id, trInstance := setupRoomTest(t)
-	trInstance.Type = testRoomType
-	trInstance.Addr = testConURL
 
-	err := UpdateRoomType(id, testRoomType)
+	trInstance.Status = "Created"
+	trInstance.GameMode = altGameMode
+	trInstance.Addr = altConURL
+
+	err := UpdateRoomGameMode(id, altGameMode)
 	if err != nil {
-		t.Fatalf(`UpdateRoomType(Valid) = %v, want nil`, err)
+		t.Fatalf(`UpdateRoomGameMode(Valid) = %v, want nil`, err)
 	}
 
 	checkExpectedRoomData(t, id, trInstance)
 }
 
-func TestUpdateRoomTypeEmptyID(t *testing.T) {
+func TestUpdateRoomGameModeEmptyID(t *testing.T) {
 	id, trInstance := setupRoomTest(t)
+
+	trInstance.Status = "Created"
+	trInstance.Addr = testConURL
 
 	err := UpdateRoomName("", altRoomName)
 	if err == nil {
-		t.Fatalf(`UpdateRoomType(EmptyID) = %v, want err`, err)
+		t.Fatalf(`UpdateRoomGameMode(EmptyID) = %v, want err`, err)
 	}
 
 	checkExpectedRoomData(t, id, trInstance)
 }
 
-func TestUpdateRoomTypeInvalidID(t *testing.T) {
+func TestUpdateRoomGameModeInvalidID(t *testing.T) {
 	id, trInstance := setupRoomTest(t)
 
-	err := UpdateRoomType(randomID, testRoomType)
+	trInstance.Status = "Created"
+	trInstance.Addr = testConURL
+
+	err := UpdateRoomGameMode(randomID, testGameMode)
 	if err == nil {
-		t.Fatalf(`UpdateRoomType(InvalidID) = %v, want err`, err)
+		t.Fatalf(`UpdateRoomGameMode(InvalidID) = %v, want err`, err)
 	}
 
 	checkExpectedRoomData(t, id, trInstance)
 }
 
+/** TODO: Given auto initialization, is there any need for this function ? */
+/**
 func TestInitializeRoomGame(t *testing.T) {
 	id, _ := setupRoomTest(t)
-	UpdateRoomType(id, testRoomType)
+	UpdateRoomGameMode(id, testGameMode)
 
 	err := InitializeRoomGame(id)
 	if err != nil {
@@ -275,7 +328,7 @@ func TestInitializeRoomGame(t *testing.T) {
 
 func TestInitializeRoomGameDouble(t *testing.T) {
 	id, _ := setupRoomTest(t)
-	UpdateRoomType(id, testRoomType)
+	UpdateRoomGameMode(id, testGameMode)
 
 	InitializeRoomGame(id)
 	err := InitializeRoomGame(id)
@@ -285,25 +338,25 @@ func TestInitializeRoomGameDouble(t *testing.T) {
 }
 func TestInitializeRoomGameInvalidRID(t *testing.T) {
 	id, _ := setupRoomTest(t)
-	UpdateRoomType(id, testRoomType)
+	UpdateRoomGameMode(id, testGameMode)
 
 	err := InitializeRoomGame(randomID)
 	if err == nil {
 		t.Fatalf(`CreateRoomGameInstance(Invalid RID) = %v, want err`, err)
 	}
 }
-func TestInitializeRoomGameTypeNotSet(t *testing.T) {
+func TestInitializeRoomGameModeNotSet(t *testing.T) {
 	id, _ := setupRoomTest(t)
 
 	err := InitializeRoomGame(id)
 	if err == nil {
-		t.Fatalf(`CreateRoomGameInstance(Room Type Not Set) = %v, want err`, err)
+		t.Fatalf(`CreateRoomGameInstance(Room GameMode Not Set) = %v, want err`, err)
 	}
 }
 
 func TestInitializeRoomGameDeletedRoom(t *testing.T) {
 	id, _ := setupRoomTest(t)
-	UpdateRoomType(id, testRoomType)
+	UpdateRoomGameMode(id, testGameMode)
 
 	err := DeleteRoom(id)
 	if err != nil {
@@ -314,6 +367,7 @@ func TestInitializeRoomGameDeletedRoom(t *testing.T) {
 		t.Fatalf(`CreateRoomGameInstance(Deleted Room) = %v, want err`, err)
 	}
 }
+*/
 
 func TestDeleteRoom(t *testing.T) {
 	id, _ := setupActiveRoomTest(t)
@@ -366,15 +420,9 @@ func setupRoomTest(t *testing.T) (string, Room) {
 }
 
 func setupAltRoomTest() (string, Room) {
-	alternateRoomJSON, _ := json.Marshal(Room{
-		Name: altRoomName,
-		Type: "None",
-	})
+	id, _ := CreateRoom(altRoomJSON)
 
-	id, _ := CreateRoom(alternateRoomJSON)
-
-	trInstance := testRoom
-	trInstance.Name = altRoomName
+	trInstance := altRoom
 	trInstance.RID = id
 
 	return id, trInstance
@@ -383,7 +431,7 @@ func setupAltRoomTest() (string, Room) {
 func setupActiveRoomTest(t *testing.T) (string, Room) {
 	id, _ := setupRoomTest(t)
 
-	UpdateRoomType(id, testRoomType)
+	UpdateRoomGameMode(id, testGameMode)
 
 	trInstance, _ := GetRoom(id)
 
@@ -393,8 +441,11 @@ func setupActiveRoomTest(t *testing.T) (string, Room) {
 }
 
 func setupRoomSuite() {
-	reg.RegisterGameType(testRoomType, testConURL)
-	reg.RegisterGameType(altRoomType, altConURL)
+	go testDummy.Serve(testConPort)
+	go testDummy.Serve(altConPort)
+
+	reg.RegisterGameMode(testGameMode, testConURL)
+	reg.RegisterGameMode(altGameMode, altConURL)
 
 	time.Sleep(200 * time.Millisecond)
 }
