@@ -6,12 +6,12 @@ import (
 
 const testAddress = "Address"
 
-const testGameType = "Test"
-const altGameType = "Alt"
-const badGameType = "Invalid"
+const testGameMode = "Test"
+const altGameMode = "Alt"
+const badGameMode = "Invalid"
 
 func TestRegisterGame(t *testing.T) {
-	err := RegisterGameType(testGameType, testAddress)
+	err := RegisterGameMode(testGameMode, testAddress)
 	if err != nil {
 		t.Fatalf(`TestRegisterGame(Valid) = %v, want nil`, err)
 	}
@@ -20,9 +20,9 @@ func TestRegisterGame(t *testing.T) {
 }
 
 func TestRegisterUniqueNameGame(t *testing.T) {
-	RegisterGameType(testGameType, testAddress)
+	RegisterGameMode(testGameMode, testAddress)
 
-	err := RegisterGameType(altGameType, testAddress)
+	err := RegisterGameMode(altGameMode, testAddress)
 	if err != nil {
 		t.Fatalf(`TestRegisterGame(Unique Name) = %v, want nil`, err)
 	}
@@ -31,8 +31,8 @@ func TestRegisterUniqueNameGame(t *testing.T) {
 }
 
 func TestRegisterSameNameGame(t *testing.T) {
-	RegisterGameType(testGameType, testAddress)
-	err := RegisterGameType(testGameType, testAddress)
+	RegisterGameMode(testGameMode, testAddress)
+	err := RegisterGameMode(testGameMode, testAddress)
 	if err == nil {
 		t.Fatalf(`TestRegisterGame(Same Name) = %v, want err`, err)
 	}
@@ -40,8 +40,8 @@ func TestRegisterSameNameGame(t *testing.T) {
 	t.Cleanup(cleanUpAfterTest)
 }
 
-func TestRegisterGameEmptyType(t *testing.T) {
-	err := RegisterGameType("", testAddress)
+func TestRegisterGameEmptyMode(t *testing.T) {
+	err := RegisterGameMode("", testAddress)
 	if err == nil {
 		t.Fatalf(`TestRegisterGame(Empty Name) = %v, want err`, err)
 	}
@@ -50,7 +50,7 @@ func TestRegisterGameEmptyType(t *testing.T) {
 }
 
 func TestRegisterGameEmptyURL(t *testing.T) {
-	err := RegisterGameType(testGameType, "")
+	err := RegisterGameMode(testGameMode, "")
 	if err == nil {
 		t.Fatalf(`TestRegisterGame(Empty URL) = %v, want err`, err)
 	}
@@ -59,34 +59,34 @@ func TestRegisterGameEmptyURL(t *testing.T) {
 func TestRemoveGameFromRegistry(t *testing.T) {
 	setupRegisterTest(t)
 
-	err := RemoveGameType(testGameType)
+	err := RemoveGameMode(testGameMode)
 	if err != nil {
 		t.Fatalf(`TestRemoveGameFromRegistry(Valid) = %v, want nil`, err)
 	}
 }
 
-func TestRemoveGameFromRegistryInvalidType(t *testing.T) {
+func TestRemoveGameFromRegistryInvalidMode(t *testing.T) {
 	setupRegisterTest(t)
 
-	err := RemoveGameType(badGameType)
+	err := RemoveGameMode(badGameMode)
 	if err == nil {
-		t.Fatalf(`TestRemoveGameFromRegistry(Invalid Type) = %v, want err`, err)
+		t.Fatalf(`TestRemoveGameFromRegistry(Invalid Mode) = %v, want err`, err)
 	}
 }
 
 func TestRemoveGameFromRegistryDouble(t *testing.T) {
 	setupRegisterTest(t)
 
-	RemoveGameType(testGameType)
-	err := RemoveGameType(testGameType)
+	RemoveGameMode(testGameMode)
+	err := RemoveGameMode(testGameMode)
 	if err == nil {
 		t.Fatalf(`TestRemoveGameFromRegistry(Double) = %v, want err`, err)
 	}
 }
 
 func setupRegisterTest(t *testing.T) {
-	RegisterGameType(testGameType, testAddress)
-	RegisterGameType(altGameType, testAddress)
+	RegisterGameMode(testGameMode, testAddress)
+	RegisterGameMode(altGameMode, testAddress)
 
 	t.Cleanup(cleanUpAfterTest)
 }

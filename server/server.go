@@ -167,7 +167,7 @@ func getRoomInfo(c *gin.Context) {
 func getGameModes(c *gin.Context) {
 	_, w := processMessage(c)
 
-	gameModes := registry.GetGameTypes()
+	gameModes := registry.GetGameModes()
 
 	gameModesJSON, err := json.Marshal(gameModes)
 	if err != nil {

@@ -29,12 +29,33 @@ const testConURL = "http://localhost:" + testConPort
 const testUser = "Test User"
 const altUser = "Alt User"
 
-const testRoom = "Test Room"
-const altRoom = "Alt Room"
+const testRoomName = "Test Room"
+
+const altRoomName = "Alt Room"
+
+var testRoomInfo = room.Room{
+	RID:      "",
+	Name:     testRoomName,
+	GameMode: testGameMode,
+	Status:   "New",
+	Addr:     "",
+}
+
+var testRoom, _ = json.Marshal(testRoomInfo)
+
+var altRoomInfo = room.Room{
+	RID:      "",
+	Name:     altRoomName,
+	GameMode: testGameMode,
+	Status:   "New",
+	Addr:     "",
+}
+
+var altRoom, _ = json.Marshal(altRoomInfo)
 
 const newRules = "New Rules"
 
-const testType = "Test"
+const testGameMode = "Test"
 
 func TestMain(m *testing.M) {
 	setupClientSuite()
@@ -61,7 +82,7 @@ func TestCreateUser(t *testing.T) {
 }
 
 func TestCreateRoom(t *testing.T) {
-	resp, err := sendRequest(testMainURL+"/rooms", http.MethodPost, []byte(testRoom))
+	resp, err := sendRequest(testMainURL+"/rooms", http.MethodPost, testRoom)
 	if err != nil {
 		t.Fatalf(`TestCreateRoom() = %v, want nil`, err)
 	}
@@ -115,7 +136,7 @@ func TestUserJoinRoom(t *testing.T) {
 	}
 
 	users, _ := lobby.GetUsersInRoom(rid)
-	if users[0] != uid {
+	if users[0].UID != uid {
 		t.Fatalf(`TestUserJoinRoom() = %v, want %v`, users[0], uid)
 	}
 }
@@ -130,15 +151,15 @@ func TestGetRoomUsers(t *testing.T) {
 		t.Fatalf(`TestGetRoomUsers() = %v, want nil`, err)
 	}
 
-	var users []string
+	var users []user.User
 	err = json.Unmarshal([]byte(resp), &users)
 
 	if len(users) != 1 || err != nil {
 		t.Fatalf(`TestGetRoomUsers() = %v, %v, want [uuid], nil`, users, err)
 	}
 
-	if users[0] != uid {
-		t.Fatalf(`TestGetRoomUsers()= %q, want %q`, users[0], uid)
+	if users[0].UID != uid {
+		t.Fatalf(`TestGetRoomUsers()= %q, want %q`, users[0].UID, uid)
 	}
 
 	real, _ := lobby.GetUsersInRoom(rid)
@@ -147,20 +168,20 @@ func TestGetRoomUsers(t *testing.T) {
 	}
 }
 
-func TestGetGameTypes(t *testing.T) {
+func TestGetGameModes(t *testing.T) {
 	resp, err := sendRequest(testMainURL+"/gameModes", http.MethodGet, []byte{})
 	if err != nil {
-		t.Fatalf(`TestGetGameTypes() = %v, want nil`, err)
+		t.Fatalf(`TestGetGameModes() = %v, want nil`, err)
 	}
 
-	var gTypes []string
-	err = json.Unmarshal([]byte(resp), &gTypes)
-	if len(gTypes) != 1 || err != nil {
-		t.Fatalf(`TestGetGameTypes() = %v, %v, want [%s], nil`, gTypes, err, testType)
+	var gameModes []string
+	err = json.Unmarshal([]byte(resp), &gameModes)
+	if len(gameModes) != 1 || err != nil {
+		t.Fatalf(`TestGetGameModes() = %v, %v, want [%s], nil`, gameModes, err, testGameMode)
 	}
 
-	if gTypes[0] != testType {
-		t.Fatalf(`TestGetGameTypes() %q, want %q`, gTypes[0], testType)
+	if gameModes[0] != testGameMode {
+		t.Fatalf(`TestGetGameModes() %q, want %q`, gameModes[0], testGameMode)
 	}
 }
 
@@ -207,8 +228,8 @@ func TestUpdateRoomName(t *testing.T) {
 	}
 
 	room, _ := room.GetRoom(rid)
-	if room.Name != altRoom {
-		t.Fatalf(`TestUpdateRoomName() = %q, want %q`, room.Name, altRoom)
+	if room.Name != altRoomName {
+		t.Fatalf(`TestUpdateRoomName() = %q, want %q`, room.Name, altRoomName)
 	}
 }
 
@@ -228,19 +249,19 @@ func TestUpdateRoomStatus(t *testing.T) {
 	}
 }
 
-func TestUpdateRoomType(t *testing.T) {
+func TestUpdateRoomMode(t *testing.T) {
 	rid := setupRoom(t)
 
-	url := fmt.Sprintf("%s/rooms/%s/type", testMainURL, rid)
+	url := fmt.Sprintf("%s/rooms/%s/mode", testMainURL, rid)
 
-	_, err := sendRequest(url, http.MethodPut, []byte(testType))
+	_, err := sendRequest(url, http.MethodPut, []byte(testGameMode))
 	if err != nil {
-		t.Fatalf(`TestUpdateRoomType() = %v, want nil`, err)
+		t.Fatalf(`TestUpdateRoomMode() = %v, want nil`, err)
 	}
 
 	room, _ := room.GetRoom(rid)
-	if room.Type != testType {
-		t.Fatalf(`TestUpdateRoomType() = %q, want %q`, room.Status, testType)
+	if room.GameMode != testGameMode {
+		t.Fatalf(`TestUpdateRoomMode() = %q, want %q`, room.Status, testGameMode)
 	}
 }
 
@@ -362,7 +383,7 @@ func setupClientSuite() {
 
 	time.Sleep(200 * time.Millisecond)
 
-	registry.RegisterGameType("Test", testConURL)
+	registry.RegisterGameMode("Test", testConURL)
 
 }
 
@@ -385,7 +406,7 @@ func cleanUpRoom(rid string) {
 func setupReadyRoom(t *testing.T) string {
 	rid := setupRoom(t)
 
-	room.UpdateRoomType(rid, testType)
+	room.UpdateRoomGameMode(rid, testGameMode)
 
 	return rid
 }

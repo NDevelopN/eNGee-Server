@@ -26,7 +26,7 @@ func RegisterGameMode(name string, url string) error {
 	return nil
 }
 
-func RemoveGameType(name string) error {
+func RemoveGameMode(name string) error {
 	_, found := urlRegistry[name]
 	if !found {
 		return fmt.Errorf("no matching game mode found")
@@ -37,13 +37,13 @@ func RemoveGameType(name string) error {
 	return nil
 }
 
-func GetGameTypes() []string {
-	var gTypes []string
+func GetGameModes() []string {
+	var gameModes []string
 	for name := range urlRegistry {
-		gTypes = append(gTypes, name)
+		gameModes = append(gameModes, name)
 	}
 
-	return gTypes
+	return gameModes
 }
 
 func GetGameURL(name string) (string, error) {

@@ -16,8 +16,8 @@ const testRoomName = "Test Room"
 const testUserName = "Test User"
 
 var testRoom, _ = json.Marshal(room.Room{
-	Name: testRoomName,
-	Type: "None",
+	Name:     testRoomName,
+	GameMode: "None",
 })
 
 const moreUserCount = 3
