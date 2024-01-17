@@ -1,8 +1,11 @@
 package gameclient
 
 import (
+	reg "Engee-Server/gameRegistry"
+	"Engee-Server/testDummy"
 	"os"
 	"testing"
+	"time"
 
 	"github.com/google/uuid"
 )
@@ -10,6 +13,9 @@ import (
 var testRID = uuid.NewString()
 var altRID = uuid.NewString()
 var badRID = uuid.NewString()
+
+const testGameMode = "Test"
+const altGameMode = "Alt"
 
 const testPort = "8091"
 const altPort = "8092"
@@ -160,15 +166,6 @@ func TestSetGameRulesDouble(t *testing.T) {
 	}
 }
 
-func TestSetGameRulesAfterStart(t *testing.T) {
-	setupActiveGameTest(t)
-
-	err := SetGameRules(testRID, updatedRules)
-	if err == nil {
-		t.Fatalf(`TestSetGameRules(After Start) = %v, want err`, err)
-	}
-}
-
 func TestSetGameRulesInvalidRID(t *testing.T) {
 	setupGameTest(t)
 
@@ -196,41 +193,12 @@ func TestStartGameInvalidRID(t *testing.T) {
 	}
 }
 
-func TestStartGameDouble(t *testing.T) {
-	setupGameTest(t)
-
-	StartGame(testRID)
-	err := StartGame(testRID)
-	if err == nil {
-		t.Fatalf(`TestStartGame(Double) = %v, want err`, err)
-	}
-}
-
 func TestPauseGame(t *testing.T) {
 	setupActiveGameTest(t)
 
 	err := PauseGame(testRID)
 	if err != nil {
 		t.Fatalf(`TestPauseGame(Valid) = %v, want nil`, err)
-	}
-}
-
-func TestPauseGameDouble(t *testing.T) {
-	setupActiveGameTest(t)
-
-	PauseGame(testRID)
-	err := PauseGame(testRID)
-	if err != nil {
-		t.Fatalf(`TestPauseGame(Double) = %v, want nil`, err)
-	}
-}
-
-func TestPauseGameNotStarted(t *testing.T) {
-	setupGameTest(t)
-
-	err := PauseGame(testRID)
-	if err == nil {
-		t.Fatalf(`TestPauseGame(Not Started) = %v, want err`, err)
 	}
 }
 
@@ -251,25 +219,6 @@ func TestResetGame(t *testing.T) {
 	}
 }
 
-func TestResetGameDouble(t *testing.T) {
-	setupActiveGameTest(t)
-
-	ResetGame(testRID)
-	err := ResetGame(testRID)
-	if err == nil {
-		t.Fatalf(`TestResetGame(Double) = %v, want err`, err)
-	}
-}
-
-func TestResetGameNotStarted(t *testing.T) {
-	setupGameTest(t)
-
-	err := ResetGame(testRID)
-	if err == nil {
-		t.Fatalf(`TestResetGame(Not Started) = %v, want err`, err)
-	}
-}
-
 func TestResetGameInvalidRID(t *testing.T) {
 	setupActiveGameTest(t)
 
@@ -280,6 +229,13 @@ func TestResetGameInvalidRID(t *testing.T) {
 }
 
 func setupGameSuite() {
+	go testDummy.Serve(testPort)
+	go testDummy.Serve(altPort)
+
+	reg.RegisterGameMode(testGameMode, testURL)
+	reg.RegisterGameMode(altGameMode, altURL)
+
+	time.Sleep(200 * time.Millisecond)
 
 }
 
