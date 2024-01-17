@@ -42,14 +42,40 @@ func RemoveUserFromRoom(uid string, rid string) error {
 		return fmt.Errorf("room does not contain user")
 	}
 
+	return removeUIDFromLobby(uid, rid)
+}
+
+func RemoveUserFromAllRooms(uid string) error {
+	_, err := user.GetUser(uid)
+	if err != nil {
+		return err
+	}
+
+	for rid := range lobbies {
+		if checkRoomContainsUser(uid, rid) {
+			err = removeUIDFromLobby(uid, rid)
+			if err != nil {
+				return err
+			}
+		}
+	}
+
+	return nil
+}
+
+func removeUIDFromLobby(uid string, rid string) error {
+	var err error = nil
 	lobbies[rid], err = utils.RemoveElementFromSliceOrdered(lobbies[rid], uid)
+	if err != nil {
+		return err
+	}
 
 	if len(lobbies[rid]) == 0 {
 		room.DeleteRoom(rid)
 		delete(lobbies, rid)
 	}
 
-	return err
+	return nil
 }
 
 func GetUsersInRoom(rid string) ([]user.User, error) {

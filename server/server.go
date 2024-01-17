@@ -373,7 +373,15 @@ func endRoomGame(c *gin.Context) {
 func deleteUser(c *gin.Context) {
 	_, w := processMessage(c)
 	ids := utils.GetRequestIDs(c.Request)
-	err := user.DeleteUser(ids[0])
+
+	err := lobby.RemoveUserFromAllRooms(ids[0])
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Failed to delete room(s) user is in: %v", err), http.StatusInternalServerError)
+		log.Printf("[Error] Removing deleting user from room(s): %v", err)
+		//No return, want to complete deleting user regardless
+	}
+
+	err = user.DeleteUser(ids[0])
 	if err != nil {
 		http.Error(w, fmt.Sprintf("Failed to delete user: %v", err), http.StatusInternalServerError)
 		log.Printf("[Error] Deleting user: %v", err)
