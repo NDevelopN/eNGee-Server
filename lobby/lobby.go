@@ -5,6 +5,7 @@ import (
 	"Engee-Server/user"
 	"Engee-Server/utils"
 	"fmt"
+	"log"
 )
 
 var lobbies = make(map[string][]string)
@@ -92,7 +93,13 @@ func GetUsersInRoom(rid string) ([]user.User, error) {
 	for _, uid := range lobbies[rid] {
 		user, err := user.GetUser(uid)
 		if err != nil {
-			return nil, err
+			log.Printf("[Error] Attempted to get user in lobby room list: %v", err)
+			err = removeUIDFromLobby(uid, rid)
+			if err != nil {
+				return nil, err
+			}
+
+			continue
 		}
 
 		users = append(users, user)

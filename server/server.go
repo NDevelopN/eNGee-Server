@@ -6,6 +6,7 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 
@@ -40,12 +41,15 @@ func Serve(port string) {
 	router.POST("/users", postUser)
 	router.POST("/rooms", postRoom)
 
+	router.POST("/users/:id", userHeartbeat)
+
 	router.GET("/rooms", getRooms)
 	router.GET("/rooms/:rid/users", getRoomUsers)
 	router.GET("/rooms/:rid", getRoomInfo)
 
 	router.GET("/gameModes", getGameModes)
 	router.POST("/gameModes", postGameMode)
+	router.POST("/gameModes/:gameMode", gameModeHeartbeat)
 
 	router.PUT("/users/:uid/name", updateUserName)
 	router.PUT("/users/:uid/room", userJoinRoom)
@@ -92,6 +96,23 @@ func postRoom(c *gin.Context) {
 	}
 
 	err = sendSimpleReply(w, rid, http.StatusOK)
+	if err != nil {
+		log.Printf("[Error] Sending reply: %v", err)
+	}
+}
+
+func userHeartbeat(c *gin.Context) {
+	_, w := processMessage(c)
+	ids := utils.GetRequestIDs(c.Request)
+
+	err := user.Heartbeat(ids[0])
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Hearbeat failed: %v", err), http.StatusInternalServerError)
+		log.Printf("[Error] Receiving user heartbeat: %v", err)
+		return
+	}
+
+	err = sendAccept(w)
 	if err != nil {
 		log.Printf("[Error] Sending reply: %v", err)
 	}
@@ -202,6 +223,24 @@ func postGameMode(c *gin.Context) {
 	if err != nil {
 		http.Error(w, fmt.Sprintf("Failed to update game mode: %v", err), http.StatusInternalServerError)
 		log.Printf("[Error] Updating game mode: %v", err)
+		return
+	}
+
+	err = sendAccept(w)
+	if err != nil {
+		log.Printf("[Error] Sending reply: %v", err)
+	}
+}
+
+func gameModeHeartbeat(c *gin.Context) {
+	_, w := processMessage(c)
+	splitPath := strings.Split(c.Request.URL.Path, "/")
+	modeName := splitPath[len(splitPath)-1]
+
+	err := registry.Heartbeat(modeName)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Failed to accept heartbeat: %v", err), http.StatusInternalServerError)
+		log.Printf("[Error] Receiving gamemode heartbeat: %v", err)
 		return
 	}
 

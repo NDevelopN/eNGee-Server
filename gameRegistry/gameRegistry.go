@@ -3,9 +3,11 @@ package gameRegistry
 import (
 	"Engee-Server/utils"
 	"fmt"
+	"time"
 )
 
 var urlRegistry = make(map[string]string)
+var heartbeats map[string]time.Time
 
 func RegisterGameMode(name string, url string) error {
 	if name == "" {
@@ -23,6 +25,25 @@ func RegisterGameMode(name string, url string) error {
 	}
 
 	urlRegistry[name] = url
+
+	if heartbeats == nil {
+		heartbeats = make(map[string]time.Time)
+		go utils.MonitorHeartbeats(&heartbeats, RemoveGameMode)
+	}
+
+	heartbeats[name] = time.Now()
+
+	return nil
+}
+
+func Heartbeat(name string) error {
+	_, found := urlRegistry[name]
+	if !found {
+		return fmt.Errorf("no game mode '%s' found", name)
+	}
+
+	heartbeats[name] = time.Now()
+
 	return nil
 }
 
@@ -33,6 +54,7 @@ func RemoveGameMode(name string) error {
 	}
 
 	delete(urlRegistry, name)
+	delete(heartbeats, name)
 
 	return nil
 }

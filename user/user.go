@@ -2,6 +2,7 @@ package user
 
 import (
 	"fmt"
+	"time"
 
 	"Engee-Server/utils"
 
@@ -15,6 +16,7 @@ type User struct {
 }
 
 var users = make(map[string]User)
+var heartbeats map[string]time.Time
 
 func CreateUser(name string) (string, error) {
 	err := utils.ValidateInputRefuseEmpty(name, nil)
@@ -27,8 +29,26 @@ func CreateUser(name string) (string, error) {
 	newUser.Name = name
 	newUser.Status = "New"
 
+	if heartbeats == nil {
+		heartbeats = make(map[string]time.Time)
+		go utils.MonitorHeartbeats(&heartbeats, DeleteUser)
+	}
+
 	users[newUser.UID] = newUser
+	heartbeats[newUser.UID] = time.Now()
+
 	return newUser.UID, nil
+}
+
+func Heartbeat(uid string) error {
+	_, err := getUserByID(uid)
+	if err != nil {
+		return err
+	}
+
+	heartbeats[uid] = time.Now()
+
+	return nil
 }
 
 func GetUser(uid string) (User, error) {
@@ -76,6 +96,7 @@ func DeleteUser(uid string) error {
 	}
 
 	delete(users, uid)
+	delete(heartbeats, uid)
 
 	return nil
 }
