@@ -18,7 +18,7 @@ var randomID = uuid.NewString()
 
 const testRoomName = "Test Room"
 const testConPort = "8091"
-const testConURL = "localhost:" + testConPort
+const testConURL = "http://localhost:" + testConPort
 const testGameMode = "Test"
 const testUserName = "Test User"
 

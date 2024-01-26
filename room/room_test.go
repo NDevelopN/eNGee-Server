@@ -25,8 +25,8 @@ const altGameMode = "Alt"
 
 const testConPort = "8091"
 const altConPort = "8092"
-const testConURL = "localhost:" + testConPort
-const altConURL = "localhost:" + altConPort
+const testConURL = "http://localhost:" + testConPort
+const altConURL = "http://localhost:" + altConPort
 
 var testRoom = Room{
 	RID:      "",

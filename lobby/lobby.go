@@ -1,11 +1,13 @@
 package lobby
 
 import (
-	"Engee-Server/room"
-	"Engee-Server/user"
-	"Engee-Server/utils"
 	"fmt"
 	"log"
+
+	"Engee-Server/room"
+	sErr "Engee-Server/stockErrors"
+	"Engee-Server/user"
+	"Engee-Server/utils"
 )
 
 var lobbies = make(map[string][]string)
@@ -18,7 +20,11 @@ func JoinUserToRoom(uid string, rid string) error {
 
 	if checkRoomLobbyExists(rid) {
 		if checkRoomContainsUser(uid, rid) {
-			return fmt.Errorf("user already in this room")
+			return &sErr.MatchFoundError[string]{
+				Space: "Room Users",
+				Field: "UID",
+				Value: uid,
+			}
 		}
 	} else {
 		lobbies[rid] = make([]string, 0)
@@ -35,12 +41,17 @@ func RemoveUserFromRoom(uid string, rid string) error {
 		return err
 	}
 
-	if !checkRoomLobbyExists(rid) {
-		return fmt.Errorf("lobby for room does not exist")
+	err = requireRoomLobby(rid)
+	if err != nil {
+		return err
 	}
 
 	if !checkRoomContainsUser(uid, rid) {
-		return fmt.Errorf("room does not contain user")
+		return &sErr.MatchNotFoundError[string]{
+			Space: "Room Users",
+			Field: "UID",
+			Value: uid,
+		}
 	}
 
 	return removeUIDFromLobby(uid, rid)
@@ -49,7 +60,7 @@ func RemoveUserFromRoom(uid string, rid string) error {
 func RemoveUserFromAllRooms(uid string) error {
 	_, err := user.GetUser(uid)
 	if err != nil {
-		return err
+		return fmt.Errorf("could not get user: %w", err)
 	}
 
 	for rid := range lobbies {
@@ -68,7 +79,7 @@ func removeUIDFromLobby(uid string, rid string) error {
 	var err error = nil
 	lobbies[rid], err = utils.RemoveElementFromSliceOrdered(lobbies[rid], uid)
 	if err != nil {
-		return err
+		return fmt.Errorf("could not remove UID from slice: %w", err)
 	}
 
 	if len(lobbies[rid]) == 0 {
@@ -82,11 +93,12 @@ func removeUIDFromLobby(uid string, rid string) error {
 func GetUsersInRoom(rid string) ([]user.User, error) {
 	_, err := room.GetRoom(rid)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("could not find room: %w", err)
 	}
 
-	if !checkRoomLobbyExists(rid) {
-		return nil, fmt.Errorf("lobby for room does not exist")
+	err = requireRoomLobby(rid)
+	if err != nil {
+		return nil, err
 	}
 
 	var users []user.User
@@ -106,7 +118,11 @@ func GetUsersInRoom(rid string) ([]user.User, error) {
 	}
 
 	if len(users) == 0 {
-		err = fmt.Errorf("no users in room")
+
+		err = &sErr.EmptySetError{
+			Space: "Lobby",
+			Field: "Users",
+		}
 	}
 
 	return users, err
@@ -115,11 +131,12 @@ func GetUsersInRoom(rid string) ([]user.User, error) {
 func GetRoomUserCount(rid string) (int, error) {
 	_, err := room.GetRoom(rid)
 	if err != nil {
-		return 0, err
+		return 0, fmt.Errorf("could not get room: %w", err)
 	}
 
-	if !checkRoomLobbyExists(rid) {
-		return 0, fmt.Errorf("lobby for room does not exist")
+	err = requireRoomLobby(rid)
+	if err != nil {
+		return 0, err
 	}
 
 	return len(lobbies[rid]), nil
@@ -128,12 +145,24 @@ func GetRoomUserCount(rid string) (int, error) {
 func checkUserAndRoomExist(uid string, rid string) error {
 	_, err := user.GetUser(uid)
 	if err != nil {
-		return err
+		return fmt.Errorf("could not get user: %w", err)
 	}
 
 	_, err = room.GetRoom(rid)
 	if err != nil {
-		return err
+		return fmt.Errorf("could not get room: %w", err)
+	}
+
+	return nil
+}
+
+func requireRoomLobby(rid string) error {
+	if !checkRoomLobbyExists(rid) {
+		return &sErr.MatchNotFoundError[string]{
+			Space: "Lobbies",
+			Field: "RID",
+			Value: rid,
+		}
 	}
 
 	return nil

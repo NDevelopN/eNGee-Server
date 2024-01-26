@@ -4,7 +4,7 @@ import (
 	"testing"
 )
 
-const testAddress = "Address"
+const testAddress = "http://localhost:8091"
 
 const testGameMode = "Test"
 const altGameMode = "Alt"

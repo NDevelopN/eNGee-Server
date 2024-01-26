@@ -1,34 +1,33 @@
 package utils
 
-import "fmt"
+import (
+	sErr "Engee-Server/stockErrors"
+	"net/url"
+)
 
-func ValidateInputRefuseEmpty(input string, allowed map[string]struct{}) error {
-	if input == "" {
-		return fmt.Errorf("input is empty")
+func ValidateURL(endpoint string) error {
+	if endpoint == "" {
+		return &sErr.EmptyValueError{
+			Field: "URL",
+		}
 	}
 
-	return ValidateInput(input, allowed)
-}
-
-func ValidateInput(input string, allowed map[string]struct{}) error {
-	if len(allowed) == 0 {
-		return nil
+	u, err := url.Parse(endpoint)
+	if err != nil {
+		return err
 	}
 
-	_, contains := allowed[input]
-	if contains {
-		return nil
+	if u.Scheme == "" {
+		return &sErr.EmptyValueError{
+			Field: "Scheme",
+		}
 	}
 
-	return fmt.Errorf("%q is not a valid input", input)
-}
-
-func ValidateURL(url string) error {
-	if url == "" {
-		return fmt.Errorf("provided url is empty string")
+	if u.Host == "" {
+		return &sErr.EmptyValueError{
+			Field: "Host",
+		}
 	}
-
-	//TODO ensure URL is valid
 
 	return nil
 }

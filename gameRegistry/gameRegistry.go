@@ -1,9 +1,11 @@
 package gameRegistry
 
 import (
-	"Engee-Server/utils"
 	"fmt"
 	"time"
+
+	sErr "Engee-Server/stockErrors"
+	"Engee-Server/utils"
 )
 
 var urlRegistry = make(map[string]string)
@@ -11,17 +13,23 @@ var heartbeats map[string]time.Time
 
 func RegisterGameMode(name string, url string) error {
 	if name == "" {
-		return fmt.Errorf("game mode name is empty string")
+		return &sErr.EmptyValueError{
+			Field: "Gamemode name",
+		}
 	}
 
 	err := utils.ValidateURL(url)
 	if err != nil {
-		return err
+		return fmt.Errorf("URL is invalid: %w", err)
 	}
 
 	_, found := urlRegistry[name]
 	if found {
-		return fmt.Errorf("a game mode with that name already exists")
+		return &sErr.MatchFoundError[string]{
+			Space: "Gamemodes",
+			Field: "Name",
+			Value: name,
+		}
 	}
 
 	urlRegistry[name] = url
@@ -37,9 +45,9 @@ func RegisterGameMode(name string, url string) error {
 }
 
 func Heartbeat(name string) error {
-	_, found := urlRegistry[name]
-	if !found {
-		return fmt.Errorf("no game mode '%s' found", name)
+	_, err := GetGamemodeURL(name)
+	if err != nil {
+		return err
 	}
 
 	heartbeats[name] = time.Now()
@@ -48,9 +56,9 @@ func Heartbeat(name string) error {
 }
 
 func RemoveGameMode(name string) error {
-	_, found := urlRegistry[name]
-	if !found {
-		return fmt.Errorf("no matching game mode found")
+	_, err := GetGamemodeURL(name)
+	if err != nil {
+		return err
 	}
 
 	delete(urlRegistry, name)
@@ -68,10 +76,20 @@ func GetGameModes() []string {
 	return gameModes
 }
 
-func GetGameURL(name string) (string, error) {
+func GetGamemodeURL(name string) (string, error) {
+	if name == "" {
+		return "", &sErr.EmptyValueError{
+			Field: "Name",
+		}
+	}
+
 	url, found := urlRegistry[name]
 	if !found {
-		return "", fmt.Errorf("no matching game mode found")
+		return "", &sErr.MatchNotFoundError[string]{
+			Space: "Gamemodes",
+			Field: "Name",
+			Value: name,
+		}
 	}
 
 	return url, nil

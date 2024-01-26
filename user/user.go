@@ -1,12 +1,12 @@
 package user
 
 import (
-	"fmt"
 	"time"
 
-	"Engee-Server/utils"
-
 	"github.com/google/uuid"
+
+	sErr "Engee-Server/stockErrors"
+	"Engee-Server/utils"
 )
 
 type User struct {
@@ -19,9 +19,10 @@ var users = make(map[string]User)
 var heartbeats map[string]time.Time
 
 func CreateUser(name string) (string, error) {
-	err := utils.ValidateInputRefuseEmpty(name, nil)
-	if err != nil {
-		return "", err
+	if name == "" {
+		return "", &sErr.EmptyValueError{
+			Field: "Name",
+		}
 	}
 
 	var newUser User
@@ -41,7 +42,7 @@ func CreateUser(name string) (string, error) {
 }
 
 func Heartbeat(uid string) error {
-	_, err := getUserByID(uid)
+	_, err := GetUser(uid)
 	if err != nil {
 		return err
 	}
@@ -52,16 +53,26 @@ func Heartbeat(uid string) error {
 }
 
 func GetUser(uid string) (User, error) {
-	return getUserByID(uid)
+	user, found := users[uid]
+	if !found {
+		return user, &sErr.MatchNotFoundError[string]{
+			Space: "Users",
+			Field: "UID",
+			Value: uid,
+		}
+	}
+
+	return user, nil
 }
 
 func UpdateUserName(uid string, name string) error {
-	err := utils.ValidateInputRefuseEmpty(name, nil)
-	if err != nil {
-		return err
+	if name == "" {
+		return &sErr.EmptyValueError{
+			Field: "Name",
+		}
 	}
 
-	user, err := getUserByID(uid)
+	user, err := GetUser(uid)
 	if err != nil {
 		return err
 	}
@@ -73,12 +84,13 @@ func UpdateUserName(uid string, name string) error {
 }
 
 func UpdateUserStatus(uid string, status string) error {
-	err := utils.ValidateInputRefuseEmpty(status, nil)
-	if err != nil {
-		return err
+	if status == "" {
+		return &sErr.EmptyValueError{
+			Field: "Status",
+		}
 	}
 
-	user, err := getUserByID(uid)
+	user, err := GetUser(uid)
 	if err != nil {
 		return err
 	}
@@ -90,7 +102,7 @@ func UpdateUserStatus(uid string, status string) error {
 }
 
 func DeleteUser(uid string) error {
-	_, err := getUserByID(uid)
+	_, err := GetUser(uid)
 	if err != nil {
 		return err
 	}
@@ -99,15 +111,4 @@ func DeleteUser(uid string) error {
 	delete(heartbeats, uid)
 
 	return nil
-}
-
-func getUserByID(uid string) (User, error) {
-	var err error
-
-	user, found := users[uid]
-	if !found {
-		err = fmt.Errorf("no user found with id: %q", uid)
-	}
-
-	return user, err
 }

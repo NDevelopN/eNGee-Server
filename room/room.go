@@ -1,15 +1,15 @@
 package room
 
 import (
-	gameclient "Engee-Server/gameClient"
-	"Engee-Server/utils"
 	"encoding/json"
 	"fmt"
 
-	registry "Engee-Server/gameRegistry"
-
 	"github.com/google/uuid"
 	"golang.org/x/exp/maps"
+
+	gameclient "Engee-Server/gameClient"
+	registry "Engee-Server/gameRegistry"
+	sErr "Engee-Server/stockErrors"
 )
 
 type Room struct {
@@ -26,26 +26,27 @@ func CreateRoom(roomInfo []byte) (string, error) {
 	var newRoom Room
 	err := json.Unmarshal(roomInfo, &newRoom)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("could not unmarshal room info: %w", err)
 	}
 
-	err = utils.ValidateInputRefuseEmpty(newRoom.Name, nil)
-	if err != nil {
-		return "", err
+	if newRoom.Name == "" {
+		return "", &sErr.EmptyValueError{
+			Field: "Name",
+		}
 	}
 
 	id := uuid.NewString()
 
 	newRoom.RID = id
 
-	newRoom.Addr, err = registry.GetGameURL(newRoom.GameMode)
+	newRoom.Addr, err = registry.GetGamemodeURL(newRoom.GameMode)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("could not get get gamemode info: %w", err)
 	}
 
-	err = gameclient.CreateGameInstance(id, "http://"+newRoom.Addr)
+	err = gameclient.CreateGameInstance(id, newRoom.Addr)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("could not create game instance: %w", err)
 	}
 
 	newRoom.Status = "Created"
@@ -70,16 +71,19 @@ func GetRoomURL(rid string) (string, error) {
 	}
 
 	if room.Addr == "" {
-		return "", fmt.Errorf("room URL not set")
+		return "", &sErr.EmptyValueError{
+			Field: "Addr",
+		}
 	}
 
 	return room.Addr, nil
 }
 
 func UpdateRoomName(rid string, name string) error {
-	err := utils.ValidateInputRefuseEmpty(name, nil)
-	if err != nil {
-		return err
+	if name == "" {
+		return &sErr.EmptyValueError{
+			Field: "Name",
+		}
 	}
 
 	room, err := getRoomByID(rid)
@@ -94,9 +98,10 @@ func UpdateRoomName(rid string, name string) error {
 }
 
 func UpdateRoomStatus(rid string, status string) error {
-	err := utils.ValidateInputRefuseEmpty(status, nil)
-	if err != nil {
-		return err
+	if status == "" {
+		return &sErr.EmptyValueError{
+			Field: "Status",
+		}
 	}
 
 	room, err := getRoomByID(rid)
@@ -111,9 +116,10 @@ func UpdateRoomStatus(rid string, status string) error {
 }
 
 func UpdateRoomGameMode(rid string, roomGameMode string) error {
-	err := utils.ValidateInputRefuseEmpty(roomGameMode, nil)
-	if err != nil {
-		return err
+	if roomGameMode == "" {
+		return &sErr.EmptyValueError{
+			Field: "Gamemode",
+		}
 	}
 
 	room, err := getRoomByID(rid)
@@ -123,13 +129,13 @@ func UpdateRoomGameMode(rid string, roomGameMode string) error {
 
 	room.GameMode = roomGameMode
 
-	room.Addr, err = registry.GetGameURL(roomGameMode)
-	if err == nil {
-		rooms[rid] = room
-		return nil
-	} else {
-		return err
+	room.Addr, err = registry.GetGamemodeURL(roomGameMode)
+	if err != nil {
+		return fmt.Errorf("could not get gamemode url from registry: %w", err)
 	}
+
+	rooms[rid] = room
+	return nil
 }
 
 func InitializeRoomGame(rid string) error {
@@ -138,13 +144,15 @@ func InitializeRoomGame(rid string) error {
 		return err
 	}
 
-	err = gameclient.CreateGameInstance(rid, "http://"+room.Addr)
+	err = gameclient.CreateGameInstance(rid, room.Addr)
 	if err != nil {
-		room.Status = "Created"
-		rooms[rid] = room
+		return fmt.Errorf("could not creat game instance: %w", err)
 	}
 
-	return err
+	room.Status = "Created"
+	rooms[rid] = room
+
+	return nil
 }
 
 func DeleteRoom(rid string) error {
@@ -153,7 +161,10 @@ func DeleteRoom(rid string) error {
 		return err
 	}
 
-	gameclient.EndGame(rid)
+	err = gameclient.EndGame(rid)
+	if err != nil {
+		return fmt.Errorf("could not end game: %w", err)
+	}
 
 	delete(rooms, rid)
 
@@ -161,12 +172,14 @@ func DeleteRoom(rid string) error {
 }
 
 func getRoomByID(rid string) (Room, error) {
-	var err error
-
 	room, found := rooms[rid]
 	if !found {
-		err = fmt.Errorf("no room found with id: %q", rid)
+		return room, &sErr.MatchNotFoundError[string]{
+			Space: "Rooms",
+			Field: "RID",
+			Value: rid,
+		}
 	}
 
-	return room, err
+	return room, nil
 }
