@@ -53,6 +53,12 @@ func Heartbeat(uid string) error {
 }
 
 func GetUser(uid string) (User, error) {
+	if uid == "" {
+		return User{}, &sErr.EmptyValueError{
+			Field: "UID",
+		}
+	}
+
 	user, found := users[uid]
 	if !found {
 		return user, &sErr.MatchNotFoundError[string]{
