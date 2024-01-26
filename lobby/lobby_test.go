@@ -215,51 +215,6 @@ func TestGetRoomUserCountAfterDelete(t *testing.T) {
 	}
 }
 
-func TestGetRoomLeader(t *testing.T) {
-	uid, rid := setupLobbyTest(t)
-	addMoreUsersToLobby(t, rid)
-
-	leader, err := GetRoomLeader(rid)
-	if leader != uid || err != nil {
-		t.Fatalf(`TestGetRoomLeader(Valid) = %q, %v, want %q, nil`, leader, err, uid)
-	}
-}
-
-func TestGetRoomLeaderInvalidRID(t *testing.T) {
-	_, rid := setupLobbyTest(t)
-	addMoreUsersToLobby(t, rid)
-
-	leader, err := GetRoomLeader(randomID)
-	if leader != "" || err == nil {
-		t.Fatalf(`TestGetRoomLeader(Invalid RID) = %q, %v, want "", err`, leader, err)
-	}
-}
-
-func TestGetLeaderOfEmptyRoom(t *testing.T) {
-	_, rid := createUserAndRoom(t)
-
-	leader, err := GetRoomLeader(rid)
-	if leader != "" || err == nil {
-		t.Fatalf(`TestGetRoomLeader(Empty Room) = %q, %v, want "", err`, leader, err)
-	}
-}
-
-func TestGetRoomLeaderAfterDelete(t *testing.T) {
-	uid, rid := setupLobbyTest(t)
-	addMoreUsersToLobby(t, rid)
-
-	RemoveUserFromRoom(uid, rid)
-
-	leader, err := GetRoomLeader(rid)
-	if leader == "" || err != nil {
-		t.Fatalf(`TestGetRoomLeader(After Delete) = %q, %v, want uuid, nil`, leader, err)
-	}
-
-	if leader == uid {
-		t.Fatalf(`TestGetRoomLeader(After Delete) matches initial uid (%q == %q)`, leader, uid)
-	}
-}
-
 func setupLobbyTest(t *testing.T) (string, string) {
 	uid, rid := createUserAndRoom(t)
 
