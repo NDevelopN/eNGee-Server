@@ -1,7 +1,10 @@
 package gameRegistry
 
 import (
+	"errors"
 	"testing"
+
+	sErr "Engee-Server/stockErrors"
 )
 
 const testAddress = "http://localhost:8091"
@@ -33,8 +36,8 @@ func TestRegisterUniqueNameGame(t *testing.T) {
 func TestRegisterSameNameGame(t *testing.T) {
 	RegisterGameMode(testGameMode, testAddress)
 	err := RegisterGameMode(testGameMode, testAddress)
-	if err == nil {
-		t.Fatalf(`TestRegisterGame(Same Name) = %v, want err`, err)
+	if !errors.As(err, &sErr.MF_ERR) {
+		t.Fatalf(`TestRegisterGame(Same Name) = %v, want MatchFoundError`, err)
 	}
 
 	t.Cleanup(cleanUpAfterTest)
@@ -42,8 +45,8 @@ func TestRegisterSameNameGame(t *testing.T) {
 
 func TestRegisterGameEmptyMode(t *testing.T) {
 	err := RegisterGameMode("", testAddress)
-	if err == nil {
-		t.Fatalf(`TestRegisterGame(Empty Name) = %v, want err`, err)
+	if !errors.As(err, &sErr.EV_ERR) {
+		t.Fatalf(`TestRegisterGame(Empty Name) = %v, want EmptyValueError`, err)
 	}
 
 	t.Cleanup(cleanUpAfterTest)
@@ -51,8 +54,8 @@ func TestRegisterGameEmptyMode(t *testing.T) {
 
 func TestRegisterGameEmptyURL(t *testing.T) {
 	err := RegisterGameMode(testGameMode, "")
-	if err == nil {
-		t.Fatalf(`TestRegisterGame(Empty URL) = %v, want err`, err)
+	if !errors.As(err, &sErr.EV_ERR) {
+		t.Fatalf(`TestRegisterGame(Empty URL) = %v, want EmptyValueError`, err)
 	}
 }
 
@@ -69,8 +72,8 @@ func TestRemoveGameFromRegistryInvalidMode(t *testing.T) {
 	setupRegisterTest(t)
 
 	err := RemoveGameMode(badGameMode)
-	if err == nil {
-		t.Fatalf(`TestRemoveGameFromRegistry(Invalid Mode) = %v, want err`, err)
+	if !errors.As(err, &sErr.MNF_ERR) {
+		t.Fatalf(`TestRemoveGameFromRegistry(Invalid Mode) = %v, want MatchNotFoundError`, err)
 	}
 }
 
@@ -79,8 +82,8 @@ func TestRemoveGameFromRegistryDouble(t *testing.T) {
 
 	RemoveGameMode(testGameMode)
 	err := RemoveGameMode(testGameMode)
-	if err == nil {
-		t.Fatalf(`TestRemoveGameFromRegistry(Double) = %v, want err`, err)
+	if !errors.As(err, &sErr.MNF_ERR) {
+		t.Fatalf(`TestRemoveGameFromRegistry(Double) = %v, want MatchNotFoundError`, err)
 	}
 }
 
