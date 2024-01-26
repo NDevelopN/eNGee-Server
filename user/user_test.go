@@ -1,9 +1,12 @@
 package user
 
 import (
+	"errors"
 	"testing"
 
 	"github.com/google/uuid"
+
+	sErr "Engee-Server/stockErrors"
 )
 
 var testUser = User{
@@ -50,8 +53,8 @@ func TestCreateSameNameUsers(t *testing.T) {
 
 func TestCreateUserEmptyName(t *testing.T) {
 	id, err := CreateUser("")
-	if id != "" || err == nil {
-		t.Fatalf(`CreateUser(EmptyName) = %q, %v, want "", err`, id, err)
+	if id != "" || !errors.As(err, &sErr.EV_ERR) {
+		t.Fatalf(`CreateUser(EmptyName) = %q, %v, want "", EmptyValueError`, id, err)
 	}
 
 	t.Cleanup(cleanAfterTest)
@@ -67,17 +70,17 @@ func TestGetUser(t *testing.T) {
 
 func TestGetUserEmptyID(t *testing.T) {
 	setupUserTest(t)
-	user, err := GetUser("")
-	if err == nil {
-		t.Fatalf(`GetUser(EmptyID) = %v, %v, want nil, err`, user, err)
+	_, err := GetUser("")
+	if !errors.As(err, &sErr.EV_ERR) {
+		t.Fatalf(`GetUser(EmptyID) = %v, want EmptyValueError`, err)
 	}
 }
 
 func TestGetUserInvalidID(t *testing.T) {
 	setupUserTest(t)
 	user, err := GetUser(randomID)
-	if err == nil {
-		t.Fatalf(`GetUser(InvalidID) = %v, %v, want nil, err`, user, err)
+	if !errors.As(err, &sErr.MNF_ERR) {
+		t.Fatalf(`GetUser(InvalidID) = %v, %v, want nil, MatchNotFoundError`, user, err)
 	}
 }
 
@@ -98,8 +101,8 @@ func TestUpdateUserNameEmptyName(t *testing.T) {
 	id, tuInstance := setupUserTest(t)
 
 	err := UpdateUserName(id, "")
-	if err == nil {
-		t.Fatalf(`UpdateUserName(EmptyName) = %v, want err`, err)
+	if !errors.As(err, &sErr.EV_ERR) {
+		t.Fatalf(`UpdateUserName(EmptyName) = %v, want EmptyValueError`, err)
 	}
 
 	checkExpectedUserData(t, id, tuInstance)
@@ -119,8 +122,8 @@ func TestUpdateUserNameEmptyID(t *testing.T) {
 	id, tuInstance := setupUserTest(t)
 
 	err := UpdateUserName("", newUserName)
-	if err == nil {
-		t.Fatalf(`UpdateUserName(EmptyID) = %v, want err`, err)
+	if !errors.As(err, &sErr.EV_ERR) {
+		t.Fatalf(`UpdateUserName(EmptyID) = %v, want EmptyValueError`, err)
 	}
 
 	checkExpectedUserData(t, id, tuInstance)
@@ -130,8 +133,8 @@ func TestUpdateUserStatusEmptyStatus(t *testing.T) {
 	id, tuInstance := setupUserTest(t)
 
 	err := UpdateUserStatus(id, "")
-	if err == nil {
-		t.Fatalf(`UpdateUserStatus(EmptyStatus) = %v, want err`, err)
+	if !errors.As(err, &sErr.EV_ERR) {
+		t.Fatalf(`UpdateUserStatus(EmptyStatus) = %v, want EmptyValueError`, err)
 	}
 
 	checkExpectedUserData(t, id, tuInstance)
@@ -150,8 +153,8 @@ func TestUpdateUserNameInvalidID(t *testing.T) {
 	id, tuInstance := setupUserTest(t)
 
 	err := UpdateUserName(randomID, newUserName)
-	if err == nil {
-		t.Fatalf(`UpdateUserName(InvalidID) = %v, want err`, err)
+	if !errors.As(err, &sErr.MNF_ERR) {
+		t.Fatalf(`UpdateUserName(InvalidID) = %v, want MatchNotFoundError`, err)
 	}
 
 	checkExpectedUserData(t, id, tuInstance)
@@ -173,8 +176,8 @@ func TestUpdateUserStatusEmptyID(t *testing.T) {
 	id, tuInstance := setupUserTest(t)
 
 	err := UpdateUserName("", newUserName)
-	if err == nil {
-		t.Fatalf(`UpdateUserStatus(EmptyID) = %v, want err`, err)
+	if !errors.As(err, &sErr.EV_ERR) {
+		t.Fatalf(`UpdateUserStatus(EmptyID) = %v, want EmptyValueError`, err)
 	}
 
 	checkExpectedUserData(t, id, tuInstance)
@@ -184,8 +187,8 @@ func TestUpdateUserStatusInvalidID(t *testing.T) {
 	id, tuInstance := setupUserTest(t)
 
 	err := UpdateUserStatus(randomID, updatedUserStatus)
-	if err == nil {
-		t.Fatalf(`UpdateUserStatus(InvalidID) = %v, want err`, err)
+	if !errors.As(err, &sErr.MNF_ERR) {
+		t.Fatalf(`UpdateUserStatus(InvalidID) = %v, want MatchNotFoundError`, err)
 	}
 
 	checkExpectedUserData(t, id, tuInstance)
@@ -206,8 +209,8 @@ func TestDeleteEmptyID(t *testing.T) {
 	setupUserTest(t)
 
 	err := DeleteUser("")
-	if err == nil {
-		t.Fatalf(`DeleteUser(EmptyID) = %v, want err`, err)
+	if !errors.As(err, &sErr.EV_ERR) {
+		t.Fatalf(`DeleteUser(EmptyID) = %v, want EmptyValueError`, err)
 	}
 }
 
@@ -215,8 +218,8 @@ func TestDeleteInvalidID(t *testing.T) {
 	setupUserTest(t)
 
 	err := DeleteUser(randomID)
-	if err == nil {
-		t.Fatalf(`DeleteUser(InvalidID) = %v, want err`, err)
+	if !errors.As(err, &sErr.MNF_ERR) {
+		t.Fatalf(`DeleteUser(InvalidID) = %v, want MatchNotFoundError`, err)
 	}
 }
 
@@ -225,8 +228,8 @@ func TestDeleteDouble(t *testing.T) {
 
 	DeleteUser(id)
 	err := DeleteUser(id)
-	if err == nil {
-		t.Fatalf(`DeleteUser(Double) = %v, want err`, err)
+	if !errors.As(err, &sErr.MNF_ERR) {
+		t.Fatalf(`DeleteUser(Double) = %v, want MatchNotFoundError`, err)
 	}
 }
 
