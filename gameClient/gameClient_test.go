@@ -1,13 +1,16 @@
 package gameclient
 
 import (
-	reg "Engee-Server/gameRegistry"
-	"Engee-Server/testDummy"
+	"errors"
 	"os"
 	"testing"
 	"time"
 
 	"github.com/google/uuid"
+
+	reg "Engee-Server/gameRegistry"
+	sErr "Engee-Server/stockErrors"
+	"Engee-Server/testDummy"
 )
 
 var testRID = uuid.NewString()
@@ -45,8 +48,8 @@ func TestCreateGame(t *testing.T) {
 func TestCreateGameDoubleSameURL(t *testing.T) {
 	CreateGameInstance(testRID, testURL)
 	err := CreateGameInstance(testRID, testURL)
-	if err == nil {
-		t.Fatalf(`TestCreateGame(Double Same) = %v, want err`, err)
+	if !errors.As(err, &sErr.MF_ERR) {
+		t.Fatalf(`TestCreateGame(Double Same) = %v, want MatchFoundError`, err)
 	}
 
 	t.Cleanup(cleanUpAfterTest)
@@ -55,8 +58,8 @@ func TestCreateGameDoubleSameURL(t *testing.T) {
 func TestCreateGameDoubleUniqueURL(t *testing.T) {
 	CreateGameInstance(testRID, testURL)
 	err := CreateGameInstance(testRID, altURL)
-	if err == nil {
-		t.Fatalf(`TestCreateGame(Double Unique) = %v, want err`, err)
+	if !errors.As(err, &sErr.MF_ERR) {
+		t.Fatalf(`TestCreateGame(Double Unique) = %v, want MatchFoundError`, err)
 	}
 
 	t.Cleanup(cleanUpAfterTest)
@@ -84,8 +87,8 @@ func TestCreateGameMultiUniqueURL(t *testing.T) {
 
 func TestCreateGameEmptyRID(t *testing.T) {
 	err := CreateGameInstance("", testURL)
-	if err == nil {
-		t.Fatalf(`TestCreateGame(Empty RID) %v, want err`, err)
+	if !errors.As(err, &sErr.EV_ERR) {
+		t.Fatalf(`TestCreateGame(Empty RID) %v, want EmptyValueError`, err)
 	}
 
 	t.Cleanup(cleanUpAfterTest)
@@ -93,8 +96,8 @@ func TestCreateGameEmptyRID(t *testing.T) {
 
 func TestCreateGameEmptyURL(t *testing.T) {
 	err := CreateGameInstance(testRID, "")
-	if err == nil {
-		t.Fatalf(`TestCreateGame(Empty URL) %v, want err`, err)
+	if !errors.As(err, &sErr.EV_ERR) {
+		t.Fatalf(`TestCreateGame(Empty URL) %v, want EmptyValueError`, err)
 	}
 
 	t.Cleanup(cleanUpAfterTest)
@@ -103,7 +106,7 @@ func TestCreateGameEmptyURL(t *testing.T) {
 func TestCreateGameInvalidURL(t *testing.T) {
 	err := CreateGameInstance(testRID, badURL)
 	if err == nil {
-		t.Fatalf(`TestCreateGame(Valid) %v, want err`, err)
+		t.Fatalf(`TestCreateGame(Valid) %v, want error`, err)
 	}
 
 	t.Cleanup(cleanUpAfterTest)
@@ -120,8 +123,8 @@ func TestEndGameDouble(t *testing.T) {
 	setupGameTest(t)
 	EndGame(testRID)
 	err := EndGame(testRID)
-	if err == nil {
-		t.Fatalf(`TestEndGame(Double) = %v, want err`, err)
+	if !errors.As(err, &sErr.MNF_ERR) {
+		t.Fatalf(`TestEndGame(Double) = %v, want MatchNotFoundError`, err)
 	}
 }
 func TestEndGameMulti(t *testing.T) {
@@ -135,15 +138,15 @@ func TestEndGameMulti(t *testing.T) {
 func TestEndGameInvalidRID(t *testing.T) {
 	setupGameTest(t)
 	err := EndGame(badRID)
-	if err == nil {
-		t.Fatalf(`TestEndGame(InvalidRID) = %v, want err`, err)
+	if !errors.As(err, &sErr.MNF_ERR) {
+		t.Fatalf(`TestEndGame(InvalidRID) = %v, want MatchNotFoundError`, err)
 	}
 }
 func TestEndGameEmptyRID(t *testing.T) {
 	setupGameTest(t)
 	err := EndGame("")
-	if err == nil {
-		t.Fatalf(`TestEndGame(EmptyRID) = %v, want err`, err)
+	if !errors.As(err, &sErr.EV_ERR) {
+		t.Fatalf(`TestEndGame(EmptyRID) = %v, want EmptyValueError`, err)
 	}
 }
 
@@ -170,8 +173,8 @@ func TestSetGameRulesInvalidRID(t *testing.T) {
 	setupGameTest(t)
 
 	err := SetGameRules(badRID, updatedRules)
-	if err == nil {
-		t.Fatalf(`TestSetGameRules(InvalidRID) = %v, want err`, err)
+	if !errors.As(err, &sErr.MNF_ERR) {
+		t.Fatalf(`TestSetGameRules(InvalidRID) = %v, want MatchNotFoundError`, err)
 	}
 }
 
@@ -188,8 +191,8 @@ func TestStartGameInvalidRID(t *testing.T) {
 	setupGameTest(t)
 
 	err := StartGame(badRID)
-	if err == nil {
-		t.Fatalf(`TestStartGame(Invalid RID) = %v, want err`, err)
+	if !errors.As(err, &sErr.MNF_ERR) {
+		t.Fatalf(`TestStartGame(Invalid RID) = %v, want MatchNotFoundError`, err)
 	}
 }
 
@@ -206,8 +209,8 @@ func TestPauseGameInvalidRID(t *testing.T) {
 	setupActiveGameTest(t)
 
 	err := PauseGame(badRID)
-	if err == nil {
-		t.Fatalf(`TestPauseGame(InvalidRID) = %v, want err`, err)
+	if !errors.As(err, &sErr.MNF_ERR) {
+		t.Fatalf(`TestPauseGame(InvalidRID) = %v, want MatchNotFoundError`, err)
 	}
 }
 func TestResetGame(t *testing.T) {
@@ -223,8 +226,8 @@ func TestResetGameInvalidRID(t *testing.T) {
 	setupActiveGameTest(t)
 
 	err := ResetGame(badRID)
-	if err == nil {
-		t.Fatalf(`TestResetGame(InvalidRID) = %v, want err`, err)
+	if !errors.As(err, &sErr.MNF_ERR) {
+		t.Fatalf(`TestResetGame(InvalidRID) = %v, want MatchNotFoundError`, err)
 	}
 }
 
