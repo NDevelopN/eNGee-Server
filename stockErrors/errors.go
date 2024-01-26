@@ -65,3 +65,12 @@ type HttpRequestError struct {
 func (e *HttpRequestError) Error() string {
 	return fmt.Sprintf("http request %q failed. Returned error code: %d", e.Call, e.Code)
 }
+
+var (
+	EV_ERR  *EmptyValueError
+	IV_ERR  *InvalidValueError[string]
+	MNF_ERR *MatchNotFoundError[string]
+	MF_ERR  *MatchFoundError[string]
+	ES_ERR  *EmptySetError
+	HR_ERR  *HttpRequestError
+)
