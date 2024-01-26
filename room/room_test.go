@@ -1,16 +1,19 @@
 package room
 
 import (
-	gameclient "Engee-Server/gameClient"
-	reg "Engee-Server/gameRegistry"
-	"Engee-Server/testDummy"
 	"encoding/json"
+	"errors"
 	"log"
 	"os"
 	"testing"
 	"time"
 
 	"github.com/google/uuid"
+
+	gameclient "Engee-Server/gameClient"
+	reg "Engee-Server/gameRegistry"
+	sErr "Engee-Server/stockErrors"
+	"Engee-Server/testDummy"
 )
 
 var randomID = uuid.NewString()
@@ -94,8 +97,8 @@ func TestCreateRoomNoName(t *testing.T) {
 
 	id, err := CreateRoom(namelessRoom)
 
-	if id != "" || err == nil {
-		t.Fatalf(`CreateRoom(EmptyName) = %q, %v, want "", nil`, id, err)
+	if id != "" || !errors.As(err, &sErr.EV_ERR) {
+		t.Fatalf(`CreateRoom(EmptyName) = %q, %v, want "", EmptyValueError`, id, err)
 	}
 
 	t.Cleanup(cleanUpAfterTest)
@@ -116,16 +119,16 @@ func TestGetRoom(t *testing.T) {
 func TestGetRoomEmptyID(t *testing.T) {
 	setupRoomTest(t)
 	room, err := GetRoom("")
-	if err == nil {
-		t.Fatalf(`GetRoom(EmptyID) = %v, %v, want nil, err`, room, err)
+	if !errors.As(err, &sErr.EV_ERR) {
+		t.Fatalf(`GetRoom(EmptyID) = %v, %v, want nil, EmptyValueError`, room, err)
 	}
 }
 
 func TestGetRoomInvalidID(t *testing.T) {
 	setupRoomTest(t)
 	room, err := GetRoom(randomID)
-	if err == nil {
-		t.Fatalf(`GetRoom(InvalidID) = %v, %v, want nil, err`, room, err)
+	if !errors.As(err, &sErr.MNF_ERR) {
+		t.Fatalf(`GetRoom(InvalidID) = %v, %v, want nil, MatchNotFoundError`, room, err)
 	}
 }
 
@@ -194,8 +197,8 @@ func TestUpdateRoomNameEmptyName(t *testing.T) {
 	trInstance.Addr = testConURL
 
 	err := UpdateRoomName(id, "")
-	if err == nil {
-		t.Fatalf(`UpdateRoomName(EmptyName) = %v, want err`, err)
+	if !errors.As(err, &sErr.EV_ERR) {
+		t.Fatalf(`UpdateRoomName(EmptyName) = %v, want EmptyValueError`, err)
 	}
 
 	checkExpectedRoomData(t, id, trInstance)
@@ -209,7 +212,7 @@ func TestUpdateRoomNameNoChange(t *testing.T) {
 
 	err := UpdateRoomName(id, testRoomName)
 	if err != nil {
-		t.Fatalf(`UpdateRoomName(NoChange) = %v, want err`, err)
+		t.Fatalf(`UpdateRoomName(NoChange) = %v, want nil`, err)
 	}
 
 	checkExpectedRoomData(t, id, trInstance)
@@ -222,8 +225,8 @@ func TestUpdateRoomNameEmptyID(t *testing.T) {
 	trInstance.Addr = testConURL
 
 	err := UpdateRoomName("", altRoomName)
-	if err == nil {
-		t.Fatalf(`UpdateRoomName(EmptyID) = %v, want err`, err)
+	if !errors.As(err, &sErr.EV_ERR) {
+		t.Fatalf(`UpdateRoomName(EmptyID) = %v, want EmptyValueError`, err)
 	}
 
 	checkExpectedRoomData(t, id, trInstance)
@@ -250,8 +253,8 @@ func TestUpdateRoomStatusEmptyID(t *testing.T) {
 	trInstance.Addr = testConURL
 
 	err := UpdateRoomName("", altRoomName)
-	if err == nil {
-		t.Fatalf(`UpdateRoomStatus(EmptyID) = %v, want err`, err)
+	if !errors.As(err, &sErr.EV_ERR) {
+		t.Fatalf(`UpdateRoomStatus(EmptyID) = %v, want EmptyValueError`, err)
 	}
 
 	checkExpectedRoomData(t, id, trInstance)
@@ -264,8 +267,8 @@ func TestUpdateRoomStatusInvalidID(t *testing.T) {
 	trInstance.Addr = testConURL
 
 	err := UpdateRoomStatus(randomID, updatedRoomStatus)
-	if err == nil {
-		t.Fatalf(`UpdateRoomStatus(InvalidID) = %v, want err`, err)
+	if !errors.As(err, &sErr.MNF_ERR) {
+		t.Fatalf(`UpdateRoomStatus(InvalidID) = %v, want MatchNotFoundError`, err)
 	}
 
 	checkExpectedRoomData(t, id, trInstance)
@@ -293,8 +296,8 @@ func TestUpdateRoomGameModeEmptyID(t *testing.T) {
 	trInstance.Addr = testConURL
 
 	err := UpdateRoomName("", altRoomName)
-	if err == nil {
-		t.Fatalf(`UpdateRoomGameMode(EmptyID) = %v, want err`, err)
+	if !errors.As(err, &sErr.EV_ERR) {
+		t.Fatalf(`UpdateRoomGameMode(EmptyID) = %v, want EmptyValueError`, err)
 	}
 
 	checkExpectedRoomData(t, id, trInstance)
@@ -307,67 +310,12 @@ func TestUpdateRoomGameModeInvalidID(t *testing.T) {
 	trInstance.Addr = testConURL
 
 	err := UpdateRoomGameMode(randomID, testGameMode)
-	if err == nil {
-		t.Fatalf(`UpdateRoomGameMode(InvalidID) = %v, want err`, err)
+	if !errors.As(err, &sErr.MNF_ERR) {
+		t.Fatalf(`UpdateRoomGameMode(InvalidID) = %v, want MatchNotFoundError`, err)
 	}
 
 	checkExpectedRoomData(t, id, trInstance)
 }
-
-/** TODO: Given auto initialization, is there any need for this function ? */
-/**
-func TestInitializeRoomGame(t *testing.T) {
-	id, _ := setupRoomTest(t)
-	UpdateRoomGameMode(id, testGameMode)
-
-	err := InitializeRoomGame(id)
-	if err != nil {
-		t.Fatalf(`CreateRoomGameInstance(Valid) = %v, want nil`, err)
-	}
-}
-
-func TestInitializeRoomGameDouble(t *testing.T) {
-	id, _ := setupRoomTest(t)
-	UpdateRoomGameMode(id, testGameMode)
-
-	InitializeRoomGame(id)
-	err := InitializeRoomGame(id)
-	if err == nil {
-		t.Fatalf(`CreateRoomGameInstance(Double) = %v, want err`, err)
-	}
-}
-func TestInitializeRoomGameInvalidRID(t *testing.T) {
-	id, _ := setupRoomTest(t)
-	UpdateRoomGameMode(id, testGameMode)
-
-	err := InitializeRoomGame(randomID)
-	if err == nil {
-		t.Fatalf(`CreateRoomGameInstance(Invalid RID) = %v, want err`, err)
-	}
-}
-func TestInitializeRoomGameModeNotSet(t *testing.T) {
-	id, _ := setupRoomTest(t)
-
-	err := InitializeRoomGame(id)
-	if err == nil {
-		t.Fatalf(`CreateRoomGameInstance(Room GameMode Not Set) = %v, want err`, err)
-	}
-}
-
-func TestInitializeRoomGameDeletedRoom(t *testing.T) {
-	id, _ := setupRoomTest(t)
-	UpdateRoomGameMode(id, testGameMode)
-
-	err := DeleteRoom(id)
-	if err != nil {
-		t.Fatalf(`Failed to delete: %v`, err)
-	}
-	err = InitializeRoomGame(id)
-	if err == nil {
-		t.Fatalf(`CreateRoomGameInstance(Deleted Room) = %v, want err`, err)
-	}
-}
-*/
 
 func TestDeleteRoom(t *testing.T) {
 	id, _ := setupActiveRoomTest(t)
@@ -384,8 +332,8 @@ func TestDeleteEmptyID(t *testing.T) {
 	setupActiveRoomTest(t)
 
 	err := DeleteRoom("")
-	if err == nil {
-		t.Fatalf(`DeleteRoom(EmptyID) = %v, want err`, err)
+	if !errors.As(err, &sErr.EV_ERR) {
+		t.Fatalf(`DeleteRoom(EmptyID) = %v, want EmptyValueError`, err)
 	}
 }
 
@@ -393,8 +341,8 @@ func TestDeleteInvalidID(t *testing.T) {
 	setupActiveRoomTest(t)
 
 	err := DeleteRoom(randomID)
-	if err == nil {
-		t.Fatalf(`DeleteRoom(InvalidID) = %v, want err`, err)
+	if !errors.As(err, &sErr.MNF_ERR) {
+		t.Fatalf(`DeleteRoom(InvalidID) = %v, want MatchNotFoundError`, err)
 	}
 }
 
@@ -403,8 +351,8 @@ func TestDeleteDouble(t *testing.T) {
 
 	DeleteRoom(id)
 	err := DeleteRoom(id)
-	if err == nil {
-		t.Fatalf(`DeleteRoom(Double) = %v, want err`, err)
+	if !errors.As(err, &sErr.MNF_ERR) {
+		t.Fatalf(`DeleteRoom(Double) = %v, want MatchNotFoundError`, err)
 	}
 }
 
