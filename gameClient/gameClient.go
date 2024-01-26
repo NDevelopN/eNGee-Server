@@ -120,6 +120,11 @@ func RemovePlayer(rid string, targetUID string) error {
 }
 
 func checkRID(rid string) error {
+	if rid == "" {
+		return &sErr.EmptyValueError{
+			Field: "RID",
+		}
+	}
 	_, found := gameURLs[rid]
 	if !found {
 		return &sErr.MatchNotFoundError[string]{
