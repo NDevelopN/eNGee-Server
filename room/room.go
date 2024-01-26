@@ -57,7 +57,22 @@ func CreateRoom(roomInfo []byte) (string, error) {
 }
 
 func GetRoom(rid string) (Room, error) {
-	return getRoomByID(rid)
+	if rid == "" {
+		return Room{}, &sErr.EmptyValueError{
+			Field: "RID",
+		}
+	}
+
+	room, found := rooms[rid]
+	if !found {
+		return room, &sErr.MatchNotFoundError[string]{
+			Space: "Rooms",
+			Field: "RID",
+			Value: rid,
+		}
+	}
+
+	return room, nil
 }
 
 func GetRooms() []Room {
@@ -65,7 +80,7 @@ func GetRooms() []Room {
 }
 
 func GetRoomURL(rid string) (string, error) {
-	room, err := getRoomByID(rid)
+	room, err := GetRoom(rid)
 	if err != nil {
 		return "", err
 	}
@@ -86,7 +101,7 @@ func UpdateRoomName(rid string, name string) error {
 		}
 	}
 
-	room, err := getRoomByID(rid)
+	room, err := GetRoom(rid)
 	if err != nil {
 		return err
 	}
@@ -104,7 +119,7 @@ func UpdateRoomStatus(rid string, status string) error {
 		}
 	}
 
-	room, err := getRoomByID(rid)
+	room, err := GetRoom(rid)
 	if err != nil {
 		return err
 	}
@@ -122,7 +137,7 @@ func UpdateRoomGameMode(rid string, roomGameMode string) error {
 		}
 	}
 
-	room, err := getRoomByID(rid)
+	room, err := GetRoom(rid)
 	if err != nil {
 		return err
 	}
@@ -139,7 +154,7 @@ func UpdateRoomGameMode(rid string, roomGameMode string) error {
 }
 
 func InitializeRoomGame(rid string) error {
-	room, err := getRoomByID(rid)
+	room, err := GetRoom(rid)
 	if err != nil {
 		return err
 	}
@@ -156,7 +171,7 @@ func InitializeRoomGame(rid string) error {
 }
 
 func DeleteRoom(rid string) error {
-	_, err := getRoomByID(rid)
+	_, err := GetRoom(rid)
 	if err != nil {
 		return err
 	}
@@ -169,17 +184,4 @@ func DeleteRoom(rid string) error {
 	delete(rooms, rid)
 
 	return nil
-}
-
-func getRoomByID(rid string) (Room, error) {
-	room, found := rooms[rid]
-	if !found {
-		return room, &sErr.MatchNotFoundError[string]{
-			Space: "Rooms",
-			Field: "RID",
-			Value: rid,
-		}
-	}
-
-	return room, nil
 }
