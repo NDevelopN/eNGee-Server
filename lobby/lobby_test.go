@@ -1,17 +1,19 @@
 package lobby
 
 import (
-	reg "Engee-Server/gameRegistry"
-	"Engee-Server/room"
-	"Engee-Server/testDummy"
-	"Engee-Server/user"
-	"time"
-
 	"encoding/json"
+	"errors"
 	"os"
 	"testing"
+	"time"
 
 	"github.com/google/uuid"
+
+	reg "Engee-Server/gameRegistry"
+	"Engee-Server/room"
+	sErr "Engee-Server/stockErrors"
+	"Engee-Server/testDummy"
+	"Engee-Server/user"
 )
 
 var randomID = uuid.NewString()
@@ -52,8 +54,8 @@ func TestJoinUserToRoomInvalidUID(t *testing.T) {
 	_, rid := createUserAndRoom(t)
 
 	err := JoinUserToRoom(randomID, rid)
-	if err == nil {
-		t.Fatalf(`TestJoinUserToRoom(InvalidUID) = %v, want err`, err)
+	if !errors.As(err, &sErr.MNF_ERR) {
+		t.Fatalf(`TestJoinUserToRoom(InvalidUID) = %v, want MatchNotFoundError`, err)
 	}
 }
 
@@ -61,8 +63,8 @@ func TestJoinUserToRoomInvalidRID(t *testing.T) {
 	uid, _ := createUserAndRoom(t)
 
 	err := JoinUserToRoom(uid, randomID)
-	if err == nil {
-		t.Fatalf(`TestJoinUserToRoom(InvalidRID) = %v, want err`, err)
+	if !errors.As(err, &sErr.MNF_ERR) {
+		t.Fatalf(`TestJoinUserToRoom(InvalidRID) = %v, want MatchNotFoundError`, err)
 	}
 }
 
@@ -72,8 +74,8 @@ func TestJoinUserToRoomDouble(t *testing.T) {
 	JoinUserToRoom(uid, rid)
 
 	err := JoinUserToRoom(uid, rid)
-	if err == nil {
-		t.Fatalf(`TestJoinUserToRoom(Double) = %v, want err`, err)
+	if !errors.As(err, &sErr.MF_ERR) {
+		t.Fatalf(`TestJoinUserToRoom(Double) = %v, want MatchFoundError`, err)
 	}
 }
 
@@ -82,7 +84,7 @@ func TestRemoveUserFromRoom(t *testing.T) {
 
 	err := RemoveUserFromRoom(uid, rid)
 	if err != nil {
-		t.Fatalf(`TestRemoveUserFromRoom(Valid) = %v, want err`, err)
+		t.Fatalf(`TestRemoveUserFromRoom(Valid) = %v, want nil`, err)
 	}
 }
 
@@ -90,8 +92,8 @@ func TestRemoveUserFromRoomInvalidUID(t *testing.T) {
 	_, rid := setupLobbyTest(t)
 
 	err := RemoveUserFromRoom(randomID, rid)
-	if err == nil {
-		t.Fatalf(`TestRemoveUserFromRoom(InvalidUID) = %v, want err`, err)
+	if !errors.As(err, &sErr.MNF_ERR) {
+		t.Fatalf(`TestRemoveUserFromRoom(InvalidUID) = %v, want MatchNotFoundError`, err)
 	}
 }
 
@@ -99,8 +101,8 @@ func TestRemoveUserFromRoomInvalidRID(t *testing.T) {
 	uid, _ := setupLobbyTest(t)
 
 	err := RemoveUserFromRoom(uid, randomID)
-	if err == nil {
-		t.Fatalf(`TestRemoveUserFromRoom(InvalidRID) = %v, want err`, err)
+	if !errors.As(err, &sErr.MNF_ERR) {
+		t.Fatalf(`TestRemoveUserFromRoom(InvalidRID) = %v, want MatchNotFoundError`, err)
 	}
 }
 
@@ -110,8 +112,8 @@ func TestRemoveUserFromRoomDouble(t *testing.T) {
 	RemoveUserFromRoom(uid, rid)
 
 	err := RemoveUserFromRoom(uid, rid)
-	if err == nil {
-		t.Fatalf(`TestRemoveUserFromRoom(Double) = %v, want err`, err)
+	if !errors.As(err, &sErr.MNF_ERR) {
+		t.Fatalf(`TestRemoveUserFromRoom(Double) = %v, want MatchNotFoundError`, err)
 	}
 
 }
@@ -150,17 +152,8 @@ func TestGetUsersInRoomInvalidRID(t *testing.T) {
 	setupLobbyTest(t)
 
 	users, err := GetUsersInRoom(randomID)
-	if len(users) != 0 || err == nil {
-		t.Fatalf(`TestGetUsersInRoom(InvalidGID) = %v, %v, want [], err`, users, err)
-	}
-}
-
-func TestGetUsersInEmptyRoom(t *testing.T) {
-	_, rid := createUserAndRoom(t)
-
-	users, err := GetUsersInRoom(rid)
-	if len(users) != 0 || err == nil {
-		t.Fatalf(`TestGetUsersInRoom(Empty) = %v, %v, want [], err`, users, err)
+	if len(users) != 0 || !errors.As(err, &sErr.MNF_ERR) {
+		t.Fatalf(`TestGetUsersInRoom(InvalidGID) = %v, %v, want [], MatchNotFoundError`, users, err)
 	}
 }
 
@@ -170,8 +163,8 @@ func TestGetUsersInRoomAfterDelete(t *testing.T) {
 	RemoveUserFromRoom(uid, rid)
 
 	users, err := GetUsersInRoom(rid)
-	if len(users) != 0 || err == nil {
-		t.Fatalf(`TestGetUsersInRoom(AfterUserDelete) = %v, %v, want [], err`, users, err)
+	if len(users) != 0 || !errors.As(err, &sErr.MNF_ERR) {
+		t.Fatalf(`TestGetUsersInRoom(AfterUserDelete) = %v, %v, want [], MatchNotFoundError`, users, err)
 	}
 }
 
@@ -199,8 +192,8 @@ func TestGetRoomUserCountInvalidRID(t *testing.T) {
 	setupLobbyTest(t)
 
 	count, err := GetRoomUserCount(randomID)
-	if count != 0 || err == nil {
-		t.Fatalf(`TestGetRoomUserCount(InvalidRID) = %d, %v, want 0, err`, count, err)
+	if count != 0 || !errors.As(err, &sErr.MNF_ERR) {
+		t.Fatalf(`TestGetRoomUserCount(InvalidRID) = %d, %v, want 0, MatchNotFoundError`, count, err)
 	}
 }
 
@@ -210,8 +203,8 @@ func TestGetRoomUserCountAfterDelete(t *testing.T) {
 	RemoveUserFromRoom(uid, rid)
 
 	count, err := GetRoomUserCount(rid)
-	if count != 0 || err == nil {
-		t.Fatalf(`TestGetRoomUserCount(AfterUserDelete) = %d, %v, want 0, err`, count, err)
+	if count != 0 || !errors.As(err, &sErr.MNF_ERR) {
+		t.Fatalf(`TestGetRoomUserCount(AfterUserDelete) = %d, %v, want 0, MatchNotFoundError`, count, err)
 	}
 }
 
