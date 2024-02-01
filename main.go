@@ -1,9 +1,11 @@
 package main
 
-import "Engee-Server/server"
-
-const port = "8090"
+import (
+	"Engee-Server/config"
+	"Engee-Server/server"
+)
 
 func main() {
-	server.Serve(port)
+	config := config.ReadConfig()
+	server.Serve(config.Server.Port)
 }
