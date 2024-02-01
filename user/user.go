@@ -1,147 +1,120 @@
 package user
 
 import (
-	db "Engee-Server/database"
-	g "Engee-Server/game"
-	utils "Engee-Server/utils"
-
-	"fmt"
+	"time"
 
 	"github.com/google/uuid"
+
+	sErr "Engee-Server/stockErrors"
+	"Engee-Server/utils"
 )
 
-func CreateUser(u utils.User) (string, error) {
-	if u.Name == "" {
-		return "", fmt.Errorf("user name is empty")
-	}
-
-	if u.UID != "" {
-		return "", fmt.Errorf("a new user should not have a UID: %v", u.UID)
-	}
-	if u.GID != "" {
-		return "", fmt.Errorf("a new user should not have a GID: %v", u.GID)
-	}
-
-	if u.Status != "" {
-		return "", fmt.Errorf("a new user should not have a status: %v", u.Status)
-	}
-
-	u.UID = uuid.NewString()
-	u.Status = "New"
-
-	err := db.CreateUser(u)
-	if err != nil {
-		return "", fmt.Errorf("could not create user in database: %v", err)
-	}
-
-	return u.UID, nil
+type User struct {
+	UID    string `json:"uid"`
+	Name   string `json:"name"`
+	Status string `json:"status"`
 }
 
-func GetUser(uid string) (utils.User, error) {
-	return db.GetUser(uid)
+var users = make(map[string]User)
+var heartbeats map[string]time.Time
+
+func CreateUser(name string) (string, error) {
+	if name == "" {
+		return "", &sErr.EmptyValueError{
+			Field: "Name",
+		}
+	}
+
+	var newUser User
+	newUser.UID = uuid.NewString()
+	newUser.Name = name
+	newUser.Status = "New"
+
+	if heartbeats == nil {
+		heartbeats = make(map[string]time.Time)
+		go utils.MonitorHeartbeats(&heartbeats, DeleteUser)
+	}
+
+	users[newUser.UID] = newUser
+	heartbeats[newUser.UID] = time.Now()
+
+	return newUser.UID, nil
 }
 
-func joinUserToGame(gid string, uid string) error {
-	u, err := GetUser(uid)
-	if err != nil {
-		return fmt.Errorf("could not find user in database: %v", err)
-	}
-
-	if u.GID != "" {
-		return fmt.Errorf("user already in a game: %v", u.GID)
-	}
-
-	err = g.JoinGame(gid, uid)
-	if err != nil {
-		return fmt.Errorf("could not update game with user: %v", err)
-	}
-
-	return nil
-}
-
-func removeGID(u utils.User) error {
-	u.GID = ""
-	err := db.UpdateUser(u)
-	if err != nil {
-		return fmt.Errorf("could not update user in database: %v", err)
-	}
-
-	return nil
-}
-
-func removeUserFromGame(gid string, uid string) error {
-	u, err := GetUser(uid)
-	if err != nil {
-		return fmt.Errorf("could not find user in database: %v", err)
-	}
-
-	if u.GID != gid {
-		return fmt.Errorf("user not in provided game: %v", u.GID)
-	}
-
-	err = g.LeaveGame(gid, uid)
-	if err != nil {
-		return fmt.Errorf("could not update game without user: %v", err)
-	}
-
-	err = removeGID(u)
+func Heartbeat(uid string) error {
+	_, err := GetUser(uid)
 	if err != nil {
 		return err
 	}
 
+	heartbeats[uid] = time.Now()
+
 	return nil
 }
 
-func UpdateUser(n utils.User) error {
-	o, err := GetUser(n.UID)
-	if err != nil {
-		return fmt.Errorf("could not get user to update: %v", err)
-	}
-
-	if n.Name == "" {
-		return fmt.Errorf("provided user name is empty")
-	}
-
-	if n.GID != o.GID {
-		if n.GID == "" {
-			err = removeUserFromGame(o.GID, o.UID)
-			if err != nil {
-				return fmt.Errorf("could not remove user from game: %v", err)
-			}
-		} else {
-			err = joinUserToGame(n.GID, n.UID)
-			if err != nil {
-				return fmt.Errorf("could not join user to game: %v", err)
-			}
+func GetUser(uid string) (User, error) {
+	if uid == "" {
+		return User{}, &sErr.EmptyValueError{
+			Field: "UID",
 		}
-
-		n.Status = "Not Ready"
 	}
 
-	err = db.UpdateUser(n)
+	user, found := users[uid]
+	if !found {
+		return user, &sErr.MatchNotFoundError[string]{
+			Space: "Users",
+			Field: "UID",
+			Value: uid,
+		}
+	}
+
+	return user, nil
+}
+
+func UpdateUserName(uid string, name string) error {
+	if name == "" {
+		return &sErr.EmptyValueError{
+			Field: "Name",
+		}
+	}
+
+	user, err := GetUser(uid)
 	if err != nil {
-		return fmt.Errorf("could not update user in database: %v", err)
+		return err
 	}
+
+	user.Name = name
+	users[uid] = user
+
+	return nil
+}
+
+func UpdateUserStatus(uid string, status string) error {
+	if status == "" {
+		return &sErr.EmptyValueError{
+			Field: "Status",
+		}
+	}
+
+	user, err := GetUser(uid)
+	if err != nil {
+		return err
+	}
+
+	user.Status = status
+	users[uid] = user
 
 	return nil
 }
 
 func DeleteUser(uid string) error {
-	u, err := GetUser(uid)
+	_, err := GetUser(uid)
 	if err != nil {
-		return fmt.Errorf("could not get user from database: %v", err)
+		return err
 	}
 
-	if u.GID != "" {
-		err = removeUserFromGame(u.GID, uid)
-		if err != nil {
-			return fmt.Errorf("could not remove user from game: %v", err)
-		}
-	}
+	delete(users, uid)
+	delete(heartbeats, uid)
 
-	err = db.RemoveUser(uid)
-	if err != nil {
-		return fmt.Errorf("could not delete user from database: %v", err)
-	}
 	return nil
 }

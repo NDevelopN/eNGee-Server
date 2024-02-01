@@ -1,410 +1,263 @@
 package user
 
 import (
+	"errors"
 	"testing"
 
-	db "Engee-Server/database"
-	g "Engee-Server/game"
-	u "Engee-Server/utils"
-
 	"github.com/google/uuid"
+
+	sErr "Engee-Server/stockErrors"
 )
 
-func TestCreateUserValid(t *testing.T) {
-	db.ResetDB()
-	msg, err := CreateUser(u.DefUser)
-	_, pe := uuid.Parse(msg)
-	if pe != nil || err != nil {
-		t.Fatalf(`CreateUser(valid) = %q, "%v", want "uuid", "nil"`, msg, err)
-	}
+var testUser = User{
+	UID:    "",
+	Name:   testUserName,
+	Status: "New",
 }
 
-func TestCreateUserMutli(t *testing.T) {
-	db.ResetDB()
-	_, _ = CreateUser(u.DefUser)
-	msg, err := CreateUser(u.DefUser)
-	_, pe := uuid.Parse(msg)
-	if pe != nil || err != nil {
-		t.Fatalf(`CreateUser(multi) = %q, "%v", want "uuid", "nil"`, msg, err)
+var randomID = uuid.NewString()
+
+const testUserName = "Test User"
+const newUserName = "New Name"
+
+const updatedUserStatus = "Updated"
+
+func TestCreateUser(t *testing.T) {
+	id, err := CreateUser(testUserName)
+	if id == "" || err != nil {
+		t.Fatalf(`CreateUser(Valid) = %q, %v, want "uuid", nil`, id, err)
 	}
+
+	t.Cleanup(cleanAfterTest)
+}
+
+func TestCreateUniqueNameUsers(t *testing.T) {
+	CreateUser(testUserName)
+	id, err := CreateUser(newUserName)
+	if id == "" || err != nil {
+		t.Fatalf(`CreateUser(Unique Name) = %q, %v, want "uuid", nil`, id, err)
+	}
+
+	t.Cleanup(cleanAfterTest)
+}
+
+func TestCreateSameNameUsers(t *testing.T) {
+	CreateUser(testUserName)
+	id, err := CreateUser(testUserName)
+	if id == "" || err != nil {
+		t.Fatalf(`CreateUser(Same Name) = %q, %v, want "uuid", nil`, id, err)
+	}
+
+	t.Cleanup(cleanAfterTest)
 }
 
 func TestCreateUserEmptyName(t *testing.T) {
-	db.ResetDB()
-	user := u.DefUser
-	user.Name = ""
+	id, err := CreateUser("")
+	if id != "" || !errors.As(err, &sErr.EV_ERR) {
+		t.Fatalf(`CreateUser(EmptyName) = %q, %v, want "", EmptyValueError`, id, err)
+	}
 
-	msg, err := CreateUser(user)
-	if err == nil {
-		t.Fatalf(`CreateUser(Empty name) = %q, "%v", want "", ERROR`, msg, err)
+	t.Cleanup(cleanAfterTest)
+}
+
+func TestGetUser(t *testing.T) {
+	id, tuInstance := setupUserTest(t)
+	user, err := GetUser(id)
+	if user != tuInstance || err != nil {
+		t.Fatalf(`GetUser(ValidID) = %v, %v, want obj, nil`, user, err)
 	}
 }
 
-func TestCreateGameInjection(t *testing.T) {
-	db.ResetDB()
-	//TODO
-}
-
-func TestGetUserValid(t *testing.T) {
-	db.ResetDB()
-
-	uid, _ := CreateUser(u.DefUser)
-
-	want := u.DefUser
-	want.UID = uid
-	want.Status = "New"
-
-	user, err := GetUser(uid)
-	if user != want || err != nil {
-		t.Fatalf(`GetUser(valid) = %q, "%v", want %q, "nil"`, user, err, want)
+func TestGetUserEmptyID(t *testing.T) {
+	setupUserTest(t)
+	_, err := GetUser("")
+	if !errors.As(err, &sErr.EV_ERR) {
+		t.Fatalf(`GetUser(EmptyID) = %v, want EmptyValueError`, err)
 	}
 }
 
-func TestGetUserMulti(t *testing.T) {
-	db.ResetDB()
-
-	_, _ = CreateUser(u.DefUser)
-	uid, _ := CreateUser(u.DefUser)
-
-	want := u.DefUser
-	want.UID = uid
-	want.Status = "New"
-
-	user, err := GetUser(uid)
-	if user != want || err != nil {
-		t.Fatalf(`GetUser(multi) = %q, "%v", want %q, "nil"`, user, err, want)
+func TestGetUserInvalidID(t *testing.T) {
+	setupUserTest(t)
+	user, err := GetUser(randomID)
+	if !errors.As(err, &sErr.MNF_ERR) {
+		t.Fatalf(`GetUser(InvalidID) = %v, %v, want nil, MatchNotFoundError`, user, err)
 	}
 }
 
-func TestGetUserInvalidGID(t *testing.T) {
-	db.ResetDB()
+func TestUpdateUserName(t *testing.T) {
+	id, tuInstance := setupUserTest(t)
 
-	_, _ = CreateUser(u.DefUser)
+	tuInstance.Name = newUserName
 
-	user, err := GetUser(uuid.NewString())
-	if err == nil {
-		t.Fatalf(`GetUser(InvalidUID) = %q, "%v", want "nil", ERROR`, user, err)
-	}
-}
-
-func TestGetUserEmptyUID(t *testing.T) {
-	db.ResetDB()
-
-	_, _ = CreateUser(u.DefUser)
-
-	user, err := GetUser("")
-	if err == nil {
-		t.Fatalf(`GetUser(EmptyUID) = %q, "%v", want "nil", ERROR`, user, err)
-	}
-}
-
-func TestGetUserEmptyDB(t *testing.T) {
-	db.ResetDB()
-
-	user, err := GetUser(uuid.NewString())
-	if err == nil {
-		t.Fatalf(`GetUser(EmptyDB) = %q, "%v", want "nil", ERROR`, user, err)
-	}
-}
-
-func TestGetUserInjection(t *testing.T) {
-	db.ResetDB()
-	//TODO
-}
-
-func TestUpdateUserChangeName(t *testing.T) {
-	db.ResetDB()
-
-	uid, _ := CreateUser(u.DefUser)
-
-	user := u.DefUser
-	user.UID = uid
-	user.Name = "Name Test"
-
-	err := UpdateUser(user)
+	err := UpdateUserName(id, newUserName)
 	if err != nil {
-		t.Fatalf(`UpdateUser(Name) = "%v", want "nil"`, err)
+		t.Fatalf(`UpdateUserName(Valid) = %v, want nil`, err)
 	}
 
-	want := user
-
-	user, err = GetUser(uid)
-	if want != user || err != nil {
-		t.Fatalf(`UpdateUser(Name) = %q, "%v", want %q, "nil"`, user, err, want)
-	}
-
+	checkExpectedUserData(t, id, tuInstance)
 }
 
-func TestUpdateUserChangeStatus(t *testing.T) {
-	db.ResetDB()
+func TestUpdateUserNameEmptyName(t *testing.T) {
+	id, tuInstance := setupUserTest(t)
 
-	uid, _ := CreateUser(u.DefUser)
+	err := UpdateUserName(id, "")
+	if !errors.As(err, &sErr.EV_ERR) {
+		t.Fatalf(`UpdateUserName(EmptyName) = %v, want EmptyValueError`, err)
+	}
 
-	user := u.DefUser
-	user.UID = uid
-	user.Status = "Status Test"
+	checkExpectedUserData(t, id, tuInstance)
+}
 
-	err := UpdateUser(user)
+func TestUpdateUserNameNoChange(t *testing.T) {
+	id, tuInstance := setupUserTest(t)
+
+	err := UpdateUserName(id, testUserName)
 	if err != nil {
-		t.Fatalf(`UpdateUser(Status) = "%v", want "nil"`, err)
+		t.Fatalf(`UpdateUserName(NoChange) = %v, want err`, err)
 	}
 
-	want := user
+	checkExpectedUserData(t, id, tuInstance)
+}
+func TestUpdateUserNameEmptyID(t *testing.T) {
+	id, tuInstance := setupUserTest(t)
 
-	user, err = GetUser(uid)
-	if want != user || err != nil {
-		t.Fatalf(`UpdateUser(Status) = %q, "%v", want %q, "nil"`, user, err, want)
+	err := UpdateUserName("", newUserName)
+	if !errors.As(err, &sErr.EV_ERR) {
+		t.Fatalf(`UpdateUserName(EmptyID) = %v, want EmptyValueError`, err)
 	}
+
+	checkExpectedUserData(t, id, tuInstance)
 }
 
-func TestUpdateUserChangeGID(t *testing.T) {
-	db.ResetDB()
+func TestUpdateUserStatusEmptyStatus(t *testing.T) {
+	id, tuInstance := setupUserTest(t)
 
-	uid, _ := CreateUser(u.DefUser)
-	gid, _ := g.CreateGame(u.DefGame)
+	err := UpdateUserStatus(id, "")
+	if !errors.As(err, &sErr.EV_ERR) {
+		t.Fatalf(`UpdateUserStatus(EmptyStatus) = %v, want EmptyValueError`, err)
+	}
 
-	user := u.DefUser
-	user.UID = uid
-	user.GID = gid
+	checkExpectedUserData(t, id, tuInstance)
+}
+func TestUpdateUserStatusNoChange(t *testing.T) {
+	id, tuInstance := setupUserTest(t)
 
-	err := UpdateUser(user)
+	err := UpdateUserStatus(id, testUser.Status)
 	if err != nil {
-		t.Fatalf(`UpdateUser(GID) = "%v", want "nil"`, err)
+		t.Fatalf(`UpdateUserStatus(NoChange) = %v, want err`, err)
 	}
 
-	want := user
+	checkExpectedUserData(t, id, tuInstance)
+}
+func TestUpdateUserNameInvalidID(t *testing.T) {
+	id, tuInstance := setupUserTest(t)
 
-	user, err = GetUser(uid)
-	if want != user || err != nil {
-		t.Fatalf(`UpdateUser(GID) = %q, "%v", want %q, "nil"`, user, err, want)
+	err := UpdateUserName(randomID, newUserName)
+	if !errors.As(err, &sErr.MNF_ERR) {
+		t.Fatalf(`UpdateUserName(InvalidID) = %v, want MatchNotFoundError`, err)
 	}
+
+	checkExpectedUserData(t, id, tuInstance)
 }
 
-func TestUpdateUserChangeInvalidGID(t *testing.T) {
-	db.ResetDB()
+func TestUpdateUserStatus(t *testing.T) {
+	id, tuInstance := setupUserTest(t)
+	tuInstance.Status = updatedUserStatus
 
-	uid, _ := CreateUser(u.DefUser)
-
-	user := u.DefUser
-	user.UID = uid
-	user.GID = uuid.NewString()
-
-	err := UpdateUser(user)
-	if err == nil {
-		t.Fatalf(`UpdateUser(InvalidGID) = "%v", want ERROR`, err)
-	}
-
-	want := u.DefUser
-	want.UID = uid
-	want.Status = "New"
-
-	user, err = GetUser(uid)
-	if want != user || err != nil {
-		t.Fatalf(`UpdateUser(InvalidGID) = %q, "%v", want %q, "nil"`, user, err, want)
-	}
-}
-
-func TestUpdateUserAll(t *testing.T) {
-	db.ResetDB()
-
-	uid, _ := CreateUser(u.DefUser)
-	gid, _ := g.CreateGame(u.DefGame)
-
-	user := u.DefUser
-	user.UID = uid
-	user.GID = gid
-	user.Name = "Name Test"
-	user.Status = "Status Test"
-
-	err := UpdateUser(user)
+	err := UpdateUserStatus(id, updatedUserStatus)
 	if err != nil {
-		t.Fatalf(`UpdateUser(all) = "%v", want "nil"`, err)
+		t.Fatalf(`UpdateUserStatus(Valid) = %v, want nil`, err)
 	}
 
-	want := user
-
-	user, err = GetUser(uid)
-	if want != user || err != nil {
-		t.Fatalf(`UpdateUser(all) = %q, "%v", want %q, "nil"`, user, err, want)
-	}
+	checkExpectedUserData(t, id, tuInstance)
 }
 
-func TestUpdateUserInvalidUID(t *testing.T) {
-	db.ResetDB()
+func TestUpdateUserStatusEmptyID(t *testing.T) {
+	id, tuInstance := setupUserTest(t)
 
-	uid, _ := CreateUser(u.DefUser)
-
-	user := u.DefUser
-	user.UID = uuid.NewString()
-	user.Name = "Name Test"
-
-	err := UpdateUser(user)
-	if err == nil {
-		t.Fatalf(`UpdateUser(InvalidUID) = "%v", want ERROR`, err)
+	err := UpdateUserName("", newUserName)
+	if !errors.As(err, &sErr.EV_ERR) {
+		t.Fatalf(`UpdateUserStatus(EmptyID) = %v, want EmptyValueError`, err)
 	}
 
-	want := u.DefUser
-	want.UID = uid
-	want.Status = "New"
-
-	user, err = GetUser(uid)
-	if want != user || err != nil {
-		t.Fatalf(`UpdateUser(InvalidUID) = %q, "%v", want %q, "nil"`, user, err, want)
-	}
+	checkExpectedUserData(t, id, tuInstance)
 }
 
-func TestUpdateUserEmptyUID(t *testing.T) {
-	db.ResetDB()
+func TestUpdateUserStatusInvalidID(t *testing.T) {
+	id, tuInstance := setupUserTest(t)
 
-	uid, _ := CreateUser(u.DefUser)
-
-	user := u.DefUser
-	user.UID = ""
-	user.Name = "Name Test"
-
-	err := UpdateUser(user)
-	if err == nil {
-		t.Fatalf(`UpdatedUser(EmptyUID) = "%v", want ERROR`, err)
+	err := UpdateUserStatus(randomID, updatedUserStatus)
+	if !errors.As(err, &sErr.MNF_ERR) {
+		t.Fatalf(`UpdateUserStatus(InvalidID) = %v, want MatchNotFoundError`, err)
 	}
 
-	want := u.DefUser
-	want.UID = uid
-	want.Status = "New"
-
-	user, err = GetUser(uid)
-	if want != user || err != nil {
-		t.Fatalf(`UpdateUser(EmptyUID) = %q, "%v", want %q, "nil"`, user, err, want)
-	}
+	checkExpectedUserData(t, id, tuInstance)
 }
 
-func TestUpdateUserEmptyDB(t *testing.T) {
-	db.ResetDB()
+func TestDeleteUser(t *testing.T) {
+	id, _ := setupUserTest(t)
 
-	user := u.DefUser
-	user.UID = uuid.NewString()
-	user.Name = "Name Test"
-
-	err := UpdateUser(user)
-	if err == nil {
-		t.Fatalf(`UpdateUser(EmptyDB) = "%v", want ERROR`, err)
-	}
-
-	user, err = GetUser(user.UID)
-	if err == nil {
-		t.Fatalf(`UpdateUser(EmptyDB) = %q, "%v", want "nil", ERROR`, user, err)
-	}
-}
-
-func TestUpdateUserNoChange(t *testing.T) {
-	db.ResetDB()
-
-	uid, _ := CreateUser(u.DefUser)
-
-	user := u.DefUser
-	user.UID = uid
-
-	err := UpdateUser(user)
+	err := DeleteUser(id)
 	if err != nil {
-		t.Fatalf(`UpdateUser(NoChange) = "%v", want "nil"`, err)
+		t.Fatalf(`DeleteUser(Valid) = %v, want nil`, err)
 	}
 
-	want := u.DefUser
-	want.UID = uid
-
-	user, err = GetUser(uid)
-	if want != user || err != nil {
-		t.Fatalf(`UpdateUser(NoChange) = %q, want "%v", "nil"`, err, want)
-	}
+	confirmUserNotExist(t, id)
 }
 
-func TestDeleteUserValid(t *testing.T) {
-	db.ResetDB()
-	uid, _ := CreateUser(u.DefUser)
-	err := DeleteUser(uid)
-	if err != nil {
-		t.Fatalf(`DeleteUser(Valid) = "%v", want "nil"`, err)
-	}
-
-	user, err := GetUser(uid)
-	if err == nil {
-		t.Fatalf(`DeletUser(Valid) = %q, "%v", want "nil", ERROR`, user, err)
-	}
-}
-
-func TestDeleteUserMulti(t *testing.T) {
-	db.ResetDB()
-	_, _ = CreateUser(u.DefUser)
-	uid, _ := CreateUser(u.DefUser)
-	err := DeleteUser(uid)
-	if err != nil {
-		t.Fatalf(`DeleteUser(Multi) = "%v", want "nil"`, err)
-	}
-
-	user, err := GetUser(uid)
-	if err == nil {
-		t.Fatalf(`DeleteUser(Multi) = %q, "%v", want "nil", ERROR`, user, err)
-	}
-}
-
-func TestDeleteUserInvalidUID(t *testing.T) {
-	db.ResetDB()
-	uid, _ := CreateUser(u.DefUser)
-
-	err := DeleteUser(uuid.NewString())
-	if err == nil {
-		t.Fatalf(`DeleteUser(InvalidGID) = "%v", want ERROR`, err)
-	}
-
-	want := u.DefUser
-	want.UID = uid
-	want.Status = "New"
-
-	user, err := GetUser(uid)
-	if want != user || err != nil {
-		t.Fatalf(`DeletUser(InvalidGID) = %q, "%v", want %q, "nil"`, user, err, want)
-	}
-}
-
-func TestDeletUserEmptyGID(t *testing.T) {
-	db.ResetDB()
-	uid, _ := CreateUser(u.DefUser)
+func TestDeleteEmptyID(t *testing.T) {
+	setupUserTest(t)
 
 	err := DeleteUser("")
-	if err == nil {
-		t.Fatalf(`DeleteUser(EmptyGID) = "%v", want ERROR`, err)
-	}
-
-	want := u.DefUser
-	want.UID = uid
-	want.Status = "New"
-
-	user, err := GetUser(uid)
-	if want != user || err != nil {
-		t.Fatalf(`DeletUser(InvalidGID) = %q, "%v", want %q, "nil"`, user, err, want)
+	if !errors.As(err, &sErr.EV_ERR) {
+		t.Fatalf(`DeleteUser(EmptyID) = %v, want EmptyValueError`, err)
 	}
 }
 
-func TestDeleteUserEmptyDB(t *testing.T) {
-	db.ResetDB()
+func TestDeleteInvalidID(t *testing.T) {
+	setupUserTest(t)
 
-	err := DeleteUser(uuid.NewString())
-	if err == nil {
-		t.Fatalf(`DeleteUser(EmptyDB) = "%v", want ERROR`, err)
+	err := DeleteUser(randomID)
+	if !errors.As(err, &sErr.MNF_ERR) {
+		t.Fatalf(`DeleteUser(InvalidID) = %v, want MatchNotFoundError`, err)
 	}
 }
 
-func TestDeleteUserRepeat(t *testing.T) {
-	db.ResetDB()
-	uid, _ := CreateUser(u.DefUser)
-	_ = DeleteUser(uid)
+func TestDeleteDouble(t *testing.T) {
+	id, _ := setupUserTest(t)
 
-	err := DeleteUser(uid)
-	if err == nil {
-		t.Fatalf(`DeleteUser(Repeat) = "%v", want ERROR`, err)
+	DeleteUser(id)
+	err := DeleteUser(id)
+	if !errors.As(err, &sErr.MNF_ERR) {
+		t.Fatalf(`DeleteUser(Double) = %v, want MatchNotFoundError`, err)
 	}
 }
 
-func TestDeleteUserInjection(t *testing.T) {
-	db.ResetDB()
-	//TODO
+func setupUserTest(t *testing.T) (string, User) {
+	id, _ := CreateUser(testUserName)
+
+	tuInstance := testUser
+	tuInstance.UID = id
+
+	t.Cleanup(cleanAfterTest)
+
+	return id, tuInstance
+}
+
+func checkExpectedUserData(t *testing.T, id string, expected User) {
+	user, err := GetUser(id)
+	if user != expected || err != nil {
+		t.Fatalf(`GetUser(UpdatedUser) = %v, %v, want %v, nil`, user, err, expected)
+	}
+}
+
+func confirmUserNotExist(t *testing.T, id string) {
+	user, err := GetUser(id)
+	if err == nil {
+		t.Fatalf(`GetUser(DeletedUser) %v, %v, want nil, err`, user, err)
+	}
+}
+
+func cleanAfterTest() {
+	users = make(map[string]User)
 }
