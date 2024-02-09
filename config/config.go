@@ -8,14 +8,8 @@ import (
 
 const configPath = "./config.json"
 
-type Address struct {
-	Protocol string `json:"protocol"`
-	Host     string `json:"host"`
-	Port     string `json:"port"`
-}
-
 type Config struct {
-	Server Address `json:"server"`
+	Port string `json:"server_port"`
 }
 
 func ReadConfig() Config {

@@ -7,5 +7,5 @@ import (
 
 func main() {
 	config := config.ReadConfig()
-	server.Serve(config.Server.Port)
+	server.Serve(config.Port)
 }
